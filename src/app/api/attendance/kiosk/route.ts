@@ -3,9 +3,6 @@ import { db } from "@/lib/db";
 import { attendance, therapists, branches } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import fs from "fs/promises";
-import path from "path";
-
 export async function POST(request: Request) {
   try {
     const session = await getSession();
@@ -37,23 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk cabang Anda." }, { status: 403 });
     }
 
-    // 2. Save the photo to public/uploads/attendance/
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "attendance");
-    try {
-      await fs.access(uploadsDir);
-    } catch {
-      await fs.mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Extract base64 data
-    const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, "");
     const dateStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const timeStr = new Date().toLocaleTimeString("sv-SE", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit" }).replace(/:/g, "-");
-    const fileName = `${dateStr}_${timeStr}_${therapist.id}.jpg`;
-    const filePath = path.join(uploadsDir, fileName);
-
-    await fs.writeFile(filePath, base64Data, "base64");
-    const photoUrl = `/uploads/attendance/${fileName}`;
+    const photoUrl = photoBase64; // Save directly as base64 string to avoid EROFS in serverless environments
 
     // 3. Update or Insert Attendance Record
     const existing = await db
