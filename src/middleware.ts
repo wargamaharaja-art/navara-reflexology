@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Proteksi halaman admin selain halaman login
   if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
-    // Di mode development, kita bypass proteksi redirect agar mempermudah testing di HP
+    // Di mode development, bypass proteksi redirect agar mempermudah testing di HP
     if (process.env.NODE_ENV === "development") {
       return NextResponse.next();
     }

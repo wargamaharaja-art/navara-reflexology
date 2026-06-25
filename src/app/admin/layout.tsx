@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleBranchChange = (value: string) => {
     setSelectedBranch(value);
-    document.cookie = `navara-reflexology-selected-branch=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    document.cookie = `radja-bekam-selected-branch=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
     window.location.reload();
   };
 
