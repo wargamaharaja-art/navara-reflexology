@@ -85,14 +85,15 @@ export default function PublicReceiptPage() {
                 URL.revokeObjectURL(url);
                 
                 // WA Text
-                const landingPageUrl = "https://radjabekam.com";
+                const landingPageUrl = "https://navara-reflexology-7gk3ni66x-rizaldmoch30-3888s-projects.vercel.app/";
                 const dateFormatted = new Date(invoice.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
                 let itemsText = "";
                 invoice.items.forEach(item => {
-                  itemsText += `- ${item.name} (${item.qty}x)\n`;
+                  itemsText += `- ${item.name} (${item.qty}x)\n${formatRupiah(item.subtotal)}\n\n`;
                 });
+                itemsText = itemsText.trimEnd();
                 
-                const msg = `Assalamualaikum ${invoice.patientName},\nTerima kasih telah mempercayakan ikhtiar sehatnya di *Navara Reflexology cabang ${invoice.branchName}* 🙏\n\nBerikut adalah detail layanan yang Anda terima:\n${itemsText}\nTotal Pembayaran: *${formatRupiah(invoice.grandTotal)}*\nTanggal: ${dateFormatted}\n\nUntuk informasi lebih lanjut, kunjungi website kami:\n${landingPageUrl}\n\n_Semoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya!_\n\n— Tim Navara Reflexology`;
+                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Navara Reflexology Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n🎁 Nikmati sesi Full Body Massage selama 60' dengan mendaftar sebagai member di Navara Reflexology! \n(S&K berlaku)\n\nUntuk informasi lebih lanjut, bisa kunjungi halaman kami di: ${landingPageUrl}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Navara Reflexology`;
                 
                 const cleanPhone = invoice.patientPhone.replace(/^0/, "62").replace(/\D/g, "");
                 
