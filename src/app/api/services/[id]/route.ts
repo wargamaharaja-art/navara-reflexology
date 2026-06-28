@@ -37,7 +37,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     // Instead of hard delete, we do soft delete
     const result = await db.update(services).set({
       isActive: false,

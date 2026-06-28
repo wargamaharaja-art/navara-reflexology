@@ -1,9 +1,9 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, boolean, json } from "drizzle-orm/pg-core";
 
 // ============================================
 // BRANCHES (Cabang Klinik)
 // ============================================
-export const branches = sqliteTable("branches", {
+export const branches = pgTable("branches", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   address: text("address").notNull(),
@@ -12,26 +12,26 @@ export const branches = sqliteTable("branches", {
   operatingHours: text("operating_hours").notNull().default("09:00 - 21:00 WIB"),
   operatingHoursWeekend: text("operating_hours_weekend").notNull().default("09:00 - 21:00 WIB"),
   mapUrl: text("map_url"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 // ============================================
 // SERVICES (Layanan Terapi)
 // ============================================
-export const services = sqliteTable("services", {
+export const services = pgTable("services", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 // ============================================
 // THERAPISTS (Data Pegawai Terapis)
 // ============================================
-export const therapists = sqliteTable("therapists", {
+export const therapists = pgTable("therapists", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   specialization: text("specialization").notNull(), // e.g., "Bekam Kering", "Bekam Basah", "Akupuntur"
@@ -43,14 +43,14 @@ export const therapists = sqliteTable("therapists", {
   photoUrl: text("photo_url"), // URL or base64 data for ID card photo
   birthDate: text("birth_date"),
   pinCode: text("pin_code"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
   joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 // ============================================
 // INVENTORY (Master Barang Gudang)
 // ============================================
-export const inventoryItems = sqliteTable("inventory_items", {
+export const inventoryItems = pgTable("inventory_items", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   category: text("category").notNull(), // e.g., "Alat Medis", "Herbal & Obat", "Perlengkapan Umum"
@@ -64,7 +64,7 @@ export const inventoryItems = sqliteTable("inventory_items", {
 // ============================================
 // INVENTORY TRANSACTIONS (Riwayat Keluar/Masuk Barang)
 // ============================================
-export const inventoryTransactions = sqliteTable("inventory_transactions", {
+export const inventoryTransactions = pgTable("inventory_transactions", {
   id: text("id").primaryKey(),
   itemId: text("item_id").notNull().references(() => inventoryItems.id),
   type: text("type", { enum: ["IN", "OUT"] }).notNull(), // IN: Masuk/Beli, OUT: Keluar/Pakai
@@ -77,17 +77,17 @@ export const inventoryTransactions = sqliteTable("inventory_transactions", {
 // ============================================
 // FINANCE CATEGORIES (Master Data Kategori Finansial)
 // ============================================
-export const financeCategories = sqliteTable("finance_categories", {
+export const financeCategories = pgTable("finance_categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type", { enum: ["INCOME", "EXPENSE"] }).notNull(),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 // ============================================
 // FINANCE TRANSACTIONS (Buku Kas & Laba Rugi)
 // ============================================
-export const financeTransactions = sqliteTable("finance_transactions", {
+export const financeTransactions = pgTable("finance_transactions", {
   id: text("id").primaryKey(),
   type: text("type", { enum: ["INCOME", "EXPENSE"] }).notNull(),
   category: text("category").notNull(), // e.g., "Reservasi", "Gaji Terapis", "Operasional", "Pembelian Stok"
@@ -103,7 +103,7 @@ export const financeTransactions = sqliteTable("finance_transactions", {
 // ============================================
 // PATIENTS (Buku Pasien)
 // ============================================
-export const patients = sqliteTable("patients", {
+export const patients = pgTable("patients", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
@@ -116,7 +116,7 @@ export const patients = sqliteTable("patients", {
 // ============================================
 // PATIENT VISITS (Kunjungan Pasien)
 // ============================================
-export const patientVisits = sqliteTable("patient_visits", {
+export const patientVisits = pgTable("patient_visits", {
   id: text("id").primaryKey(),
   patientId: text("patient_id").notNull().references(() => patients.id),
   serviceId: text("service_id").notNull().references(() => services.id),
@@ -134,7 +134,7 @@ export const patientVisits = sqliteTable("patient_visits", {
 // ============================================
 // RESERVATIONS (Pemesanan via Web)
 // ============================================
-export const reservations = sqliteTable("reservations", {
+export const reservations = pgTable("reservations", {
   id: text("id").primaryKey(),
   customerName: text("customer_name").notNull(),
   customerPhone: text("customer_phone").notNull(),
@@ -151,7 +151,7 @@ export const reservations = sqliteTable("reservations", {
 // ============================================
 // SETTINGS (Informasi Perusahaan Global)
 // ============================================
-export const settings = sqliteTable("settings", {
+export const settings = pgTable("settings", {
   id: text("id").primaryKey(), // We'll just use one row with id "company_info"
   companyName: text("company_name").notNull(),
   description: text("description").notNull(),
@@ -168,14 +168,14 @@ export const settings = sqliteTable("settings", {
   operatingHours: text("operating_hours").notNull().default("09:00 - 21:00 WIB"),
   operatingHoursWeekend: text("operating_hours_weekend").notNull().default("09:00 - 21:00 WIB"),
   mapUrl: text("map_url"),
-  aboutPageContent: text("about_page_content", { mode: "json" }),
+  aboutPageContent: json("about_page_content"),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
 // ============================================
 // THERAPIST COMMISSIONS (Komisi Terapis)
 // ============================================
-export const therapistCommissions = sqliteTable("therapist_commissions", {
+export const therapistCommissions = pgTable("therapist_commissions", {
   id: text("id").primaryKey(),
   therapistId: text("therapist_id").notNull().references(() => therapists.id),
   visitId: text("visit_id").notNull().references(() => patientVisits.id),
@@ -188,7 +188,7 @@ export const therapistCommissions = sqliteTable("therapist_commissions", {
 // ============================================
 // MONTHLY TARGETS (KPI Bulanan)
 // ============================================
-export const monthlyTargets = sqliteTable("monthly_targets", {
+export const monthlyTargets = pgTable("monthly_targets", {
   id: text("id").primaryKey(), // "${branchId}-${month}"
   month: text("month").notNull(), // "YYYY-MM"
   branchId: text("branch_id").notNull().references(() => branches.id),
@@ -200,7 +200,7 @@ export const monthlyTargets = sqliteTable("monthly_targets", {
 // ============================================
 // ADMINS (Pengguna Panel Admin)
 // ============================================
-export const admins = sqliteTable("admins", {
+export const admins = pgTable("admins", {
   id: text("id").primaryKey(),
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
@@ -208,7 +208,7 @@ export const admins = sqliteTable("admins", {
   role: text("role", { enum: ["SUPER_ADMIN", "BRANCH_ADMIN", "THERAPIST", "CASHIER", "INVESTOR"] }).notNull().default("BRANCH_ADMIN"),
   permissions: text("permissions"), // JSON string array of allowed menus
   branchId: text("branch_id").references(() => branches.id), // Nullable for SUPER_ADMIN or INVESTOR
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
@@ -262,16 +262,16 @@ export type NewAdmin = typeof admins.$inferInsert;
 // ============================================
 
 // Chart of Accounts (Buku Besar)
-export const accounts = sqliteTable("accounts", {
+export const accounts = pgTable("accounts", {
   id: text("id").primaryKey(),
   code: text("code").notNull().unique(), // e.g., "101" (Kas), "401" (Pendapatan), dll
   name: text("name").notNull(),
   type: text("type", { enum: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "COGS", "EXPENSE"] }).notNull(),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 // Journal Entries (Jurnal Umum Header)
-export const journalEntries = sqliteTable("journal_entries", {
+export const journalEntries = pgTable("journal_entries", {
   id: text("id").primaryKey(),
   date: text("date").notNull(),
   description: text("description").notNull(),
@@ -280,7 +280,7 @@ export const journalEntries = sqliteTable("journal_entries", {
 });
 
 // Journal Lines (Detail Debet/Kredit Jurnal)
-export const journalLines = sqliteTable("journal_lines", {
+export const journalLines = pgTable("journal_lines", {
   id: text("id").primaryKey(),
   entryId: text("entry_id").notNull().references(() => journalEntries.id, { onDelete: "cascade" }),
   accountId: text("account_id").notNull().references(() => accounts.id),
@@ -300,7 +300,7 @@ export type NewJournalLine = typeof journalLines.$inferInsert;
 // ============================================
 // ATTENDANCE (Absensi Karyawan)
 // ============================================
-export const attendance = sqliteTable("attendance", {
+export const attendance = pgTable("attendance", {
   id: text("id").primaryKey(),
   therapistId: text("therapist_id").notNull().references(() => therapists.id),
   branchId: text("branch_id").notNull().references(() => branches.id),
@@ -315,7 +315,7 @@ export const attendance = sqliteTable("attendance", {
 // ============================================
 // THERAPIST SERVICE COMMISSIONS (Override Komisi)
 // ============================================
-export const therapistServiceCommissions = sqliteTable("therapist_service_commissions", {
+export const therapistServiceCommissions = pgTable("therapist_service_commissions", {
   id: text("id").primaryKey(),
   therapistId: text("therapist_id").notNull().references(() => therapists.id),
   serviceId: text("service_id").notNull().references(() => services.id),
@@ -331,7 +331,7 @@ export type NewTherapistServiceCommission = typeof therapistServiceCommissions.$
 // ============================================
 // THERAPIST MONTHLY REPORTS (Rapor & Slip Gaji)
 // ============================================
-export const therapistMonthlyReports = sqliteTable("therapist_monthly_reports", {
+export const therapistMonthlyReports = pgTable("therapist_monthly_reports", {
   id: text("id").primaryKey(), // Secure UUID / Token unik
   therapistId: text("therapist_id").notNull().references(() => therapists.id, { onDelete: "cascade" }),
   month: text("month").notNull(), // Format YYYY-MM (misal "2026-06")
@@ -360,7 +360,7 @@ export type NewTherapistMonthlyReport = typeof therapistMonthlyReports.$inferIns
 // ============================================
 // INVOICES (Struk / Bukti Pembayaran)
 // ============================================
-export const invoices = sqliteTable("invoices", {
+export const invoices = pgTable("invoices", {
   id: text("id").primaryKey(), // UUID unik
   invoiceNumber: text("invoice_number").notNull().unique(), // Format: INV-CABANG-YYYYMMDD-SEQ
   visitId: text("visit_id").references(() => patientVisits.id),
@@ -392,7 +392,7 @@ export type NewInvoice = typeof invoices.$inferInsert;
 // ============================================
 // STAFF (Pegawai Non-Terapis)
 // ============================================
-export const staff = sqliteTable("staff", {
+export const staff = pgTable("staff", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   role: text("role").notNull(), // "Admin", "CS", "Kebersihan", dsb
@@ -400,7 +400,7 @@ export const staff = sqliteTable("staff", {
   baseSalary: integer("base_salary").notNull().default(0),
   dailyAllowance: integer("daily_allowance").notNull().default(0), // Uang makan/transport
   branchId: text("branch_id").references(() => branches.id),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
   joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 
@@ -410,7 +410,7 @@ export type NewStaff = typeof staff.$inferInsert;
 // ============================================
 // STAFF PAYROLL REPORTS (Slip Gaji Pegawai)
 // ============================================
-export const staffPayrollReports = sqliteTable("staff_payroll_reports", {
+export const staffPayrollReports = pgTable("staff_payroll_reports", {
   id: text("id").primaryKey(), // Secure UUID
   staffId: text("staff_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
   month: text("month").notNull(), // Format YYYY-MM (misal "2026-06")

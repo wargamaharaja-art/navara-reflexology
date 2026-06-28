@@ -1,15 +1,10 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import * as dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
+const { db } = require("./index");
 import { branches, services, settings, accounts } from "./schema";
 
 async function seed() {
-  const client = createClient({
-    url: process.env.TURSO_DATABASE_URL || "file:local.db",
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  });
-
-  const db = drizzle(client);
-
   console.log("🌱 Seeding database...");
 
   // ---- Seed Branches ----
@@ -134,8 +129,6 @@ async function seed() {
   console.log("✅ Accounts seeded");
 
   console.log("🎉 Database seeded successfully!");
-
-  client.close();
 }
 
 seed().catch((err) => {

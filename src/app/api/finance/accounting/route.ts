@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id));
 
     if (month) {
-      query = query.where(sql`strftime('%Y-%m', ${journalEntries.date}) = ${month}`) as any;
+      query = query.where(sql`to_char(${journalEntries.date}::timestamp, 'YYYY-MM') = ${month}`) as any;
     }
 
     const lines = await query;

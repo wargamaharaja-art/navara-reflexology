@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#ffffff',
     icons: [
       {
-        src: '/logo.png',
+        src: '/navara-logo.png',
         sizes: 'any',
         type: 'image/png',
       },

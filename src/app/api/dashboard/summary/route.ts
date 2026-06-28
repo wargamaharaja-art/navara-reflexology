@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       })
       .from(financeTransactions);
 
-    const dateCondition = sql`strftime('%Y-%m', ${financeTransactions.date}) = ${month}`;
+    const dateCondition = sql`to_char(${financeTransactions.date}::timestamp, 'YYYY-MM') = ${month}`;
     if (branchFilter) {
       monthFinanceQuery = monthFinanceQuery.where(and(dateCondition, eq(financeTransactions.branchId, branchFilter))) as any;
     } else {

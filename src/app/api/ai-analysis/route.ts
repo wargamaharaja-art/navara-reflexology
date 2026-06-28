@@ -31,7 +31,7 @@ export async function GET(request: Request) {
       })
       .from(financeTransactions);
 
-    const dateCondition = sql`strftime('%Y-%m', ${financeTransactions.date}) = ${month}`;
+    const dateCondition = sql`to_char(${financeTransactions.date}::timestamp, 'YYYY-MM') = ${month}`;
     if (branchFilter) {
       monthFinanceQuery = monthFinanceQuery.where(and(dateCondition, eq(financeTransactions.branchId, branchFilter))) as any;
     } else {
@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       .select({ count: sql<number>`COUNT(${patientVisits.id})` })
       .from(patientVisits);
       
-    const visitDateCondition = sql`strftime('%Y-%m', ${patientVisits.visitDate}) = ${month}`;
+    const visitDateCondition = sql`to_char(${patientVisits.visitDate}::timestamp, 'YYYY-MM') = ${month}`;
     if (branchFilter) {
       visitsQuery = visitsQuery.where(and(visitDateCondition, eq(patientVisits.branchId, branchFilter))) as any;
     } else {

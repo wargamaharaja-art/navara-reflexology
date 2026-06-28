@@ -71,6 +71,7 @@ export default function AdminVisitsPage() {
   const [saving, setSaving] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDate, setFilterDate] = useState("");
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -129,10 +130,13 @@ export default function AdminVisitsPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
 
+  // Patient History Modal State
+  const [selectedPatientHistoryId, setSelectedPatientHistoryId] = useState<string | null>(null);
+
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedBranchId, activeTab]);
+  }, [searchQuery, selectedBranchId, activeTab, filterDate]);
 
   // POS (Kasir) Tab States
   const [posPhone, setPosPhone] = useState("");
@@ -520,6 +524,27 @@ export default function AdminVisitsPage() {
   const getServiceName = (id: string) => services.find(s => s.id === id)?.name || id;
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
+  const handleDeleteVisit = async (visitId: string) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus data kunjungan ini? Tindakan ini tidak dapat dibatalkan.")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/patient-visits/${visitId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        alert("Data kunjungan berhasil dihapus");
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menghapus data kunjungan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan jaringan");
+    }
+  };
+
   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
     const patientVisits = visits.filter(v => v.patientId === patientId);
     const index = patientVisits.findIndex(v => v.id === visitId);
@@ -528,10 +553,11 @@ export default function AdminVisitsPage() {
 
   let finalVisits = visits.filter(v => {
     const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
+    const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchBranch && matchSearch;
-  });
+    return matchBranch && matchDate && matchSearch;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const totalPages = Math.ceil(finalVisits.length / itemsPerPage);
   const paginatedVisits = finalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -767,8 +793,8 @@ export default function AdminVisitsPage() {
                         type="number"
                         min="0"
                         required
-                        value={posAmountPaid || ""}
-                        onChange={e => setPosAmountPaid(parseInt(e.target.value) || 0)}
+                        value={posAmountPaid.toString()}
+                        onChange={e => setPosAmountPaid(e.target.value === "" ? 0 : parseInt(e.target.value))}
                         placeholder="Masukkan nominal..."
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
                       />
@@ -1204,9 +1230,20 @@ export default function AdminVisitsPage() {
                   </h3>
                 </div>
                 
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-64" />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="date" 
+                      value={filterDate} 
+                      onChange={(e) => setFilterDate(e.target.value)} 
+                      className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-auto text-gray-600" 
+                    />
+                  </div>
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-64" />
+                  </div>
                 </div>
               </div>
 
@@ -1252,7 +1289,16 @@ export default function AdminVisitsPage() {
                               <div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock className="w-3 h-3"/> {v.visitTime}</div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="font-bold text-gray-900">{getPatientName(v.patientId)}</div>
+                              <div className="font-bold text-gray-900 flex items-center gap-2">
+                                {getPatientName(v.patientId)}
+                                <button
+                                  onClick={() => setSelectedPatientHistoryId(v.patientId)}
+                                  className="text-[10px] bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200 transition-colors flex items-center gap-1 font-bold shadow-sm"
+                                  title="Lihat Riwayat Kunjungan Pasien"
+                                >
+                                  <Calendar className="w-3 h-3" /> Riwayat
+                                </button>
+                              </div>
                               <div className="mt-1.5">
                                 {isNewPatient ? (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
@@ -1286,20 +1332,38 @@ export default function AdminVisitsPage() {
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
                                     <Check className="w-3 h-3" /> Lunas
                                   </span>
-                                  <button 
-                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
-                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
-                                  >
-                                    <Plus className="w-3 h-3"/> Tambah Layanan
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button 
+                                      onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
+                                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
+                                    >
+                                      <Plus className="w-3 h-3"/> Tambah Layanan
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteVisit(v.id)}
+                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      title="Hapus Data Kunjungan"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 </div>
                               ) : (
-                                <button 
-                                  onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
-                                >
-                                  Ke Kasir
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  <button 
+                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                  >
+                                    Ke Kasir
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteVisit(v.id)}
+                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                                    title="Hapus Data Kunjungan"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                               )}
                             </td>
                             <td className="px-6 py-4">
@@ -1387,6 +1451,9 @@ export default function AdminVisitsPage() {
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Pasien</p>
                           <h4 className="text-2xl font-black text-gray-900 mt-1">{recapData.summary.totalVisits} Kunjungan</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Laki-laki: <span className="font-bold">{recapData.summary.genderStats?.L || 0}</span> • Perempuan: <span className="font-bold">{recapData.summary.genderStats?.P || 0}</span>
+                          </p>
                         </div>
                       </div>
 
@@ -1711,6 +1778,99 @@ export default function AdminVisitsPage() {
           </div>
         </div>
       )}
+
+      {/* Patient History Modal */}
+      {selectedPatientHistoryId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative transform transition-all animate-in zoom-in-95 duration-300">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-blue-500 z-10"></div>
+            
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Riwayat Kunjungan Pasien</h3>
+                <p className="text-sm text-gray-500 font-medium mt-0.5">
+                  <User className="w-4 h-4 inline-block mr-1 text-gray-400" />
+                  {getPatientName(selectedPatientHistoryId)}
+                </p>
+              </div>
+              <button onClick={() => setSelectedPatientHistoryId(null)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
+              <div className="space-y-4">
+                {visits
+                  .filter(v => v.patientId === selectedPatientHistoryId)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((visit, idx, arr) => (
+                    <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
+                        <div className="space-y-3 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-gray-900 text-lg">{visit.visitDate.split('-').reverse().join('/')}</span>
+                            <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
+                              <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
+                            </span>
+                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
+                              Kunjungan #{arr.length - idx}
+                            </span>
+                            {visit.paymentStatus === "PAID" && (
+                              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 uppercase tracking-wide flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <Activity className="w-4 h-4 text-teal-500"/> {getServiceName(visit.serviceId)}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(visit.therapistId)}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <Store className="w-4 h-4 text-amber-500"/> {getBranchName(visit.branchId)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
+                            <FileText className="w-3.5 h-3.5" /> Catatan Medis
+                          </div>
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                            {visit.notes || <span className="italic text-gray-400">Tidak ada catatan medis untuk kunjungan ini.</span>}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+              <button 
+                onClick={() => setSelectedPatientHistoryId(null)}
+                className="px-6 py-2.5 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );

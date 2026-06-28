@@ -3,17 +3,8 @@ import { admins } from "@/lib/db/schema";
 import { createSession, verifyPassword, hashPassword, getDefaultPermissions } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { type NextRequest } from "next/server";
-import fs from "fs";
-import path from "path";
-
 function logAttempt(username: string, status: string, details?: string, userAgent?: string) {
-  try {
-    const logFilePath = path.join(process.cwd(), "login_attempts.log");
-    const logEntry = `[${new Date().toISOString()}] UserAgent: ${userAgent || "unknown"} | Username: ${username} | Status: ${status} | Details: ${details || ""}\n`;
-    fs.appendFileSync(logFilePath, logEntry);
-  } catch (err) {
-    console.error("Failed to write to login_attempts.log", err);
-  }
+  console.log(`[LOGIN ATTEMPT] ${username} | ${status} | ${details}`);
 }
 
 // POST /api/auth/login — Admin login

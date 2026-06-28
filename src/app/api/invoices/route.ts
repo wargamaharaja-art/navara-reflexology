@@ -60,12 +60,21 @@ export async function GET(request: Request) {
     }
 
     const result = await db
-      .select()
+      .select({
+        invoice: invoices,
+        patientGender: patients.gender
+      })
       .from(invoices)
+      .leftJoin(patients, eq(invoices.patientId, patients.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(invoices.createdAt));
 
-    return NextResponse.json({ data: result });
+    const formatted = result.map(r => ({
+      ...r.invoice,
+      patientGender: r.patientGender
+    }));
+
+    return NextResponse.json({ data: formatted });
   } catch (error) {
     console.error("GET /api/invoices error:", error);
     return NextResponse.json({ error: "Gagal memuat data struk" }, { status: 500 });
