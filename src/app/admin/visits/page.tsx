@@ -146,6 +146,11 @@ export default function AdminVisitsPage() {
   const [posItems, setPosItems] = useState<InvoiceItem[]>([]);
   const [posDiscount, setPosDiscount] = useState(0);
   const [posPaymentMethod, setPosPaymentMethod] = useState("CASH");
+  const [posIsSplitPayment, setPosIsSplitPayment] = useState(false);
+  const [posSplitMethod1, setPosSplitMethod1] = useState("CASH");
+  const [posSplitMethod2, setPosSplitMethod2] = useState("QRIS");
+  const [posSplitAmount1, setPosSplitAmount1] = useState(0);
+  const [posSplitAmount2, setPosSplitAmount2] = useState(0);
   const [posAmountPaid, setPosAmountPaid] = useState(0);
   const [posNotes, setPosNotes] = useState("");
   const [posProcessing, setPosProcessing] = useState(false);
@@ -336,13 +341,16 @@ export default function AdminVisitsPage() {
 
   const posSubtotal = posItems.reduce((sum, i) => sum + i.subtotal, 0);
   const posGrandTotal = posSubtotal - posDiscount;
-  const posChangeAmount = Math.max(0, posAmountPaid - posGrandTotal);
+  const totalPosPaid = posIsSplitPayment ? (posSplitAmount1 + posSplitAmount2) : posAmountPaid;
+  const posChangeAmount = Math.max(0, totalPosPaid - posGrandTotal);
 
   const handlePOSSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (posItems.length === 0) return alert("Tambahkan minimal 1 item layanan!");
     if (!posPhone || !posPatientName || !posBranchId) return alert("Lengkapi data pasien & cabang!");
-    if (posAmountPaid < posGrandTotal) return alert("Uang diterima kurang dari total!");
+    
+    const totalPaid = posIsSplitPayment ? (posSplitAmount1 + posSplitAmount2) : posAmountPaid;
+    if (totalPaid < posGrandTotal) return alert("Uang diterima kurang dari total!");
 
     setPosProcessing(true);
     try {
@@ -357,8 +365,12 @@ export default function AdminVisitsPage() {
           items: posItems,
           discount: posDiscount,
           tax: 0,
-          paymentMethod: posPaymentMethod,
-          amountPaid: posAmountPaid,
+          paymentMethod: posIsSplitPayment ? "SPLIT" : posPaymentMethod,
+          splitPayments: posIsSplitPayment ? [
+            { method: posSplitMethod1, amount: posSplitAmount1 },
+            { method: posSplitMethod2, amount: posSplitAmount2 }
+          ] : null,
+          amountPaid: totalPaid,
           notes: posNotes || null,
           visitId: posVisitId,
         }),
@@ -387,6 +399,11 @@ export default function AdminVisitsPage() {
     setPosItems([]);
     setPosDiscount(0);
     setPosPaymentMethod("CASH");
+    setPosIsSplitPayment(false);
+    setPosSplitMethod1("CASH");
+    setPosSplitMethod2("QRIS");
+    setPosSplitAmount1(0);
+    setPosSplitAmount2(0);
     setPosAmountPaid(0);
     setPosNotes("");
     setPosCreatedInvoice(null);
@@ -762,59 +779,134 @@ export default function AdminVisitsPage() {
 
                     {/* Payment Method */}
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Metode Pembayaran</label>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                        {[
-                          { value: "CASH", label: "💵 Cash" },
-                          { value: "DEBIT", label: "💳 Debit" },
-                          { value: "QRIS", label: "📱 QRIS" },
-                          { value: "TRANSFER BANK", label: "🏦 Transfer" },
-                        ].map(m => (
-                          <button
-                            key={m.value}
-                            type="button"
-                            onClick={() => setPosPaymentMethod(m.value)}
-                            className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
-                              posPaymentMethod === m.value
-                                ? "bg-emerald-50 border-emerald-400 text-emerald-700"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Metode Pembayaran</label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg">
+                          <input 
+                            type="checkbox" 
+                            checked={posIsSplitPayment}
+                            onChange={(e) => setPosIsSplitPayment(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-gray-300"
+                          />
+                          <span className="font-medium text-gray-600">Split Payment (Ganda)</span>
+                        </label>
                       </div>
+
+                      {!posIsSplitPayment ? (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                          {[
+                            { value: "CASH", label: "💵 Cash" },
+                            { value: "DEBIT", label: "💳 Debit" },
+                            { value: "QRIS", label: "📱 QRIS" },
+                            { value: "TRANSFER BANK", label: "🏦 Transfer" },
+                          ].map(m => (
+                            <button
+                              key={m.value}
+                              type="button"
+                              onClick={() => setPosPaymentMethod(m.value)}
+                              className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+                                posPaymentMethod === m.value
+                                  ? "bg-emerald-50 border-emerald-400 text-emerald-700"
+                                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                              }`}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                          {/* Split 1 */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Metode 1</label>
+                              <select 
+                                value={posSplitMethod1}
+                                onChange={e => setPosSplitMethod1(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              >
+                                <option value="CASH">Cash</option>
+                                <option value="QRIS">QRIS</option>
+                                <option value="TRANSFER BANK">Transfer Bank</option>
+                                <option value="DEBIT">Debit</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Nominal 1</label>
+                              <input 
+                                type="number" 
+                                min="0" 
+                                value={posSplitAmount1.toString()}
+                                onChange={e => {
+                                  const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                  setPosSplitAmount1(val);
+                                  setPosSplitAmount2(Math.max(0, posGrandTotal - val));
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              />
+                            </div>
+                          </div>
+                          {/* Split 2 */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Metode 2</label>
+                              <select 
+                                value={posSplitMethod2}
+                                onChange={e => setPosSplitMethod2(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              >
+                                <option value="QRIS">QRIS</option>
+                                <option value="CASH">Cash</option>
+                                <option value="TRANSFER BANK">Transfer Bank</option>
+                                <option value="DEBIT">Debit</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Nominal 2</label>
+                              <input 
+                                type="number" 
+                                min="0" 
+                                value={posSplitAmount2.toString()}
+                                onChange={e => setPosSplitAmount2(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Amount Paid */}
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Uang Diterima (Rp)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        required
-                        value={posAmountPaid.toString()}
-                        onChange={e => setPosAmountPaid(e.target.value === "" ? 0 : parseInt(e.target.value))}
-                        placeholder="Masukkan nominal..."
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                      />
-                      {/* Quick amount buttons */}
-                      <div className="flex gap-2 flex-wrap">
-                        {[posGrandTotal, 50000, 100000, 150000, 200000].filter((v, i, a) => a.indexOf(v) === i && v > 0).map(amount => (
-                          <button
-                            key={amount}
-                            type="button"
-                            onClick={() => setPosAmountPaid(amount)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
-                          >
-                            {formatRupiah(amount)}
-                          </button>
-                        ))}
+                    {!posIsSplitPayment && (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">Uang Diterima (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={posAmountPaid.toString()}
+                          onChange={e => setPosAmountPaid(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                          placeholder="Masukkan nominal..."
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                        />
+                        {/* Quick amount buttons */}
+                        <div className="flex gap-2 flex-wrap">
+                          {[posGrandTotal, 50000, 100000, 150000, 200000].filter((v, i, a) => a.indexOf(v) === i && v > 0).map(amount => (
+                            <button
+                              key={amount}
+                              type="button"
+                              onClick={() => setPosAmountPaid(amount)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
+                            >
+                              {formatRupiah(amount)}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Change */}
-                    {posAmountPaid >= posGrandTotal && posAmountPaid > 0 && (
+                    {totalPosPaid >= posGrandTotal && totalPosPaid > 0 && (
                       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-semibold text-emerald-700">Kembalian</span>
@@ -823,9 +915,9 @@ export default function AdminVisitsPage() {
                       </div>
                     )}
 
-                    {posAmountPaid > 0 && posAmountPaid < posGrandTotal && (
+                    {totalPosPaid > 0 && totalPosPaid < posGrandTotal && (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2 text-red-700 text-sm">
-                        <AlertCircle className="w-4 h-4 shrink-0" /> Uang diterima kurang {formatRupiah(posGrandTotal - posAmountPaid)}
+                        <AlertCircle className="w-4 h-4 shrink-0" /> Uang diterima kurang {formatRupiah(posGrandTotal - totalPosPaid)}
                       </div>
                     )}
 

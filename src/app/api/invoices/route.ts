@@ -101,6 +101,7 @@ export async function POST(request: Request) {
       discount = 0,
       tax = 0,
       paymentMethod = "CASH",
+      splitPayments = null,
       amountPaid = 0,
       notes,
       // If linking to an existing visit
@@ -185,7 +186,8 @@ export async function POST(request: Request) {
       discount,
       tax,
       grandTotal,
-      paymentMethod,
+      paymentMethod: splitPayments && splitPayments.length > 1 ? "SPLIT" : paymentMethod,
+      splitPayments: splitPayments ? JSON.stringify(splitPayments) : null,
       amountPaid: amountPaid || grandTotal,
       changeAmount: Math.max(0, (amountPaid || grandTotal) - grandTotal),
       notes: notes || null,
@@ -193,28 +195,56 @@ export async function POST(request: Request) {
     });
 
     // 7. Create finance transaction (INCOME)
-    const finTrxId = crypto.randomUUID();
-    await db.insert(financeTransactions).values({
-      id: finTrxId,
-      type: "INCOME",
-      category: "Pendapatan Layanan",
-      amount: grandTotal,
-      description: `Struk ${invoiceNumber} - ${patientName}`,
-      referenceId: invoiceId,
-      branchId: finalBranchId,
-      paymentMethod,
-      date: now,
-    });
+    if (splitPayments && splitPayments.length > 1) {
+      for (const sp of splitPayments) {
+        if (sp.amount <= 0) continue;
+        const finTrxId = crypto.randomUUID();
+        await db.insert(financeTransactions).values({
+          id: finTrxId,
+          type: "INCOME",
+          category: "Pendapatan Layanan",
+          amount: sp.amount,
+          description: `Struk ${invoiceNumber} - ${patientName} (${sp.method})`,
+          referenceId: invoiceId,
+          branchId: finalBranchId,
+          paymentMethod: sp.method,
+          date: now,
+        });
 
-    // 8. Create journal entry
-    await createJournalEntry({
-      date: now,
-      description: `[POS] ${invoiceNumber} - ${patientName}`,
-      referenceId: finTrxId,
-      debitAccountId: COA.KAS,
-      creditAccountId: COA.PENDAPATAN_LAYANAN,
-      amount: grandTotal,
-    });
+        // 8. Create journal entry
+        await createJournalEntry({
+          date: now,
+          description: `[POS] ${invoiceNumber} - ${patientName} (${sp.method})`,
+          referenceId: finTrxId,
+          debitAccountId: COA.KAS,
+          creditAccountId: COA.PENDAPATAN_LAYANAN,
+          amount: sp.amount,
+        });
+      }
+    } else {
+      const finTrxId = crypto.randomUUID();
+      await db.insert(financeTransactions).values({
+        id: finTrxId,
+        type: "INCOME",
+        category: "Pendapatan Layanan",
+        amount: grandTotal,
+        description: `Struk ${invoiceNumber} - ${patientName}`,
+        referenceId: invoiceId,
+        branchId: finalBranchId,
+        paymentMethod,
+        date: now,
+      });
+
+      // 8. Create journal entry
+      await createJournalEntry({
+        date: now,
+        description: `[POS] ${invoiceNumber} - ${patientName}`,
+        referenceId: finTrxId,
+        debitAccountId: COA.KAS,
+        creditAccountId: COA.PENDAPATAN_LAYANAN,
+        amount: grandTotal,
+      });
+    }
 
     // 9. Create patient visit record if not linked to an existing one (POS standalone)
     let finalVisitId = visitId || null;

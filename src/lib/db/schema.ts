@@ -380,6 +380,7 @@ export const invoices = pgTable("invoices", {
   tax: integer("tax").notNull().default(0),
   grandTotal: integer("grand_total").notNull(),
   paymentMethod: text("payment_method").notNull().default("CASH"),
+  splitPayments: text("split_payments"), // JSON: [{method, amount}]
   amountPaid: integer("amount_paid").notNull().default(0),
   changeAmount: integer("change_amount").notNull().default(0),
   notes: text("notes"),

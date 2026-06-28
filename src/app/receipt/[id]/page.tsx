@@ -25,6 +25,7 @@ type InvoiceData = {
   tax: number;
   grandTotal: number;
   paymentMethod: string;
+  splitPayments: string | null;
   amountPaid: number;
   changeAmount: number;
   notes: string | null;
@@ -253,7 +254,7 @@ export default function PublicReceiptPage() {
               </div>
               <div className="text-right">
                 <span className="text-gray-400">Pembayaran</span>
-                <p className="font-semibold text-gray-700">{invoice.paymentMethod}</p>
+                <p className="font-semibold text-gray-700">{invoice.paymentMethod === "SPLIT" ? "Ganda (Split)" : invoice.paymentMethod}</p>
               </div>
             </div>
           </div>
@@ -318,10 +319,19 @@ export default function PublicReceiptPage() {
               <span className="text-sm font-extrabold text-gray-900">TOTAL</span>
               <span className="receipt-total text-lg font-extrabold text-emerald-600">{formatRupiah(invoice.grandTotal)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Bayar ({invoice.paymentMethod})</span>
-              <span className="font-semibold text-gray-800">{formatRupiah(invoice.amountPaid)}</span>
-            </div>
+            {invoice.paymentMethod === "SPLIT" && invoice.splitPayments ? (
+              JSON.parse(invoice.splitPayments).map((sp: any, idx: number) => (
+                <div key={idx} className="flex justify-between">
+                  <span className="text-gray-500">Bayar ({sp.method})</span>
+                  <span className="font-semibold text-gray-800">{formatRupiah(sp.amount)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Bayar ({invoice.paymentMethod})</span>
+                <span className="font-semibold text-gray-800">{formatRupiah(invoice.amountPaid)}</span>
+              </div>
+            )}
             {invoice.changeAmount > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Kembalian</span>
