@@ -59,14 +59,14 @@ const PAYMENT_METHODS = [
   { key: "ALL", label: "Semua", icon: Receipt, color: "bg-gray-100 text-gray-700 border-gray-200", activeColor: "bg-gray-800 text-white border-gray-800" },
   { key: "CASH", label: "Cash", icon: Banknote, color: "bg-emerald-50 text-emerald-700 border-emerald-200", activeColor: "bg-emerald-600 text-white border-emerald-600" },
   { key: "QRIS", label: "QRIS", icon: Smartphone, color: "bg-purple-50 text-purple-700 border-purple-200", activeColor: "bg-purple-600 text-white border-purple-600" },
-  { key: "TRANSFER", label: "Transfer Bank", icon: Building2, color: "bg-blue-50 text-blue-700 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
+  { key: "TRANSFER BANK", label: "Transfer Bank", icon: Building2, color: "bg-blue-50 text-blue-700 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
   { key: "DEBIT", label: "Debit", icon: CreditCard, color: "bg-orange-50 text-orange-700 border-orange-200", activeColor: "bg-orange-500 text-white border-orange-500" },
 ];
 
 const PAYMENT_BADGE: Record<string, { label: string; cls: string }> = {
   CASH:     { label: "Cash",          cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
   QRIS:     { label: "QRIS",          cls: "bg-purple-100 text-purple-700 border border-purple-200" },
-  TRANSFER: { label: "Transfer Bank", cls: "bg-blue-100 text-blue-700 border border-blue-200" },
+  "TRANSFER BANK": { label: "Transfer Bank", cls: "bg-blue-100 text-blue-700 border border-blue-200" },
   DEBIT:    { label: "Debit",         cls: "bg-orange-100 text-orange-700 border border-orange-200" },
   EWALLET:  { label: "E-Wallet",      cls: "bg-pink-100 text-pink-700 border border-pink-200" },
 };

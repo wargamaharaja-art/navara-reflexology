@@ -71,7 +71,7 @@ export default function AdminExpensesPage() {
     attachmentUrl: "",
   });
 
-  const paymentMethods = ["CASH", "DEBIT", "QRIS"];
+  const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
   const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
 

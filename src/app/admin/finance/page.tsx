@@ -73,7 +73,7 @@ export default function AdminFinancePage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
 
-  const paymentMethods = ["CASH", "DEBIT", "QRIS"];
+  const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
   const incomeCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "INCOME").map(c => c.name))), [categories]);
   const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
