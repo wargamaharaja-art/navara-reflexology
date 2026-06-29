@@ -496,7 +496,8 @@ export default function TransaksiPelangganPage() {
 
   // Filtered list
   const filtered = invoices.filter(inv => {
-    const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod;
+    const isSplitMatch = inv.paymentMethod === "SPLIT" && inv.splitPayments?.some(sp => sp.method === activeMethod);
+    const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod || isSplitMatch;
     const q = search.toLowerCase();
     const matchSearch = !q ||
       inv.patientName.toLowerCase().includes(q) ||
@@ -507,11 +508,29 @@ export default function TransaksiPelangganPage() {
   });
 
   // Summary per method
-  const summary = PAYMENT_METHODS.filter(m => m.key !== "ALL").map(m => ({
-    ...m,
-    total: invoices.filter(inv => inv.paymentMethod === m.key).reduce((s, inv) => s + inv.grandTotal, 0),
-    count: invoices.filter(inv => inv.paymentMethod === m.key).length,
-  }));
+  const summary = PAYMENT_METHODS.filter(m => m.key !== "ALL").map(m => {
+    let total = 0;
+    let count = 0;
+    
+    invoices.forEach(inv => {
+      if (inv.paymentMethod === m.key) {
+        total += inv.grandTotal;
+        count += 1;
+      } else if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+        const split = inv.splitPayments.find(sp => sp.method === m.key);
+        if (split) {
+          total += split.amount;
+          count += 1;
+        }
+      }
+    });
+
+    return {
+      ...m,
+      total,
+      count
+    };
+  });
 
   const grandTotalAll = filtered.reduce((s, inv) => s + inv.grandTotal, 0);
 
