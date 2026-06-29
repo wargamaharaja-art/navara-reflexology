@@ -30,5 +30,16 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "generate_dummy.ts",
+    "undo_dummy.ts",
+    "restore_finance.ts",
+    "restore_turso.ts",
+    "check_sqlite.ts",
+    "check_turso.ts",
+    "reset_finance.ts",
+    "fix-maps.ts",
+    "query_services.ts"
+  ]
 }
