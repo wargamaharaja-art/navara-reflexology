@@ -936,7 +936,7 @@ export default function AdminVisitsPage() {
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      disabled={posProcessing || posItems.length === 0 || posAmountPaid < posGrandTotal}
+                      disabled={posProcessing || posItems.length === 0 || totalPosPaid < posGrandTotal}
                       className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       {posProcessing ? (

@@ -50,6 +50,7 @@ interface Invoice {
   notes: string | null;
   createdAt: string;
   patientGender?: string | null;
+  splitPayments?: { method: string; amount: number }[] | null;
 }
 
 // ─────────────────────────────────────────────
@@ -69,6 +70,7 @@ const PAYMENT_BADGE: Record<string, { label: string; cls: string }> = {
   "TRANSFER BANK": { label: "Transfer Bank", cls: "bg-blue-100 text-blue-700 border border-blue-200" },
   DEBIT:    { label: "Debit",         cls: "bg-orange-100 text-orange-700 border border-orange-200" },
   EWALLET:  { label: "E-Wallet",      cls: "bg-pink-100 text-pink-700 border border-pink-200" },
+  SPLIT:    { label: "Split Payment", cls: "bg-indigo-100 text-indigo-700 border border-indigo-200" },
 };
 
 function fmtRp(n: number) {
@@ -411,6 +413,17 @@ function InvoiceRow({ invoice, onEdit }: { invoice: Invoice; onEdit: () => void 
                     <span className="text-gray-700">+{fmtRp(invoice.tax)}</span>
                   </div>
                 )}
+                {invoice.paymentMethod === "SPLIT" && invoice.splitPayments && invoice.splitPayments.length > 0 && (
+                  <div className="mb-2 p-2 bg-indigo-50 border border-indigo-100 rounded-lg space-y-1">
+                    <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Split Payment Breakdown</p>
+                    {invoice.splitPayments.map((sp, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-indigo-600 font-medium">{sp.method}</span>
+                        <span className="text-indigo-800 font-bold">{fmtRp(sp.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-between border-t border-gray-200 pt-1.5 font-bold">
                   <span className="text-gray-700">Total</span>
                   <span className="text-gray-900">{fmtRp(invoice.grandTotal)}</span>
@@ -459,6 +472,7 @@ export default function TransaksiPelangganPage() {
         const data = (json.data || []).map((inv: Invoice) => ({
           ...inv,
           items: typeof inv.items === "string" ? JSON.parse(inv.items) : inv.items,
+          splitPayments: typeof inv.splitPayments === "string" ? JSON.parse(inv.splitPayments) : inv.splitPayments,
         }));
         setInvoices(data);
       }
