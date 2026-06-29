@@ -12,15 +12,15 @@ import crypto from "crypto";
 async function generateInvoiceNumber(branchId: string): Promise<string> {
   const now = new Date();
   const dateStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).replace(/-/g, "");
-  
+
   // Get branch code (first 3 letters uppercase)
   const branchRecords = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
-  const branchCode = branchRecords.length > 0 
-    ? branchRecords[0].name.substring(0, 3).toUpperCase() 
+  const branchCode = branchRecords.length > 0
+    ? branchRecords[0].name.substring(0, 3).toUpperCase()
     : branchId.substring(0, 3).toUpperCase();
 
   const prefix = `INV-${branchCode}-${dateStr}`;
-  
+
   // Find the latest invoice with this prefix to get the next sequence
   const existing = await db
     .select()
@@ -271,7 +271,7 @@ export async function POST(request: Request) {
       const therapistRecords = await db.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
       if (therapistRecords.length > 0) {
         const therapist = therapistRecords[0];
-        
+
         // Calculate commission for each item
         for (const item of items) {
           const serviceId = item.serviceId;

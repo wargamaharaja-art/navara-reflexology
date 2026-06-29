@@ -22,21 +22,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
 
   useEffect(() => {
-    const isKeuanganActive = 
-      pathname === "/admin" || 
-      pathname === "/admin/finance" || 
+    const isKeuanganActive =
+      pathname === "/admin" ||
+      pathname === "/admin/finance" ||
       pathname?.startsWith("/admin/finance/");
-      
-    const isPengaturanActive = 
-      pathname === "/admin/settings" || 
-      pathname === "/admin/branches" || 
-      pathname?.startsWith("/admin/settings/") || 
+
+    const isPengaturanActive =
+      pathname === "/admin/settings" ||
+      pathname === "/admin/branches" ||
+      pathname?.startsWith("/admin/settings/") ||
       pathname?.startsWith("/admin/branches/");
 
-    const isPegawaiActive = 
-      pathname === "/admin/therapists" || 
-      pathname === "/admin/staff" || 
-      pathname?.startsWith("/admin/therapists") || 
+    const isPegawaiActive =
+      pathname === "/admin/therapists" ||
+      pathname === "/admin/staff" ||
+      pathname?.startsWith("/admin/therapists") ||
       pathname?.startsWith("/admin/staff") ||
       pathname === "/admin/attendance";
 
@@ -177,7 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="hover:opacity-90 transition-opacity">
             <h1 className="text-2xl md:text-3xl font-bold">
               <span className="text-white">Navara</span>{" "}
-              <span className="text-emerald-400">Reflexology</span><br className="hidden md:block"/>
+              <span className="text-emerald-400">Reflexology</span><br className="hidden md:block" />
               <span className="text-white/60 font-normal text-sm md:text-base mt-1 md:block">Admin Panel</span>
             </h1>
           </Link>
@@ -198,10 +198,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="flex items-center gap-1 mt-0.5 text-xs text-background/60">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                   <span className="truncate">
-                    {session.role === "SUPER_ADMIN" ? "Super Admin" : 
-                     session.role === "INVESTOR" ? "Investor" :
-                     session.role === "THERAPIST" ? "Terapis" :
-                     session.role === "CASHIER" ? "Kasir" : "Admin Cabang"}
+                    {session.role === "SUPER_ADMIN" ? "Super Admin" :
+                      session.role === "INVESTOR" ? "Investor" :
+                        session.role === "THERAPIST" ? "Terapis" :
+                          session.role === "CASHIER" ? "Kasir" : "Admin Cabang"}
                   </span>
                 </div>
               </div>
@@ -242,9 +242,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { name: "Buku Pasien", href: "/admin/visits", icon: CalendarCheck },
               { name: "Transaksi Pelanggan", href: "/admin/transactions", icon: BookOpen },
               { name: "Layanan Terapi", href: "/admin/services", icon: Activity },
-              { 
-                name: "Pegawai", 
-                href: "/admin/therapists", 
+              {
+                name: "Pegawai",
+                href: "/admin/therapists",
                 icon: Users,
                 subItems: [
                   { name: "Data Terapis", href: "/admin/therapists", icon: Users },
@@ -255,9 +255,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 ]
               },
               { name: "Inventaris", href: "/admin/inventory", icon: Package },
-              { 
-                name: "Keuangan", 
-                href: "/admin/finance", 
+              {
+                name: "Keuangan",
+                href: "/admin/finance",
                 icon: Wallet,
                 subItems: [
                   { name: "Pemasukan & Pengeluaran", href: "/admin/finance", icon: Wallet },
@@ -267,9 +267,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   { name: "Buku Besar", href: "/admin/finance/buku-besar", icon: Receipt },
                 ]
               },
-              { 
-                name: "Pengaturan", 
-                href: "/admin/settings", 
+              {
+                name: "Pengaturan",
+                href: "/admin/settings",
                 icon: Settings,
                 subItems: [
                   ...(session?.role === "SUPER_ADMIN" ? [
@@ -285,13 +285,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             // Permissions filtering
             const filteredNavLinks = navLinks.filter(link => {
               const perms = session?.permissions || [];
-              
+
               if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
-              
+
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
@@ -302,9 +302,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
-              
+
               if (link.name === "Inventaris") return perms.includes("INVENTARIS_BARANG");
-              
+
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
                   if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
@@ -316,7 +316,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
-              
+
               if (link.name === "Pengaturan") {
                 link.subItems = link.subItems?.filter(sub => {
                   if (sub.name === "Info Perusahaan") return session?.role === "SUPER_ADMIN";
@@ -330,15 +330,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               return false;
             });
-            
+
             return filteredNavLinks.map((link) => {
               const hasSubItems = link.subItems && link.subItems.length > 0;
               const isExpanded = expandedMenus[link.name] || false;
-              
+
               const isExactActive = pathname === link.href;
               const isParentActive = isExactActive || (link.href !== "/admin" && pathname?.startsWith(link.href || ""));
               const Icon = link.icon;
-              
+
               return (
                 <div key={link.name} className="space-y-1">
                   <Link
@@ -351,13 +351,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         setIsMobileMenuOpen(false);
                       }
                     }}
-                    className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${
-                      isExactActive 
-                        ? "bg-emerald-600 text-white font-semibold shadow-md" 
+                    className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${isExactActive
+                        ? "bg-emerald-600 text-white font-semibold shadow-md"
                         : isParentActive
                           ? "bg-white/10 text-white font-medium"
                           : "text-white/70 hover:bg-white/10 hover:text-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="relative">
@@ -372,14 +371,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span>{link.name}</span>
                     </div>
                     {hasSubItems && (
-                      <ChevronDown 
-                        className={`h-4 w-4 text-background/60 transition-transform duration-200 ${
-                          isExpanded ? "rotate-180" : ""
-                        }`} 
+                      <ChevronDown
+                        className={`h-4 w-4 text-background/60 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                          }`}
                       />
                     )}
                   </Link>
-                  
+
                   {hasSubItems && isExpanded && (
                     <div className="space-y-1 ml-6 pl-4 border-l border-background/10 animate-in fade-in slide-in-from-top-1 duration-150">
                       {link.subItems.map((sub) => {
@@ -390,11 +388,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             key={sub.name}
                             href={sub.href}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
-                              isSubActive 
-                                ? "bg-emerald-600 text-white font-semibold shadow-md" 
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${isSubActive
+                                ? "bg-emerald-600 text-white font-semibold shadow-md"
                                 : "text-white/60 hover:bg-white/10 hover:text-white"
-                            }`}
+                              }`}
                           >
                             <SubIcon className="h-4 w-4" />
                             <span>{sub.name}</span>
@@ -423,7 +420,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content Area */}
       <div className="flex-1 overflow-x-hidden">
         {isMobileMenuOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
@@ -439,8 +436,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           const isActive = pathname === link.href || (link.href !== "/admin" && pathname?.startsWith(link.href));
           const Icon = link.icon;
           return (
-            <Link 
-              key={link.name} 
+            <Link
+              key={link.name}
               href={link.href}
               className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isActive ? "text-green-600" : "text-gray-400 hover:text-gray-600"}`}
             >
@@ -456,8 +453,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
           );
         })}
-        
-        <button 
+
+        <button
           onClick={() => setIsMobileMenuOpen(true)}
           className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isMobileMenuOpen ? "text-green-600" : "text-gray-400 hover:text-gray-600"}`}
         >

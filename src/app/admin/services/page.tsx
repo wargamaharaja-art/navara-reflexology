@@ -129,7 +129,7 @@ export default function AdminServicesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menonaktifkan layanan ini?")) return;
-    
+
     try {
       const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -146,9 +146,9 @@ export default function AdminServicesPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Header Section */}
-        <PageHeader 
+        <PageHeader
           title="Manajemen Layanan Terapi"
           description="Kelola data layanan terapi yang ditawarkan klinik Anda."
           icon={Activity}
@@ -167,10 +167,10 @@ export default function AdminServicesPage() {
           {CATEGORIES.map((cat, catIndex) => {
             const filteredServices = services.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
             const isOpen = openCategory === cat;
-            
+
             return (
               <div key={cat} className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${isOpen ? 'border-teal-200' : 'border-gray-100 hover:border-gray-200'}`} style={{ animationDelay: `${catIndex * 100}ms` }}>
-                <button 
+                <button
                   onClick={() => setOpenCategory(isOpen ? null : cat)}
                   className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-teal-50/80' : 'bg-white hover:bg-gray-50'}`}
                 >
@@ -186,63 +186,63 @@ export default function AdminServicesPage() {
                     {isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                   </div>
                 </button>
-                
+
                 {/* Accordion Content */}
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 border-t border-teal-100' : 'max-h-0 opacity-0'}`}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse whitespace-nowrap">
                       <thead>
                         <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
-                        <th className="px-6 py-4 font-semibold">Nama Layanan</th>
-                        <th className="px-6 py-4 font-semibold">Harga</th>
-                        <th className="px-6 py-4 font-semibold">Durasi</th>
-                        <th className="px-6 py-4 font-semibold">Status</th>
-                        <th className="px-6 py-4 font-semibold text-right">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {loading ? (
-                        <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">Sedang memuat data...</td></tr>
-                      ) : filteredServices.length === 0 ? (
-                        <tr><td colSpan={5} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
-                      ) : (
-                        filteredServices.map(s => (
-                          <tr key={s.id} className="hover:bg-teal-50/30 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-gray-900">{s.name}</div>
-                              <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
-                            </td>
-                            <td className="px-6 py-4 font-medium text-gray-800">
-                              Rp {s.price.toLocaleString('id-ID')}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {s.durationMinutes} Menit
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                                {s.isActive ? 'Aktif' : 'Nonaktif'}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <button 
-                                onClick={() => openEditModal(s)}
-                                className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors mr-2"
-                                title="Edit"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(s.id)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Nonaktifkan"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
+                          <th className="px-6 py-4 font-semibold">Nama Layanan</th>
+                          <th className="px-6 py-4 font-semibold">Harga</th>
+                          <th className="px-6 py-4 font-semibold">Durasi</th>
+                          <th className="px-6 py-4 font-semibold">Status</th>
+                          <th className="px-6 py-4 font-semibold text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {loading ? (
+                          <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">Sedang memuat data...</td></tr>
+                        ) : filteredServices.length === 0 ? (
+                          <tr><td colSpan={5} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
+                        ) : (
+                          filteredServices.map(s => (
+                            <tr key={s.id} className="hover:bg-teal-50/30 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="font-bold text-gray-900">{s.name}</div>
+                                <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
+                              </td>
+                              <td className="px-6 py-4 font-medium text-gray-800">
+                                Rp {s.price.toLocaleString('id-ID')}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600">
+                                {s.durationMinutes} Menit
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                  {s.isActive ? 'Aktif' : 'Nonaktif'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => openEditModal(s)}
+                                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors mr-2"
+                                  title="Edit"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(s.id)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Nonaktifkan"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
                     </table>
                   </div>
                 </div>
@@ -257,14 +257,14 @@ export default function AdminServicesPage() {
             <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <h3 className="text-lg font-bold text-gray-800">{editingId ? 'Edit Layanan' : 'Tambah Layanan Baru'}</h3>
-                <button 
+                <button
                   onClick={() => setIsModalOpen(false)}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              
+
               <div className="p-6 overflow-y-auto">
                 {errorMsg && (
                   <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-start gap-2">
@@ -277,7 +277,7 @@ export default function AdminServicesPage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Kategori</label>
                       <select
                         value={formData.category}
-                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                       >
                         {CATEGORIES.map(cat => (
@@ -291,7 +291,7 @@ export default function AdminServicesPage() {
                         required
                         type="text"
                         value={formData.name}
-                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                         placeholder="e.g. Pijat Refleksi"
                       />
@@ -303,7 +303,7 @@ export default function AdminServicesPage() {
                       required
                       rows={3}
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                       placeholder="Penjelasan singkat layanan..."
                     />
@@ -316,7 +316,7 @@ export default function AdminServicesPage() {
                         type="number"
                         min="0"
                         value={formData.price}
-                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                         placeholder="150000"
                       />
@@ -328,7 +328,7 @@ export default function AdminServicesPage() {
                         type="number"
                         min="1"
                         value={formData.durationMinutes}
-                        onChange={(e) => setFormData({...formData, durationMinutes: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                         placeholder="60"
                       />
@@ -339,7 +339,7 @@ export default function AdminServicesPage() {
                       <input
                         type="checkbox"
                         checked={formData.isActive}
-                        onChange={(e) => setFormData({...formData, isActive: e.target.checked})}
+                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
                         className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 w-4 h-4"
                       />
                       <span className="text-sm font-medium text-gray-700">Layanan Aktif</span>
@@ -347,7 +347,7 @@ export default function AdminServicesPage() {
                   </div>
                 </form>
               </div>
-              
+
               <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                 <button
                   type="button"
