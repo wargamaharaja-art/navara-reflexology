@@ -13,22 +13,13 @@ const db = drizzle(pool, { schema });
 
 async function resetFinance() {
   console.log("Memulai proses reset sistem keuangan ke 0...");
-  
+
   try {
     console.log("Menghapus data journal_lines...");
     await db.delete(schema.journalLines);
 
     console.log("Menghapus data journal_entries...");
     await db.delete(schema.journalEntries);
-
-    console.log("Menghapus data therapist_commissions...");
-    await db.delete(schema.therapistCommissions);
-
-    console.log("Menghapus data therapist_monthly_reports...");
-    await db.delete(schema.therapistMonthlyReports);
-
-    console.log("Menghapus data staff_payroll_reports...");
-    await db.delete(schema.staffPayrollReports);
 
     console.log("Menghapus data invoices (struk transaksi)...");
     await db.delete(schema.invoices);

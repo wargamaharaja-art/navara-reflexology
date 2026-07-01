@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "a0f9de60-b233-423b-aeec-167f114ba449"
+      }
+    },
+    "android": {
+      "package": "com.navararefloxology.navarareflexology"
+    }
+  }
+}

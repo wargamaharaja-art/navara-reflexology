@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       phone, name, address, gender, // Patient info
-      serviceId, branchId, therapistId, visitDate, visitTime, notes, status // Visit info
+      serviceId, branchId, therapistId, visitDate, visitTime, bloodPressure, notes, status // Visit info
     } = body;
 
     if (!phone || !name || !serviceId || !branchId || !visitDate || !visitTime) {
@@ -100,6 +100,7 @@ export async function POST(request: Request) {
       therapistId: therapistId || null,
       visitDate,
       visitTime,
+      bloodPressure: bloodPressure || null,
       notes: notes || null,
       status: status || "completed",
     }).returning();

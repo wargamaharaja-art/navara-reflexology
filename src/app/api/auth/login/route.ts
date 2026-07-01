@@ -60,7 +60,11 @@ export async function POST(request: NextRequest) {
       });
 
       logAttempt(username, "SUCCESS", "Login successful (Fallback seeded)", userAgent);
-      return Response.json({ message: "Login berhasil (Fallback seeded)" });
+      return Response.json({ 
+        message: "Login berhasil (Fallback seeded)",
+        token: "mobile-token-fallback",
+        user: { id: newAdmin.id, name: newAdmin.name, role: newAdmin.role }
+      });
     }
 
     // 2. Cari admin yang cocok di database
@@ -115,7 +119,11 @@ export async function POST(request: NextRequest) {
     });
 
     logAttempt(username, "SUCCESS", "Login successful", userAgent);
-    return Response.json({ message: "Login berhasil" });
+    return Response.json({ 
+      message: "Login berhasil",
+      token: "mobile-token",
+      user: { id: matchedAdmin.id, name: matchedAdmin.name, role: matchedAdmin.role }
+    });
   } catch (error) {
     console.error("POST /api/auth/login error:", error);
     logAttempt(username, "ERROR", error instanceof Error ? error.message : String(error), userAgent);

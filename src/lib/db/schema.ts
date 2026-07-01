@@ -124,6 +124,7 @@ export const patientVisits = pgTable("patient_visits", {
   therapistId: text("therapist_id").references(() => therapists.id),
   visitDate: text("visit_date").notNull(),
   visitTime: text("visit_time").notNull(),
+  bloodPressure: text("blood_pressure"),
   notes: text("notes"),
   status: text("status", { enum: ["completed", "cancelled"] }).notNull().default("completed"),
   paymentStatus: text("payment_status", { enum: ["UNPAID", "PAID"] }).notNull().default("UNPAID"),

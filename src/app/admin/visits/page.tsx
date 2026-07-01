@@ -108,6 +108,7 @@ export default function AdminVisitsPage() {
     therapistId: "",
     visitDate: new Date().toISOString().split('T')[0],
     visitTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    bloodPressure: "",
     notes: "",
     status: "completed",
   });
@@ -482,7 +483,7 @@ export default function AdminVisitsPage() {
       setIsFormOpen(false);
       setFormData(prev => ({
         ...prev,
-        phone: "", name: "", address: "", notes: ""
+        phone: "", name: "", address: "", bloodPressure: "", notes: ""
       }));
       setSelectedServices([]);
       fetchData();
@@ -1079,7 +1080,7 @@ export default function AdminVisitsPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-5xl max-h-[90vh] overflow-y-auto relative transform transition-all animate-in zoom-in-95 duration-300">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 z-10"></div>
               
-              <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10 backdrop-blur-md">
+              <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-20">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">Catat Kunjungan Baru</h3>
                 <p className="text-sm text-gray-500 mt-1">Lengkapi data pasien dan rincian layanan kunjungan.</p>
@@ -1169,7 +1170,7 @@ export default function AdminVisitsPage() {
 
                           {isServiceDropdownOpen && (
                             <div className="absolute z-50 w-[150%] md:w-[200%] max-w-[300px] mt-2 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                              <div className="p-3 border-b border-gray-100 bg-slate-50/50 sticky top-0 z-10">
+                              <div className="p-3 border-b border-gray-100 bg-white sticky top-0 z-20">
                                 <div className="relative">
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                   <input 
@@ -1261,11 +1262,20 @@ export default function AdminVisitsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Tanggal</label>
-                    <div className="relative">
-                      <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-700">Tanggal</label>
+                      <div className="relative">
+                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-700">Tensi Darah</label>
+                      <div className="relative">
+                        <Activity className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                      </div>
                     </div>
                   </div>
 
