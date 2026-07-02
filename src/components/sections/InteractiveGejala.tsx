@@ -5,11 +5,11 @@ import { Activity, Brain, Moon, BatteryLow, Dumbbell, Wind, ArrowRight, Sparkles
 import Link from "next/link";
 
 const gejalaData = [
-  { id: 1, name: "Pegal & Linu", service: "Pijat Refleksi Full Body", url: "/booking?service=pijat-refleksi", icon: Activity, color: "from-blue-400 to-blue-600", shadow: "shadow-blue-200" },
+  { id: 1, name: "Pegal & Linu", service: "Bekam Holistik", url: "/booking?service=bekam-holistik", icon: Activity, color: "from-blue-400 to-blue-600", shadow: "shadow-blue-200" },
   { id: 2, name: "Sering Pusing", service: "Bekam Kepala", url: "/booking?service=bekam-kepala", icon: Brain, color: "from-purple-400 to-purple-600", shadow: "shadow-purple-200" },
-  { id: 3, name: "Sulit Tidur", service: "Pijat Refleksi", url: "/booking?service=pijat-refleksi", icon: Moon, color: "from-indigo-400 to-indigo-600", shadow: "shadow-indigo-200" },
-  { id: 4, name: "Mudah Lelah", service: "Bekam Sunnah", url: "/booking?service=bekam-sunnah", icon: BatteryLow, color: "from-red-400 to-rose-600", shadow: "shadow-red-200" },
-  { id: 5, name: "Otot Kaku", service: "Paket Bekam + Refleksi", url: "/booking?service=paket-bundling", icon: Dumbbell, color: "from-amber-400 to-orange-500", shadow: "shadow-amber-200" },
+  { id: 3, name: "Sulit Tidur", service: "Totok Wajah", url: "/booking?service=totok-wajah", icon: Moon, color: "from-indigo-400 to-indigo-600", shadow: "shadow-indigo-200" },
+  { id: 4, name: "Mudah Lelah", service: "Bekam Tradisional", url: "/booking?service=bekam-tradisional", icon: BatteryLow, color: "from-red-400 to-rose-600", shadow: "shadow-red-200" },
+  { id: 5, name: "Otot Kaku", service: "Bekam Holistik + Refleksi", url: "/booking?service=paket-bekam-holistik-refleksi", icon: Dumbbell, color: "from-amber-400 to-orange-500", shadow: "shadow-amber-200" },
   { id: 6, name: "Stres Berlebih", service: "Bekam Holistik", url: "/booking?service=bekam-holistik", icon: Wind, color: "from-teal-400 to-emerald-500", shadow: "shadow-teal-200" }
 ];
 

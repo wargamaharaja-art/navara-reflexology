@@ -120,7 +120,7 @@ function BMICalculator() {
         color = "text-emerald-600";
         bgLight = "bg-emerald-50 border-emerald-200";
         advice = "Pertahankan gaya hidup sehat Anda! Lakukan bekam secara rutin untuk menjaga imunitas.";
-        linkLabel = "Rekomendasi: Bekam Sunnah";
+        linkLabel = "Rekomendasi: Bekam Holistik";
         linkHref = "/services/bekam";
       } else if (bmi >= 25 && bmi <= 29.9) {
         status = "Gemuk (Overweight)";
@@ -240,8 +240,8 @@ function StressCalculator() {
         color: "text-amber-500", 
         bgLight: "bg-amber-50 border-amber-200",
         advice: "Anda mulai merasa tertekan. Beristirahatlah sejenak dan lakukan relaksasi untuk otot kaku.",
-        linkLabel: "Rekomendasi: Refleksi Full Body",
-        linkHref: "/services/refleksi"
+        linkLabel: "Rekomendasi: Bekam Holistik",
+        linkHref: "/services/bekam"
       });
     } else {
       setResult({ 
@@ -340,7 +340,7 @@ function DiabetesCalculator() {
         color: "text-emerald-600",
         bgLight: "bg-emerald-50 border-emerald-200", 
         advice: "Peluang Anda terkena diabetes saat ini tergolong rendah. Jaga terus gaya hidup sehat.",
-        linkLabel: "Rekomendasi: Bekam Sunnah",
+        linkLabel: "Rekomendasi: Bekam Tradisional",
         linkHref: "/services/bekam"
       });
     } else if (score <= 4) {

@@ -59,7 +59,7 @@ export function PromoSection() {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Cashback Rp 50.000</h3>
-                <p className="text-foreground/70 text-sm">Khusus untuk pemesanan Paket Sehat (Bekam + Refleksi) setiap hari Jumat.</p>
+                <p className="text-foreground/70 text-sm">Khusus untuk pemesanan Paket Refleksi + Totok Wajah setiap hari Jumat.</p>
               </div>
             </div>
             <div className="bg-card border border-border p-4 rounded-xl flex items-center justify-between mt-auto">

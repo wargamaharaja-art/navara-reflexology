@@ -63,30 +63,7 @@ async function seed() {
 
   // ---- Seed Services ----
   await db.insert(services).values([
-    {
-      id: "bekam-sunnah",
-      name: "Bekam Sunnah",
-      description: "Terapi pengeluaran darah kotor (toksin) dari dalam tubuh melalui permukaan kulit dengan sayatan tipis dan steril. Sangat baik untuk melancarkan peredaran darah, mengatasi darah tinggi, kolesterol, dan meredakan pegal-pegal.",
-      price: 150000,
-      durationMinutes: 45,
-      isActive: true,
-    },
-    {
-      id: "pijat-refleksi",
-      name: "Pijat Refleksi Seluruh Tubuh",
-      description: "Terapi pijat yang berfokus pada titik-titik saraf pada telapak kaki dan tangan yang terhubung dengan organ-organ tubuh. Dikombinasikan dengan pijat badan untuk relaksasi maksimal.",
-      price: 120000,
-      durationMinutes: 60,
-      isActive: true,
-    },
-    {
-      id: "paket-bundling",
-      name: "Paket Sehat (Bekam + Refleksi)",
-      description: "Kombinasi sempurna antara pijat refleksi untuk relaksasi otot dan bekam sunnah untuk detoksifikasi. Paket hemat untuk hasil terapi yang lebih maksimal dan menyeluruh.",
-      price: 250000,
-      durationMinutes: 105,
-      isActive: true,
-    },
+    // Removed 3 treatments
   ]).onConflictDoNothing();
 
   console.log("✅ Services seeded");

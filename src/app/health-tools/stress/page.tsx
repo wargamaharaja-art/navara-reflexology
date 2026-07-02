@@ -138,7 +138,7 @@ export default function StressMeterPage() {
                       {(res.level === "Sedang" || res.level === "Tinggi") && (
                         <div className="bg-accent/10 border border-accent p-4 rounded-xl mb-4 text-left">
                           <h4 className="font-bold text-accent-dark mb-1">Rekomendasi Terapi:</h4>
-                          <p className="text-sm text-gray-700">Kami merekomendasikan layanan <strong>Pijat Refleksi</strong> atau <strong>Paket Sehat</strong> untuk mengendurkan otot tegang dan memulihkan energi.</p>
+                          <p className="text-sm text-gray-700">Kami merekomendasikan layanan <strong>Refleksi Full Body</strong> atau <strong>Paket Refleksi + Totok Wajah</strong> untuk mengendurkan otot tegang dan memulihkan energi.</p>
                           <Link
                             href="/booking"
                             className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-white bg-accent hover:bg-accent-dark transition-colors shadow-lg shadow-accent/30"
