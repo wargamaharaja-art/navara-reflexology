@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles } from "lucide-react";
+import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -16,6 +16,7 @@ const formatRupiah = (amount: number) => {
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
+  const [showBalance, setShowBalance] = useState(true);
   const [month, setMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -123,196 +124,192 @@ export default function AdminDashboard() {
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 
-        <PageHeader
-          title="Dashboard Admin"
-          description="Selamat datang! Ini adalah ringkasan performa dan kondisi keuangan klinik Navara Reflexology."
-          icon={LayoutDashboard}
-        />
+        {/* Mobile Header (Seabank Style) - Only visible on Mobile */}
+        <div className="md:hidden flex items-center justify-between mb-4 mt-2">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-600 font-bold text-xl shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
+              F
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900 text-[15px] leading-tight">Fikri Mochamad R...</h2>
+              <p className="text-gray-500 text-[10px] flex items-center gap-1 mt-0.5">Role: Super Admin <span className="bg-gray-200 px-1.5 py-0.5 rounded-sm">Pst</span></p>
+            </div>
+          </div>
+          <div className="relative p-2 bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
+            <Bell className="w-5 h-5 text-gray-700" />
+            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+          </div>
+        </div>
 
-        <div className="mt-8 space-y-8">
+        {/* Desktop Header */}
+        <div className="hidden md:block">
+          <PageHeader
+            title="Dashboard Admin"
+            description="Selamat datang! Ini adalah ringkasan performa dan kondisi keuangan klinik Navara Reflexology."
+            icon={LayoutDashboard}
+          />
+        </div>
 
-          {/* Total Asset & Key Metrics */}
-          <div className="bg-white/90 backdrop-blur-md rounded-[32px] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-50 rounded-full blur-[80px] pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-50 rounded-full blur-[80px] pointer-events-none"></div>
+        <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
 
-            <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-              <div>
-                <p className="text-gray-500 text-xs font-bold tracking-wider uppercase mb-1">Total Aset Tersedia (Kas)</p>
-                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900">{formatRupiah(summaryData.kasDanBank)}</h2>
-              </div>
-              <div className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                Bulan Ini
-              </div>
+          {/* Seabank-style Top Balance Card */}
+          <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-[20px] md:rounded-[32px] p-5 md:p-8 text-white relative overflow-hidden shadow-lg border border-emerald-400/50">
+            {/* Background Watermark/Curves */}
+            <div className="absolute -right-10 -bottom-10 w-40 h-40 border-[20px] border-emerald-400/30 rounded-full pointer-events-none"></div>
+            <div className="absolute -right-20 top-0 w-32 h-32 border-[15px] border-emerald-400/20 rounded-full pointer-events-none"></div>
+
+            <div className="relative z-10 flex justify-between items-start mb-4">
+               <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                     <span className="text-xs font-semibold text-emerald-50 tracking-wide">Total Kas & Bank</span>
+                     <button onClick={() => setShowBalance(!showBalance)} className="hover:bg-emerald-400/30 p-1 rounded-full transition-colors">
+                        {showBalance ? <Eye className="w-4 h-4 text-emerald-50" /> : <EyeOff className="w-4 h-4 text-emerald-50" />}
+                     </button>
+                  </div>
+                  <h2 className="text-3xl md:text-5xl font-black tracking-tight">
+                     {showBalance ? formatRupiah(summaryData.kasDanBank) : "Rp ••••••••"}
+                  </h2>
+               </div>
+               <Link href="/admin/finance" className="bg-emerald-700/60 hover:bg-emerald-700 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 transition-colors border border-emerald-500/50 shadow-inner">
+                 Riwayat <ChevronRight className="w-3 h-3" />
+               </Link>
             </div>
 
-            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all col-span-2 sm:col-span-1 lg:col-span-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-emerald-50 rounded-2xl">
-                    <Wallet className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Kas & Bank</p>
-                </div>
-                <p className="text-xl font-bold text-gray-900">{formatRupiah(summaryData.kasDanBank)}</p>
-              </div>
-
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-amber-50 rounded-2xl">
-                    <Package className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Persediaan</p>
-                </div>
-                <p className="text-xl font-bold text-gray-900">{summaryData.persediaan} <span className="text-sm font-normal text-gray-500">Item</span></p>
-              </div>
-
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-indigo-50 rounded-2xl">
-                    <Users className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Pasien Hari Ini</p>
-                </div>
-                <p className="text-xl font-bold text-indigo-600">{summaryData.pasienHarian} <span className="text-sm font-normal text-gray-500">Orang</span></p>
-              </div>
-
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-teal-50 rounded-2xl">
-                    <TrendingUp className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Pendapatan</p>
-                </div>
-                <p className="text-xl font-bold text-teal-600">{formatRupiah(summaryData.pendapatan)}</p>
-              </div>
-
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-yellow-50 rounded-2xl">
-                    <Activity className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Laba Bersih</p>
-                </div>
-                <p className="text-xl font-bold text-yellow-600">{formatRupiah(summaryData.labaBersih)}</p>
-              </div>
+            <div className="relative z-10 grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-emerald-400/30">
+               <div>
+                 <Link href="/admin/finance" className="flex items-center gap-1 text-[10px] md:text-xs font-semibold text-emerald-100 hover:text-white mb-1 w-max">
+                    Pendapatan <ChevronRight className="w-3 h-3" />
+                 </Link>
+                 <p className="text-[15px] md:text-xl font-bold mt-0.5">
+                    {showBalance ? formatRupiah(summaryData.pendapatan) : "Rp ••••••••"}
+                 </p>
+                 <p className="text-[9px] text-emerald-200 mt-1 bg-emerald-700/40 px-1.5 py-0.5 rounded-sm inline-block border border-emerald-600/50">Bulan ini</p>
+               </div>
+               <div>
+                 <Link href="/admin/finance" className="flex items-center gap-1 text-[10px] md:text-xs font-semibold text-emerald-100 hover:text-white mb-1 w-max">
+                    Laba Bersih <ChevronRight className="w-3 h-3" />
+                 </Link>
+                 <p className="text-[15px] md:text-xl font-bold mt-0.5">
+                    {showBalance ? formatRupiah(summaryData.labaBersih) : "Rp ••••••••"}
+                 </p>
+                 <p className="text-[9px] text-emerald-200 mt-1 bg-emerald-700/40 px-1.5 py-0.5 rounded-sm inline-block border border-emerald-600/50">Hingga hari ini</p>
+               </div>
             </div>
           </div>
 
-          {/* Quick Links Menu Fitur */}
-          <div>
-            <div className="flex justify-between items-center mb-6 px-2">
-              <h3 className="text-xl font-bold text-gray-900">Menu Fitur</h3>
-              <Link href="/admin/settings" className="text-sm font-semibold text-blue-600 flex items-center gap-1 hover:text-blue-700 transition-colors">
-                Semua Fitur <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              {quickLinks.map((link) => (
+          {/* Quick Links Menu Fitur (Seabank 8-Grid Style) */}
+          <div className="bg-white rounded-[20px] md:rounded-[32px] p-5 md:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100">
+            <div className="grid grid-cols-4 gap-y-5 gap-x-2">
+              {[
+                { name: "Transfer", icon: WalletCards, href: "/admin/finance", color: "text-orange-500", badge: "" },
+                { name: "Reservasi", icon: Inbox, href: "/admin/reservations", color: "text-emerald-500", badge: "Baru" },
+                { name: "Kunjungan", icon: Calendar, href: "/admin/visits", color: "text-blue-500", badge: "" },
+                { name: "Pegawai", icon: Users, href: "/admin/therapists", color: "text-purple-500", badge: "" },
+                { name: "Inventaris", icon: Package, href: "/admin/inventory", color: "text-amber-500", badge: "Promo" },
+                { name: "Layanan", icon: Activity, href: "/admin/services", color: "text-rose-500", badge: "" },
+                { name: "Laporan", icon: Receipt, href: "/admin/finance", color: "text-teal-500", badge: "" },
+                { name: "Semua", icon: LayoutDashboard, href: "/admin/settings", color: "text-gray-500", badge: "" }
+              ].map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="bg-white/90 backdrop-blur-md rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col items-center justify-center gap-2 sm:gap-4 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all group"
+                  className="flex flex-col items-center justify-start gap-1.5 relative group"
                 >
-                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[24px] ${link.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    <link.icon className={`w-6 h-6 sm:w-8 sm:h-8 ${link.color}`} />
+                  <div className="w-[42px] h-[42px] rounded-[14px] bg-gray-50 border border-gray-100 flex items-center justify-center group-hover:scale-105 group-active:scale-95 transition-transform">
+                    <link.icon className={`w-[22px] h-[22px] ${link.color} fill-${link.color.split('-')[1]}-100`} strokeWidth={2} />
                   </div>
-                  <span className="font-bold text-sm sm:text-base text-gray-800 text-center">{link.name}</span>
+                  {link.badge && (
+                    <span className="absolute -top-1.5 right-0 md:right-4 bg-orange-100 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-orange-200 uppercase tracking-widest z-10">
+                      {link.badge}
+                    </span>
+                  )}
+                  <span className="font-semibold text-[10px] text-gray-700 text-center w-full">{link.name}</span>
                 </Link>
               ))}
             </div>
           </div>
 
-          {/* Existing KPI Dashboard Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-12 bg-white/90 backdrop-blur-md p-6 rounded-[32px] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-3.5 rounded-2xl shadow-md text-white">
-                <TrendingUp className="h-7 w-7" />
+          {/* Target / KPI (Flash Deals Style) */}
+          <div className="bg-gradient-to-b from-orange-50/50 to-white rounded-[20px] md:rounded-[32px] p-4 md:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-orange-100 relative overflow-hidden">
+            <div className="flex justify-between items-center mb-4 px-1">
+              <div className="flex items-center gap-1.5">
+                 <Flame className="w-[18px] h-[18px] text-orange-500 fill-orange-500" />
+                 <h3 className="text-sm md:text-lg font-black text-gray-900 italic tracking-tight">
+                   Target Flash Deals
+                 </h3>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Performa KPI Bulanan</h2>
-                <p className="text-gray-500 text-sm mt-1">Pemasukan & Kunjungan</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <div className="flex flex-col items-end gap-0.5 text-[10px]">
+                <span className="text-gray-500 font-semibold tracking-wider uppercase">Bulan Ini</span>
                 <input
                   type="month"
                   value={month}
                   onChange={e => setMonth(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium text-gray-700 shadow-sm outline-none"
+                  className="bg-gray-900 text-white font-bold px-2 py-1 rounded text-center outline-none border border-gray-800 focus:border-orange-500"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Target Settings Card */}
-          <div className="bg-white/90 backdrop-blur-md rounded-[32px] p-6 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-400 to-emerald-500"></div>
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Target className="w-5 h-5 text-teal-500" /> Target ({month})
-              </h3>
-              {!isEditing && (
-                <button onClick={() => setIsEditing(true)} className="text-sm font-medium text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-colors">
-                  <Edit2 className="w-4 h-4" /> Ubah Target
-                </button>
-              )}
-            </div>
-
-            {isEditing ? (
-              <form onSubmit={handleSaveTarget} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 custom-scrollbar snap-x">
+              
+              {/* Promo-style Card 1 */}
+              <div className="min-w-[145px] max-w-[150px] bg-white border border-gray-200 rounded-2xl p-3 shadow-sm snap-center flex flex-col justify-between group hover:border-orange-300 transition-colors">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Pemasukan (Rp)</label>
-                  <input
-                    type="number"
-                    required
-                    value={editIncome}
-                    onChange={e => setEditIncome(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
-                  />
+                   <p className="text-[11px] font-bold text-gray-800 leading-snug">Target Pemasukan</p>
+                   <p className="text-[10px] text-gray-400 mt-1 line-through decoration-red-400">Tercapai: {formatRupiah(summaryData.pendapatan)}</p>
+                   <p className="text-lg font-black text-orange-600 tracking-tighter mt-0.5">{formatRupiah(targetIncome)}</p>
+                   <p className="text-[9px] font-semibold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded w-max mt-1 border border-orange-100">Bulan Ini</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Kunjungan (Orang)</label>
-                  <input
-                    type="number"
-                    required
-                    value={editVisits}
-                    onChange={e => setEditVisits(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors w-full">Batal</button>
-                  <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-colors flex items-center justify-center gap-2 w-full">
-                    <Save className="w-4 h-4" /> Simpan
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Target Pemasukan</p>
-                    <p className="text-2xl font-extrabold text-emerald-900">{formatRupiah(targetIncome)}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-500">
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                </div>
-                <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Target Kunjungan</p>
-                    <p className="text-2xl font-extrabold text-blue-900">{targetVisits} <span className="text-sm font-medium text-blue-700">Pasien</span></p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-500">
-                    <Users className="w-6 h-6" />
-                  </div>
+                <div className="mt-3">
+                   <Link href="/admin/finance" className="block w-full text-center border border-orange-500 text-orange-600 text-[11px] font-bold py-1.5 rounded-lg hover:bg-orange-50 transition-colors">
+                     Lihat Grafik
+                   </Link>
                 </div>
               </div>
+
+              {/* Promo-style Card 2 */}
+              <div className="min-w-[145px] max-w-[150px] bg-white border border-gray-200 rounded-2xl p-3 shadow-sm snap-center flex flex-col justify-between group hover:border-blue-300 transition-colors">
+                <div>
+                   <p className="text-[11px] font-bold text-gray-800 leading-snug">Target Kunjungan</p>
+                   <p className="text-[10px] text-gray-400 mt-1 line-through decoration-red-400">Tercapai: {summaryData.pasienHarian}</p>
+                   <p className="text-lg font-black text-blue-600 tracking-tighter mt-0.5">{targetVisits} <span className="text-[10px] font-semibold">Orang</span></p>
+                   <p className="text-[9px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded w-max mt-1 border border-blue-100">Bulan Ini</p>
+                </div>
+                <div className="mt-3">
+                   <Link href="/admin/visits" className="block w-full text-center bg-blue-500 text-white text-[11px] font-bold py-1.5 rounded-lg hover:bg-blue-600 shadow-sm transition-colors border border-transparent">
+                     Lihat Detail
+                   </Link>
+                </div>
+              </div>
+              
+              {/* Promo-style Card 3 (Action) */}
+              <div className="min-w-[120px] flex items-center justify-center p-2 snap-center">
+                 <button onClick={() => setIsEditing(!isEditing)} className="text-[10px] font-bold text-gray-500 flex flex-col items-center gap-2 hover:text-orange-500 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center">
+                       <Edit2 className="w-4 h-4" />
+                    </div>
+                    Ubah Target
+                 </button>
+              </div>
+
+            </div>
+            
+            {isEditing && (
+              <form onSubmit={handleSaveTarget} className="mt-2 p-3 bg-white rounded-xl border border-orange-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2">
+                 <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">Target Pemasukan (Rp)</label>
+                  <input type="number" value={editIncome} onChange={e => setEditIncome(e.target.value)} className="w-full text-xs font-bold text-gray-900 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-orange-500 bg-gray-50 focus:bg-white" />
+                 </div>
+                 <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1">Target Kunjungan (Orang)</label>
+                  <input type="number" value={editVisits} onChange={e => setEditVisits(e.target.value)} className="w-full text-xs font-bold text-gray-900 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-orange-500 bg-gray-50 focus:bg-white" />
+                 </div>
+                 <div className="flex items-end gap-2">
+                    <button type="button" onClick={() => setIsEditing(false)} className="px-3 py-2 text-[11px] font-bold text-gray-600 bg-gray-100 rounded-lg w-full hover:bg-gray-200 border border-gray-200">Batal</button>
+                    <button type="submit" className="px-3 py-2 text-[11px] font-bold text-white bg-orange-500 rounded-lg w-full hover:bg-orange-600 border border-orange-500 shadow-sm flex justify-center gap-1">
+                      <Save className="w-3.5 h-3.5" /> Simpan
+                    </button>
+                 </div>
+              </form>
             )}
           </div>
 

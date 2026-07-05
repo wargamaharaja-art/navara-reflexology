@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -151,22 +151,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-100/60 via-emerald-50/30 to-slate-50 flex flex-col md:flex-row pb-36 md:pb-0">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-transparent text-gray-900 px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-40">
-        <h1 className="text-xl font-extrabold tracking-tight">
-          <span className="text-green-600">Navara</span>{" "}
-          <span className="text-gray-900">Reflexology</span>{" "}
-          <span className="text-green-500/80 font-medium text-sm">Admin</span>
-        </h1>
-        {session && (
-          <div className="text-xs text-gray-700 font-bold bg-white/40 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 border border-white/60 shadow-sm max-w-[120px] truncate">
-            <Store className="w-3.5 h-3.5 text-green-500 shrink-0" />
-            <span className="truncate">{session.role === "SUPER_ADMIN" ? "Pusat" : session.branchId}</span>
-          </div>
-        )}
-      </div>
-
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
+      {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-emerald-950 text-white transform transition-transform duration-300 ease-in-out flex flex-col
@@ -430,38 +416,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-6 right-6 bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full flex justify-between items-center z-40 p-2 pb-safe-offset-2">
-        {bottomNavLinks.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/admin" && pathname?.startsWith(link.href));
-          const Icon = link.icon;
-          return (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isActive ? "text-green-600" : "text-gray-400 hover:text-gray-600"}`}
-            >
-              <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isActive ? "bg-green-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
-                <Icon className="h-[20px] w-[20px]" />
-                {link.hasBadge && pendingReservations > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+      {/* Mobile Bottom Navigation (Seabank Style) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] flex justify-between items-center z-40 px-2 h-[70px] pb-safe">
+        
+        {/* 1. Beranda */}
+        <Link href="/admin" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname === "/admin" ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <Home className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Beranda</span>
+        </Link>
+        
+        {/* 2. Kunjungan */}
+        <Link href="/admin/visits" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname?.startsWith("/admin/visits") ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <CalendarCheck className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Kunjungan</span>
+        </Link>
+        
+        {/* 3. Reservasi (Center Popping Button) */}
+        <div className="flex-1 flex justify-center h-full relative">
+          <Link href="/admin/reservations" className="absolute -top-5 flex flex-col items-center justify-center group">
+            <div className="w-14 h-14 bg-emerald-600 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(16,185,129,0.3)] border-4 border-white text-white z-50 group-active:scale-95 transition-transform relative">
+               <Inbox className="w-6 h-6" />
+               {pendingReservations > 0 && (
+                  <span className="absolute 1 top-0 right-0 flex h-3.5 w-3.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border-2 border-white"></span>
                   </span>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+               )}
+            </div>
+            <span className="text-[10px] text-gray-500 font-semibold mt-1 transition-colors group-hover:text-emerald-600">Reservasi</span>
+          </Link>
+        </div>
 
-        <button
-          onClick={() => setIsMobileMenuOpen(true)}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isMobileMenuOpen ? "text-green-600" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isMobileMenuOpen ? "bg-green-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
-            <Menu className="h-[20px] w-[20px]" />
-          </div>
+        {/* 4. Keuangan */}
+        <Link href="/admin/finance" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname?.startsWith("/admin/finance") ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <Wallet className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Keuangan</span>
+        </Link>
+        
+        {/* 5. Menu / Saya */}
+        <button onClick={() => setIsMobileMenuOpen(true)} className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${isMobileMenuOpen ? "text-emerald-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <User className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Saya</span>
         </button>
+        
       </div>
     </div>
   );
