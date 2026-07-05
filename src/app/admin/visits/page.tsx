@@ -6,7 +6,7 @@ import {
   Plus, CalendarCheck, Search, User, Phone, MapPin, Activity, Store, 
   UserCheck, Calendar, Clock, FileText, X, ChevronDown, Users, TrendingUp, 
   Check, Receipt, Printer, MessageCircle, Link2, Download, AlertCircle, 
-  Minus, Trash2, Copy, Edit, CheckCircle2 
+  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
@@ -1492,6 +1492,8 @@ export default function AdminVisitsPage() {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       onPageChange={setCurrentPage}
+                      totalItems={finalVisits.length}
+                      itemsPerPage={itemsPerPage}
                     />
                   </div>
                 )}
