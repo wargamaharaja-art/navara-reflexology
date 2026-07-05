@@ -12,9 +12,22 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month"); // YYYY-MM
+    const startDate = searchParams.get("startDate"); // YYYY-MM-DD
+    const endDate = searchParams.get("endDate"); // YYYY-MM-DD
 
-    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-      return Response.json({ error: "Periode bulan (YYYY-MM) wajib diisi" }, { status: 400 });
+    let filterMonth = month;
+    let filterStartDate = startDate;
+    let filterEndDate = endDate;
+
+    if (!filterStartDate || !filterEndDate) {
+      if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+        return Response.json({ error: "Periode bulan (YYYY-MM) atau rentang tanggal wajib diisi" }, { status: 400 });
+      }
+      // Derive start and end date from month
+      const [year, m] = month.split("-");
+      filterStartDate = `${year}-${m}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(m), 0).getDate();
+      filterEndDate = `${year}-${m}-${lastDay}`;
     }
 
     const branchFilter = await getActiveBranchFilter();
@@ -30,15 +43,29 @@ export async function GET(request: Request) {
       .from(therapists)
       .where(and(...therapistConditions));
 
-    // 2. Fetch existing saved reports for this month
+    // 2. Fetch existing saved reports for this period
+    // If using month, match month. If custom, maybe match startDate and endDate.
+    const reportConditions = [];
+    if (month) {
+      reportConditions.push(eq(therapistMonthlyReports.month, month));
+    } else {
+      reportConditions.push(
+        and(
+          eq(therapistMonthlyReports.startDate, filterStartDate as string),
+          eq(therapistMonthlyReports.endDate, filterEndDate as string)
+        )
+      );
+    }
+    
     const savedReports = await db
       .select()
       .from(therapistMonthlyReports)
-      .where(eq(therapistMonthlyReports.month, month));
+      .where(and(...reportConditions));
 
     const savedReportsMap = new Map(savedReports.map(r => [r.therapistId, r]));
 
     // 3. Pre-fetch semua komisi dan kunjungan bulan ini sekali saja (efisien)
+    const { gte, lte } = require("drizzle-orm");
     const allMonthCommissions = await db
       .select({
         therapistId: therapistCommissions.therapistId,
@@ -46,7 +73,12 @@ export async function GET(request: Request) {
       })
       .from(therapistCommissions)
       .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-      .where(like(patientVisits.visitDate, `${month}%`));
+      .where(
+        and(
+          gte(patientVisits.visitDate, filterStartDate as string),
+          lte(patientVisits.visitDate, filterEndDate as string)
+        )
+      );
 
     const allMonthVisits = await db
       .select({ therapistId: patientVisits.therapistId })
@@ -54,7 +86,8 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(patientVisits.status, "completed"),
-          like(patientVisits.visitDate, `${month}%`)
+          gte(patientVisits.visitDate, filterStartDate as string),
+          lte(patientVisits.visitDate, filterEndDate as string)
         )
       );
 
@@ -90,7 +123,8 @@ export async function GET(request: Request) {
           .where(
             and(
               eq(attendance.therapistId, t.id),
-              like(attendance.date, `${month}%`)
+              gte(attendance.date, filterStartDate as string),
+              lte(attendance.date, filterEndDate as string)
             )
           );
 
@@ -111,6 +145,8 @@ export async function GET(request: Request) {
           therapistName: t.name,
           branchId: t.branchId,
           month,
+          startDate: filterStartDate,
+          endDate: filterEndDate,
           totalTreatments: actualTreatments,
           attendancePresent: present,
           attendanceLate: late,
@@ -151,6 +187,8 @@ export async function POST(request: Request) {
       id,
       therapistId,
       month,
+      startDate,
+      endDate,
       totalTreatments,
       attendancePresent,
       attendanceLate,
@@ -168,8 +206,8 @@ export async function POST(request: Request) {
       rating,
     } = body;
 
-    if (!therapistId || !month) {
-      return Response.json({ error: "Data terapis dan bulan wajib diisi" }, { status: 400 });
+    if (!therapistId || (!month && (!startDate || !endDate))) {
+      return Response.json({ error: "Data terapis dan bulan/rentang tanggal wajib diisi" }, { status: 400 });
     }
 
     const now = new Date().toISOString();
@@ -179,6 +217,8 @@ export async function POST(request: Request) {
       await db
         .update(therapistMonthlyReports)
         .set({
+          startDate: startDate || null,
+          endDate: endDate || null,
           totalTreatments: parseInt(totalTreatments) || 0,
           attendancePresent: parseInt(attendancePresent) || 0,
           attendanceLate: parseInt(attendanceLate) || 0,
@@ -200,28 +240,31 @@ export async function POST(request: Request) {
 
       return Response.json({ success: true, id });
     } else {
-      // Check if report already exists for this therapist and month
+      const baseCondition = eq(therapistMonthlyReports.therapistId, therapistId);
+      const periodCondition = month 
+        ? eq(therapistMonthlyReports.month, month)
+        : and(
+            eq(therapistMonthlyReports.startDate, startDate),
+            eq(therapistMonthlyReports.endDate, endDate)
+          );
+
       const existing = await db
         .select()
         .from(therapistMonthlyReports)
-        .where(
-          and(
-            eq(therapistMonthlyReports.therapistId, therapistId),
-            eq(therapistMonthlyReports.month, month)
-          )
-        )
+        .where(and(baseCondition, periodCondition))
         .limit(1);
 
       if (existing.length > 0) {
-        return Response.json({ error: "Laporan untuk terapis ini pada bulan ini sudah dibuat" }, { status: 400 });
+        return Response.json({ error: "Laporan untuk terapis ini pada periode ini sudah dibuat" }, { status: 400 });
       }
 
-      // Create new report with secure UUID
       const newId = crypto.randomUUID();
       await db.insert(therapistMonthlyReports).values({
         id: newId,
         therapistId,
-        month,
+        month: month || null,
+        startDate: startDate || null,
+        endDate: endDate || null,
         totalTreatments: parseInt(totalTreatments) || 0,
         attendancePresent: parseInt(attendancePresent) || 0,
         attendanceLate: parseInt(attendanceLate) || 0,

@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Clock, CheckCircle, AlertCircle, Save, Send, Copy, Award, Edit, Sparkles, AlertTriangle, User, DollarSign, Activity, Download } from "lucide-react";
+import { Calendar, Clock, CheckCircle, AlertCircle, Save, Send, Copy, Award, Edit, Sparkles, AlertTriangle, User, DollarSign, Activity, Download, FileText, Table } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 type MonthlyReport = {
   id: string | null;
@@ -35,6 +38,16 @@ export default function TherapistReportsPage() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   });
+  const [filterMode, setFilterMode] = useState<"month" | "dateRange">("month");
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+  });
+  
   const [reports, setReports] = useState<MonthlyReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,11 +58,15 @@ export default function TherapistReportsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeReport, setActiveReport] = useState<MonthlyReport | null>(null);
 
-  const fetchReports = useCallback(async (targetMonth: string) => {
+  const fetchReports = useCallback(async (targetMonth: string, start?: string, end?: string) => {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/therapist-reports?month=${targetMonth}`);
+      const url = filterMode === "month" 
+        ? `/api/therapist-reports?month=${targetMonth}`
+        : `/api/therapist-reports?startDate=${start}&endDate=${end}`;
+        
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setReports(json.data || []);
@@ -62,11 +79,11 @@ export default function TherapistReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterMode]);
 
   useEffect(() => {
-    fetchReports(month);
-  }, [month, fetchReports]);
+    fetchReports(month, startDate, endDate);
+  }, [month, startDate, endDate, filterMode, fetchReports]);
 
   const handleEditClick = (report: MonthlyReport) => {
     setActiveReport({ ...report });
@@ -115,7 +132,7 @@ export default function TherapistReportsPage() {
       if (res.ok) {
         setMessage({ type: "success", text: `Rapor ${activeReport.therapistName} berhasil disimpan!` });
         setIsModalOpen(false);
-        fetchReports(month);
+        fetchReports(month, startDate, endDate);
       } else {
         const errJson = await res.json();
         setMessage({ type: "error", text: errJson.error || "Gagal menyimpan rapor" });
@@ -148,7 +165,7 @@ export default function TherapistReportsPage() {
       }
 
       setMessage({ type: "success", text: `Berhasil memproses & menyimpan ${successCount} laporan terapis!` });
-      fetchReports(month);
+      fetchReports(month, startDate, endDate);
     } catch (err) {
       console.error(err);
       setMessage({ type: "error", text: "Terjadi kesalahan selama proses simpan masal" });
@@ -194,34 +211,79 @@ export default function TherapistReportsPage() {
     return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   };
 
-  const handleExportCSV = () => {
+  const handleExportExcel = () => {
     if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
-    const headers = [
-      "Nama Terapis", "Total Pasien", "Kehadiran (H/T/A)", "Gaji Pokok", "Komisi", 
-      "Tunjangan", "Bonus", "Potongan", "Take Home Pay"
-    ];
-    const csvContent = [
-      headers.join(","),
-      ...reports.map(r => [
-        `"${r.therapistName}"`,
-        r.totalTreatments,
-        `"${r.attendancePresent}/${r.attendanceLate}/${r.attendanceAbsent}"`,
-        r.baseSalary,
-        r.commissions,
-        r.allowances,
-        r.bonuses,
-        r.deductions,
-        r.takeHomePay
-      ].join(","))
-    ].join("\n");
+    
+    const formattedData = reports.map(r => ({
+      "Nama Terapis": r.therapistName,
+      "Total Pasien": r.totalTreatments,
+      "Kehadiran (H/T/A)": `${r.attendancePresent}/${r.attendanceLate}/${r.attendanceAbsent}`,
+      "Gaji Pokok": r.baseSalary,
+      "Komisi Tindakan": r.commissions,
+      "Tunjangan": r.allowances,
+      "Bonus": r.bonuses,
+      "Potongan": r.deductions,
+      "Take Home Pay": r.takeHomePay,
+      "Status Laporan": r.isSaved ? "Tersimpan" : "Draft"
+    }));
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `rekap-penggajian-${month}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Gaji Terapis");
+    
+    const fileName = filterMode === "month" 
+      ? `Rekap_Gaji_Terapis_${month}.xlsx` 
+      : `Rekap_Gaji_Terapis_${startDate}_sd_${endDate}.xlsx`;
+      
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  const handleExportPDF = () => {
+    if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
+
+    const doc = new jsPDF("landscape");
+    
+    // Title
+    doc.setFontSize(16);
+    doc.text("Rekap Gaji Terapis Navara Reflexology", 14, 20);
+    
+    doc.setFontSize(11);
+    const periodText = filterMode === "month" 
+      ? `Periode: ${getMonthReadable(month)}` 
+      : `Periode: ${startDate} s/d ${endDate}`;
+    doc.text(periodText, 14, 28);
+
+    const tableColumn = ["Nama Terapis", "Total Pasien", "Kehadiran (H/T/A)", "Gaji Pokok", "Komisi", "Tunjangan", "Bonus", "Potongan", "Take Home Pay"];
+    const tableRows: string[][] = [];
+
+    reports.forEach(r => {
+      const reportData = [
+        r.therapistName,
+        r.totalTreatments.toString(),
+        `${r.attendancePresent}/${r.attendanceLate}/${r.attendanceAbsent}`,
+        formatRupiah(r.baseSalary),
+        formatRupiah(r.commissions),
+        formatRupiah(r.allowances),
+        formatRupiah(r.bonuses),
+        formatRupiah(r.deductions),
+        formatRupiah(r.takeHomePay),
+      ];
+      tableRows.push(reportData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [13, 148, 136] }, // teal-600
+    });
+
+    const fileName = filterMode === "month" 
+      ? `Rekap_Gaji_Terapis_${month}.pdf` 
+      : `Rekap_Gaji_Terapis_${startDate}_sd_${endDate}.pdf`;
+      
+    doc.save(fileName);
   };
 
   return (
@@ -235,24 +297,70 @@ export default function TherapistReportsPage() {
           icon={Award}
           rightContent={
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 md:mt-0">
-              <div className="relative">
-                <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  id="report-month-picker"
-                  type="month"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all"
-                />
+              <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-1">
+                <button
+                  onClick={() => setFilterMode("month")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "month" ? "bg-teal-50 text-teal-700" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Per Bulan
+                </button>
+                <button
+                  onClick={() => setFilterMode("dateRange")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "dateRange" ? "bg-teal-50 text-teal-700" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Rentang Tanggal
+                </button>
               </div>
 
-              <button
-                onClick={handleExportCSV}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer text-sm"
-              >
-                <Download className="w-4 h-4" />
-                Export CSV Rekap
-              </button>
+              {filterMode === "month" ? (
+                <div className="relative">
+                  <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    id="report-month-picker"
+                    type="month"
+                    value={month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all"
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
+                    />
+                  </div>
+                  <span className="text-gray-400 text-sm">s/d</span>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportPDF}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-sm shadow-red-600/20"
+                >
+                  <FileText className="w-4 h-4" />
+                  Export PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-sm shadow-green-600/20"
+                >
+                  <Table className="w-4 h-4" />
+                  Export Excel
+                </button>
+              </div>
 
               <button
                 id="bulk-save-btn"
