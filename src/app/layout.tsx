@@ -8,6 +8,7 @@ import { FloatingWhatsApp } from "@/components/ui/FloatingWhatsApp";
 import { db } from "@/lib/db";
 import { settings, branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { PWAInstall } from "@/components/ui/PWAInstall";
 
 export const revalidate = 0;
 
@@ -52,6 +53,7 @@ export default async function RootLayout({
   return (
     <html lang="id" className={`${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
+        <PWAInstall />
         <PublicLayoutWrapper 
           navbar={<Navbar key="navbar" settings={companyInfo} branches={activeBranches} />}
           footer={<Footer key="footer" />}
