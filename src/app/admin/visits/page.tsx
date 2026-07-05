@@ -1017,26 +1017,102 @@ export default function AdminVisitsPage() {
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Header Section */}
-        <PageHeader 
-          title="Buku Pasien"
-          description="Catat dan pantau seluruh riwayat kunjungan pasien klinik."
-          icon={CalendarCheck}
-          rightContent={
-            (activeTab === "list" || activeTab === "recap") ? (
-              <button
-                onClick={() => setIsFormOpen(true)}
-                className="group bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 transition-all active:scale-95"
-              >
-                <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> 
-                Catat Kunjungan
-              </button>
-            ) : undefined
-          }
-        />
+        {/* Mobile-only Seabank-style UI */}
+        <div className="md:hidden">
+          {/* Header */}
+          <div className="bg-emerald-600 text-white px-4 pt-6 pb-20 relative -mx-4 -mt-8 sm:-mx-6 sm:-mt-8">
+            <div className="flex justify-between items-center mb-2">
+              <h1 className="text-xl font-bold tracking-tight">Kunjungan</h1>
+              <div className="relative p-2 bg-emerald-500/50 rounded-full border border-emerald-400">
+                <Bell className="w-5 h-5 text-white" />
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-emerald-500"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Overlapping Grid Card */}
+          <div className="px-1 -mt-14 relative z-10 mb-4">
+            <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
+              <div className="grid grid-cols-4 gap-y-5 gap-x-2">
+                {[
+                  { name: "Tambah", icon: Plus, action: () => setIsFormOpen(true), color: "text-emerald-500", badge: "" },
+                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(new Date().toISOString().split("T")[0]); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
+                  { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-green-500", badge: "" },
+                  { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
+                  { name: "Laporan", icon: FileText, action: () => handleTabChange("recap"), color: "text-orange-500", badge: "" },
+                  { name: "Pasien", icon: Users, action: () => handleTabChange("retention"), color: "text-purple-500", badge: "" },
+                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-teal-500", badge: "" },
+                  { name: "POS", icon: Store, action: () => handleTabChange("pos"), color: "text-rose-500", badge: "" },
+                ].map((item, idx) => (
+                  <button key={idx} onClick={item.action} className="flex flex-col items-center justify-start gap-1.5 relative group">
+                    <div className="w-[42px] h-[42px] rounded-[14px] bg-gray-50 border border-gray-100 flex items-center justify-center transition-transform active:scale-95">
+                      <item.icon className={`w-[20px] h-[20px] ${item.color} fill-${item.color.split('-')[1]}-100`} strokeWidth={2} />
+                    </div>
+                    {item.badge && (
+                      <span className="absolute -top-1.5 right-0 md:right-4 bg-orange-100 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-orange-200 uppercase tracking-widest z-10">
+                        {item.badge}
+                      </span>
+                    )}
+                    <span className="font-semibold text-[10px] text-gray-700 text-center w-full leading-tight">{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
+          {/* Mobile Tabs */}
+          <div className="flex bg-white px-2 border-b border-gray-100 rounded-t-2xl">
+            <button 
+              onClick={() => { setActiveTab("list"); setFilterDate(new Date().toISOString().split("T")[0]); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === new Date().toISOString().split("T")[0] && activeTab === "list" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-500"}`}
+            >
+              Hari Ini
+            </button>
+            <button 
+              onClick={() => { setActiveTab("list"); setFilterDate(""); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === "" && activeTab === "list" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-500"}`}
+            >
+              Semua Data
+            </button>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="p-4 bg-white shadow-[0_4px_10px_rgba(0,0,0,0.03)] relative z-10">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Cari pasien di sini"
+                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-transparent rounded-full text-[13px] font-semibold text-gray-700 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Header Section */}
+        <div className="hidden md:block">
+          <PageHeader 
+            title="Buku Pasien"
+            description="Catat dan pantau seluruh riwayat kunjungan pasien klinik."
+            icon={CalendarCheck}
+            rightContent={
+              (activeTab === "list" || activeTab === "recap") ? (
+                <button
+                  onClick={() => setIsFormOpen(true)}
+                  className="group bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 transition-all active:scale-95"
+                >
+                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> 
+                  Catat Kunjungan
+                </button>
+              ) : undefined
+            }
+          />
+        </div>
+
+        {/* Desktop Tab Selection */}
+        <div className="hidden md:flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
           <button
             onClick={() => handleTabChange("list")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
@@ -1330,7 +1406,7 @@ export default function AdminVisitsPage() {
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
               
               {/* Header Tabel */}
-              <div className="px-6 py-5 border-b border-gray-100 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="hidden md:flex px-6 py-5 border-b border-gray-100 bg-white flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                     Riwayat Kunjungan <span className="bg-gray-100 text-gray-600 text-xs py-1 px-2.5 rounded-full ml-2">{finalVisits.length}</span>
@@ -1354,7 +1430,76 @@ export default function AdminVisitsPage() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              
+              {/* Mobile List View (Seabank Style) */}
+              <div className="md:hidden bg-white min-h-[50vh]">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <span className="text-sm font-medium">Memuat data...</span>
+                  </div>
+                ) : finalVisits.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-gray-100">
+                      <CalendarCheck className="h-8 w-8 text-gray-300" />
+                    </div>
+                    <p className="text-gray-500 font-bold text-sm">Belum ada kunjungan</p>
+                    <p className="text-xs text-gray-400 mt-1">Gunakan tab atau pencarian lain.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {paginatedVisits.map(v => {
+                      const patientName = getPatientName(v.patientId);
+                      const initial = patientName.charAt(0).toUpperCase();
+                      const isCompleted = v.status === "completed";
+                      const isPaid = v.paymentStatus === "PAID";
+                      
+                      return (
+                        <div key={v.id} className="p-4 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600">
+                              {initial}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
+                              <span className="text-[11px] text-gray-500 font-medium">
+                                {v.visitDate.split('-').reverse().join('/')} &bull; {getServiceName(v.serviceId)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-1">
+                            {isPaid ? (
+                              <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
+                                <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
+                              </button>
+                            ) : (
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
+                                <Wallet className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {/* Mobile Pagination */}
+                {totalPages > 1 && (
+                  <div className="p-4 border-t border-gray-100 flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
                     <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
@@ -1485,6 +1630,8 @@ export default function AdminVisitsPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
+
               
               {!loading && finalVisits.length > 0 && (
                 <Pagination 
