@@ -9,6 +9,7 @@ import { settings, services, branches } from "@/lib/db/schema";
 import { HeroBookingBar } from "@/components/sections/HeroBookingBar";
 import { InteractiveGejala } from "@/components/sections/InteractiveGejala";
 import { TestimonialCarousel } from "@/components/sections/TestimonialCarousel";
+import { PWARedirect } from "@/components/ui/PWARedirect";
 
 export const revalidate = 0; // Disable static caching so it gets the latest settings if updated
 
@@ -27,6 +28,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col w-full">
+      <PWARedirect />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center pt-24 pb-32 overflow-hidden">
         {/* Background Image & Overlays */}
