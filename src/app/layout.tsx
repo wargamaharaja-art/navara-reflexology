@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Navara Reflexology",
   },
+  manifest: "/manifest.json",
   formatDetection: {
     telephone: false,
   },

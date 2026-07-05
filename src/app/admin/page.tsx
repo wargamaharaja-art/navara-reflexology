@@ -147,8 +147,8 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all col-span-2 sm:col-span-1 lg:col-span-1">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-emerald-50 rounded-2xl">
                     <Wallet className="w-5 h-5 text-emerald-600" />
@@ -158,7 +158,7 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-gray-900">{formatRupiah(summaryData.kasDanBank)}</p>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-amber-50 rounded-2xl">
                     <Package className="w-5 h-5 text-amber-500" />
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-gray-900">{summaryData.persediaan} <span className="text-sm font-normal text-gray-500">Item</span></p>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-indigo-50 rounded-2xl">
                     <Users className="w-5 h-5 text-indigo-600" />
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-indigo-600">{summaryData.pasienHarian} <span className="text-sm font-normal text-gray-500">Orang</span></p>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-teal-50 rounded-2xl">
                     <TrendingUp className="w-5 h-5 text-teal-600" />
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-teal-600">{formatRupiah(summaryData.pendapatan)}</p>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[20px] sm:rounded-[24px] p-4 sm:p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-2 bg-yellow-50 rounded-2xl">
                     <Activity className="w-5 h-5 text-yellow-600" />
@@ -209,17 +209,17 @@ export default function AdminDashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {quickLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="bg-white/90 backdrop-blur-md rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col items-center justify-center gap-4 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all group"
+                  className="bg-white/90 backdrop-blur-md rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col items-center justify-center gap-2 sm:gap-4 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all group"
                 >
-                  <div className={`w-16 h-16 rounded-[24px] ${link.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    <link.icon className={`w-8 h-8 ${link.color}`} />
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[24px] ${link.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                    <link.icon className={`w-6 h-6 sm:w-8 sm:h-8 ${link.color}`} />
                   </div>
-                  <span className="font-bold text-gray-800 text-center">{link.name}</span>
+                  <span className="font-bold text-sm sm:text-base text-gray-800 text-center">{link.name}</span>
                 </Link>
               ))}
             </div>
@@ -330,16 +330,16 @@ export default function AdminDashboard() {
                 <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-emerald-500" /> Progres Capaian Pemasukan
                 </h3>
-                <div className="h-80 w-full">
+                <div className="h-[400px] sm:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
                       <XAxis dataKey="date" tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                       <YAxis
-                        tickFormatter={(val) => `Rp${(val / 1000000).toFixed(1)}Jt`}
+                        tickFormatter={(val) => `Rp${(val / 1000000).toFixed(0)}Jt`}
                         tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        width={80}
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        width={55}
                       />
                       <Tooltip
                         formatter={(value: any, name: any) => {
@@ -373,15 +373,15 @@ export default function AdminDashboard() {
                 <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
                   <Users className="w-5 h-5 text-blue-500" /> Progres Capaian Kunjungan
                 </h3>
-                <div className="h-80 w-full">
+                <div className="h-[400px] sm:h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eff6ff" />
                       <XAxis dataKey="date" tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                       <YAxis
                         tickLine={false}
-                        tick={{ fill: '#6b7280', fontSize: 12 }}
-                        width={40}
+                        tick={{ fill: '#6b7280', fontSize: 11 }}
+                        width={30}
                       />
                       <Tooltip
                         formatter={(value: any, name: any) => {

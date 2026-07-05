@@ -151,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-100/60 via-emerald-50/30 to-slate-50 flex flex-col md:flex-row pb-28 md:pb-0">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-100/60 via-emerald-50/30 to-slate-50 flex flex-col md:flex-row pb-36 md:pb-0">
       {/* Mobile Header */}
       <div className="md:hidden bg-transparent text-gray-900 px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-40">
         <h1 className="text-xl font-extrabold tracking-tight">
