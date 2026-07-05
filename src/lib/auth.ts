@@ -1,8 +1,8 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
 
-const SESSION_COOKIE = "radja-bekam-session";
-const SESSION_SECRET = process.env.SESSION_SECRET || "some-very-secret-key-1234567890-abcdef-radja-bekam";
+const SESSION_COOKIE = "navara-session";
+const SESSION_SECRET = process.env.SESSION_SECRET || "some-very-secret-key-1234567890-abcdef-navara-reflexology";
 
 export interface AdminSession {
   id: string;
@@ -109,7 +109,7 @@ export async function deleteSession(): Promise<void> {
   cookieStore.delete(SESSION_COOKIE);
   
   // Also delete selected branch cookie if present
-  cookieStore.delete("radja-bekam-selected-branch");
+  cookieStore.delete("navara-selected-branch");
 }
 
 export async function getActiveBranchFilter(): Promise<string | null> {
@@ -122,7 +122,7 @@ export async function getActiveBranchFilter(): Promise<string | null> {
 
   // Super admin: read the selected branch cookie
   const cookieStore = await cookies();
-  const selectedBranch = cookieStore.get("radja-bekam-selected-branch")?.value;
+  const selectedBranch = cookieStore.get("navara-selected-branch")?.value;
   return selectedBranch && selectedBranch !== "ALL" ? selectedBranch : null;
 }
 

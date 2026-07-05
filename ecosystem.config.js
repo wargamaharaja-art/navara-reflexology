@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "radja-bekam",
+      name: "navara-reflexology",
       script: "npm",
       args: "start",
       env: {

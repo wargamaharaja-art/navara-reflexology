@@ -11,7 +11,7 @@ export function proxy(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const session = request.cookies.get("radja-bekam-session");
+    const session = request.cookies.get("navara-session");
     if (!session) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }

@@ -217,8 +217,8 @@ export default function PublicReceiptPage() {
         {/* Screen Header - hidden in print */}
         <div className="no-print text-center mb-6 max-w-md w-full">
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            <span className="text-white">Radja</span>{" "}
-            <span className="text-emerald-300">Bekam</span>
+            <span className="text-white">Navara</span>{" "}
+            <span className="text-emerald-300">Reflexology</span>
           </h1>
           <p className="text-emerald-300/70 text-sm mt-1">Struk Digital</p>
         </div>

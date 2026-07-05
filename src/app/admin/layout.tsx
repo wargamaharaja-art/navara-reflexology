@@ -65,7 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setSession(data.session);
 
           // Read selected branch from cookie
-          const match = document.cookie.match(new RegExp('(^| )radja-bekam-selected-branch=([^;]+)'));
+          const match = document.cookie.match(new RegExp('(^| )navara-selected-branch=([^;]+)'));
           const currentBranch = match ? match[2] : "ALL";
           setSelectedBranch(currentBranch);
 
@@ -109,7 +109,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleBranchChange = (value: string) => {
     setSelectedBranch(value);
-    document.cookie = `radja-bekam-selected-branch=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    document.cookie = `navara-selected-branch=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
     window.location.reload();
   };
 

@@ -9,7 +9,7 @@ export function FloatingWhatsApp({ phone }: { phone: string }) {
 
   return (
     <Link
-      href={`https://wa.me/${formattedPhone}?text=Halo%20Radja%20Bekam,%20saya%20ingin%20bertanya%20seputar%20layanan%20terapi.`}
+      href={`https://wa.me/${formattedPhone}?text=Halo%20Navara%20Reflexology,%20saya%20ingin%20bertanya%20seputar%20layanan.`}
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:bg-[#128C7E] hover:scale-110 transition-all duration-300 flex items-center justify-center animate-bounce-slow"
