@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -127,8 +128,8 @@ export default function AdminDashboard() {
         {/* Mobile Header (Seabank Style) - Only visible on Mobile */}
         <div className="md:hidden flex items-center justify-between mb-4 mt-2">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-emerald-600 font-bold text-xl shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-              F
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden p-1.5">
+              <Image src="/navara-logo.png" alt="Navara Logo" width={36} height={36} className="object-contain" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-[15px] leading-tight">Fikri Mochamad R...</h2>
@@ -229,89 +230,6 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Target / KPI (Flash Deals Style) */}
-          <div className="bg-gradient-to-b from-orange-50/50 to-white rounded-[20px] md:rounded-[32px] p-4 md:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-orange-100 relative overflow-hidden">
-            <div className="flex justify-between items-center mb-4 px-1">
-              <div className="flex items-center gap-1.5">
-                 <Flame className="w-[18px] h-[18px] text-orange-500 fill-orange-500" />
-                 <h3 className="text-sm md:text-lg font-black text-gray-900 italic tracking-tight">
-                   Target Flash Deals
-                 </h3>
-              </div>
-              <div className="flex flex-col items-end gap-0.5 text-[10px]">
-                <span className="text-gray-500 font-semibold tracking-wider uppercase">Bulan Ini</span>
-                <input
-                  type="month"
-                  value={month}
-                  onChange={e => setMonth(e.target.value)}
-                  className="bg-gray-900 text-white font-bold px-2 py-1 rounded text-center outline-none border border-gray-800 focus:border-orange-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-4 pt-1 custom-scrollbar snap-x">
-              
-              {/* Promo-style Card 1 */}
-              <div className="min-w-[145px] max-w-[150px] bg-white border border-gray-200 rounded-2xl p-3 shadow-sm snap-center flex flex-col justify-between group hover:border-orange-300 transition-colors">
-                <div>
-                   <p className="text-[11px] font-bold text-gray-800 leading-snug">Target Pemasukan</p>
-                   <p className="text-[10px] text-gray-400 mt-1 line-through decoration-red-400">Tercapai: {formatRupiah(summaryData.pendapatan)}</p>
-                   <p className="text-lg font-black text-orange-600 tracking-tighter mt-0.5">{formatRupiah(targetIncome)}</p>
-                   <p className="text-[9px] font-semibold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded w-max mt-1 border border-orange-100">Bulan Ini</p>
-                </div>
-                <div className="mt-3">
-                   <Link href="/admin/finance" className="block w-full text-center border border-orange-500 text-orange-600 text-[11px] font-bold py-1.5 rounded-lg hover:bg-orange-50 transition-colors">
-                     Lihat Grafik
-                   </Link>
-                </div>
-              </div>
-
-              {/* Promo-style Card 2 */}
-              <div className="min-w-[145px] max-w-[150px] bg-white border border-gray-200 rounded-2xl p-3 shadow-sm snap-center flex flex-col justify-between group hover:border-blue-300 transition-colors">
-                <div>
-                   <p className="text-[11px] font-bold text-gray-800 leading-snug">Target Kunjungan</p>
-                   <p className="text-[10px] text-gray-400 mt-1 line-through decoration-red-400">Tercapai: {summaryData.pasienHarian}</p>
-                   <p className="text-lg font-black text-blue-600 tracking-tighter mt-0.5">{targetVisits} <span className="text-[10px] font-semibold">Orang</span></p>
-                   <p className="text-[9px] font-semibold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded w-max mt-1 border border-blue-100">Bulan Ini</p>
-                </div>
-                <div className="mt-3">
-                   <Link href="/admin/visits" className="block w-full text-center bg-blue-500 text-white text-[11px] font-bold py-1.5 rounded-lg hover:bg-blue-600 shadow-sm transition-colors border border-transparent">
-                     Lihat Detail
-                   </Link>
-                </div>
-              </div>
-              
-              {/* Promo-style Card 3 (Action) */}
-              <div className="min-w-[120px] flex items-center justify-center p-2 snap-center">
-                 <button onClick={() => setIsEditing(!isEditing)} className="text-[10px] font-bold text-gray-500 flex flex-col items-center gap-2 hover:text-orange-500 transition-colors">
-                    <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center">
-                       <Edit2 className="w-4 h-4" />
-                    </div>
-                    Ubah Target
-                 </button>
-              </div>
-
-            </div>
-            
-            {isEditing && (
-              <form onSubmit={handleSaveTarget} className="mt-2 p-3 bg-white rounded-xl border border-orange-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 animate-in fade-in slide-in-from-top-2">
-                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1">Target Pemasukan (Rp)</label>
-                  <input type="number" value={editIncome} onChange={e => setEditIncome(e.target.value)} className="w-full text-xs font-bold text-gray-900 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-orange-500 bg-gray-50 focus:bg-white" />
-                 </div>
-                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1">Target Kunjungan (Orang)</label>
-                  <input type="number" value={editVisits} onChange={e => setEditVisits(e.target.value)} className="w-full text-xs font-bold text-gray-900 px-3 py-2 border border-gray-200 rounded-lg outline-none focus:border-orange-500 bg-gray-50 focus:bg-white" />
-                 </div>
-                 <div className="flex items-end gap-2">
-                    <button type="button" onClick={() => setIsEditing(false)} className="px-3 py-2 text-[11px] font-bold text-gray-600 bg-gray-100 rounded-lg w-full hover:bg-gray-200 border border-gray-200">Batal</button>
-                    <button type="submit" className="px-3 py-2 text-[11px] font-bold text-white bg-orange-500 rounded-lg w-full hover:bg-orange-600 border border-orange-500 shadow-sm flex justify-center gap-1">
-                      <Save className="w-3.5 h-3.5" /> Simpan
-                    </button>
-                 </div>
-              </form>
-            )}
-          </div>
 
           {/* Charts Section */}
           {loading ? (
