@@ -52,6 +52,7 @@ type Invoice = {
   tax: number;
   grandTotal: number;
   paymentMethod: string;
+  splitPayments: string | null;
   amountPaid: number;
   changeAmount: number;
   createdAt: string;
@@ -603,6 +604,7 @@ export default function AdminVisitsPage() {
                           <input
                             type="text"
                             required
+                            disabled
                             value={posPhone}
                             onChange={e => handlePOSPhoneChange(e.target.value)}
                             placeholder="08123..."
@@ -618,6 +620,7 @@ export default function AdminVisitsPage() {
                         <input
                           type="text"
                           required
+                          disabled
                           value={posPatientName}
                           onChange={e => setPosPatientName(e.target.value)}
                           placeholder="Nama lengkap"
@@ -632,9 +635,9 @@ export default function AdminVisitsPage() {
                           <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <select
                             required
+                            disabled
                             value={posBranchId}
                             onChange={e => setPosBranchId(e.target.value)}
-                            disabled={session?.role === "BRANCH_ADMIN"}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
                           >
                             <option value="">Pilih Cabang</option>
@@ -645,6 +648,7 @@ export default function AdminVisitsPage() {
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700">Terapis</label>
                         <select
+                          disabled
                           value={posTherapistId}
                           onChange={e => setPosTherapistId(e.target.value)}
                           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
@@ -673,6 +677,7 @@ export default function AdminVisitsPage() {
                   <div className="p-6">
                     <div className="relative mb-4">
                       <select
+                        disabled
                         onChange={e => { addPOSItem(e.target.value); e.target.value = ""; }}
                         value=""
                         className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none cursor-pointer"
@@ -712,19 +717,19 @@ export default function AdminVisitsPage() {
                               <p className="text-xs text-gray-500">{formatRupiah(item.price)} / item</p>
                             </div>
                             <div className="flex items-center gap-1">
-                              <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty - 1)}
-                                className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors">
+                              <button type="button" disabled onClick={() => updatePOSItemQty(item.serviceId, item.qty - 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center opacity-50 cursor-not-allowed">
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="w-8 text-center font-bold text-sm">{item.qty}</span>
-                              <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty + 1)}
-                                className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-green-50 hover:border-green-200 transition-colors">
+                              <button type="button" disabled onClick={() => updatePOSItemQty(item.serviceId, item.qty + 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center opacity-50 cursor-not-allowed">
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
                             <p className="font-bold text-gray-900 text-sm w-24 text-right">{formatRupiah(item.subtotal)}</p>
-                            <button type="button" onClick={() => removePOSItem(item.serviceId)}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <button type="button" disabled onClick={() => removePOSItem(item.serviceId)}
+                              className="p-1.5 text-gray-300 opacity-50 cursor-not-allowed rounded-lg">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -1619,9 +1624,49 @@ export default function AdminVisitsPage() {
                   </>
                 )}
               </div>
+            ) : monthlyData.length === 0 ? (
+              <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm mt-6">
+                <p className="text-gray-500">Belum ada data kunjungan untuk bulan ini.</p>
+              </div>
             ) : (
-              <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm">
-                <p className="text-gray-500">Fitur Tampilan Bulanan sedang dalam pemeliharaan.</p>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6 animate-in fade-in duration-300">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/80 border-b border-gray-100">
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal</th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Total Kunjungan</th>
+                        <th className="px-6 py-4 text-xs font-bold text-emerald-600 uppercase tracking-wider text-center">Lunas</th>
+                        <th className="px-6 py-4 text-xs font-bold text-red-500 uppercase tracking-wider text-center">Belum Lunas</th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Omset (Lunas)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {monthlyData.map((stat: any) => (
+                        <tr key={stat.date} className="hover:bg-indigo-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-gray-900">
+                              {new Date(stat.date).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-gray-700 font-medium text-center">{stat.totalVisits}</td>
+                          <td className="px-6 py-4 font-bold text-emerald-600 text-center">{stat.totalPaid}</td>
+                          <td className="px-6 py-4 font-bold text-red-500 text-center">{stat.totalUnpaid}</td>
+                          <td className="px-6 py-4 font-bold text-emerald-600 text-right">{formatRupiah(stat.totalRevenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50/80 border-t border-gray-200">
+                      <tr>
+                        <td className="px-6 py-4 font-bold text-gray-900 text-right">TOTAL BULAN INI</td>
+                        <td className="px-6 py-4 font-black text-gray-900 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalVisits, 0)}</td>
+                        <td className="px-6 py-4 font-black text-emerald-600 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalPaid, 0)}</td>
+                        <td className="px-6 py-4 font-black text-red-500 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalUnpaid, 0)}</td>
+                        <td className="px-6 py-4 font-black text-emerald-600 text-right">{formatRupiah(monthlyData.reduce((acc, curr) => acc + curr.totalRevenue, 0))}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -1685,13 +1730,37 @@ export default function AdminVisitsPage() {
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Cash</p>
                   <p className="text-2xl font-extrabold text-gray-900 mt-1">
-                    {formatRupiah(filteredInvoiceHistory.filter(i => i.paymentMethod === "CASH").reduce((sum, inv) => sum + inv.grandTotal, 0))}
+                    {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => {
+                      if (inv.paymentMethod === "CASH") return sum + inv.grandTotal;
+                      if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+                        try {
+                          const splits = JSON.parse(inv.splitPayments);
+                          const cashSplit = splits.find((s: any) => s.method === "CASH");
+                          if (cashSplit) {
+                            let cashAmt = cashSplit.amount;
+                            if (inv.changeAmount > 0) cashAmt -= inv.changeAmount;
+                            return sum + Math.max(0, cashAmt);
+                          }
+                        } catch (e) {}
+                      }
+                      return sum;
+                    }, 0))}
                   </p>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Non-Cash</p>
                   <p className="text-2xl font-extrabold text-gray-900 mt-1">
-                    {formatRupiah(filteredInvoiceHistory.filter(i => i.paymentMethod !== "CASH").reduce((sum, inv) => sum + inv.grandTotal, 0))}
+                    {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => {
+                      if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+                        try {
+                          const splits = JSON.parse(inv.splitPayments);
+                          const nonCash = splits.filter((s: any) => s.method !== "CASH");
+                          return sum + nonCash.reduce((acc: number, s: any) => acc + s.amount, 0);
+                        } catch (e) {}
+                      }
+                      if (inv.paymentMethod !== "CASH" && inv.paymentMethod !== "SPLIT") return sum + inv.grandTotal;
+                      return sum;
+                    }, 0))}
                   </p>
                 </div>
               </div>
@@ -1744,13 +1813,34 @@ export default function AdminVisitsPage() {
                             </td>
                             <td className="px-4 py-3 text-right font-bold text-gray-900">{formatRupiah(inv.grandTotal)}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                inv.paymentMethod === "CASH" ? "bg-green-50 text-green-700" :
-                                inv.paymentMethod === "DEBIT" ? "bg-blue-50 text-blue-700" :
-                                "bg-purple-50 text-purple-700"
-                              }`}>
-                                {inv.paymentMethod}
-                              </span>
+                              {inv.paymentMethod === "SPLIT" && inv.splitPayments ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  {(() => {
+                                    try {
+                                      const splits = JSON.parse(inv.splitPayments);
+                                      return splits.map((sp: any, idx: number) => (
+                                        <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded border whitespace-nowrap ${
+                                          sp.method === "CASH" ? "border-green-200 bg-green-50 text-green-700" :
+                                          sp.method === "DEBIT" ? "border-blue-200 bg-blue-50 text-blue-700" :
+                                          "border-purple-200 bg-purple-50 text-purple-700"
+                                        }`}>
+                                          {sp.method}: {formatRupiah(sp.amount)}
+                                        </span>
+                                      ));
+                                    } catch (e) {
+                                      return <span className="text-xs text-gray-500">SPLIT</span>;
+                                    }
+                                  })()}
+                                </div>
+                              ) : (
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                  inv.paymentMethod === "CASH" ? "bg-green-50 text-green-700" :
+                                  inv.paymentMethod === "DEBIT" ? "bg-blue-50 text-blue-700" :
+                                  "bg-purple-50 text-purple-700"
+                                }`}>
+                                  {inv.paymentMethod}
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-center gap-1">

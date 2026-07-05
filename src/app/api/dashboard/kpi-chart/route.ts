@@ -117,8 +117,8 @@ export async function GET(request: NextRequest) {
     for (let i = 1; i <= numDays; i++) {
       const dateStr = `${monthStr}-${String(i).padStart(2, '0')}`;
       
-      const actualIncome = incomeByDate[dateStr] || 0;
-      const actualVisits = visitsByDate[dateStr] || 0;
+      let actualIncome: number | null = incomeByDate[dateStr] || 0;
+      let actualVisits: number | null = visitsByDate[dateStr] || 0;
 
       cumIncome += actualIncome;
       cumVisits += actualVisits;
@@ -132,6 +132,8 @@ export async function GET(request: NextRequest) {
       if (dateStr > todayStr) {
         displayCumIncome = null;
         displayCumVisits = null;
+        actualIncome = null;
+        actualVisits = null;
       }
 
       chartData.push({

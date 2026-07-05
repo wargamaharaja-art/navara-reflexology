@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
@@ -332,7 +332,7 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
                       <XAxis dataKey="date" tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                       <YAxis
@@ -342,14 +342,28 @@ export default function AdminDashboard() {
                         width={80}
                       />
                       <Tooltip
-                        formatter={(value: any, name: any) => [formatRupiah(Number(value)), name === "cumIncome" ? "Aktual Kumulatif" : "Target (Goals)"]}
+                        formatter={(value: any, name: any) => {
+                          const formattedValue = formatRupiah(Number(value));
+                          let label = name;
+                          if (name === "cumIncome") label = "Aktual Kumulatif";
+                          if (name === "targetCumIncome") label = "Target Kumulatif (Goals)";
+                          if (name === "actualIncome") label = "Pemasukan Harian";
+                          return [formattedValue, label];
+                        }}
                         labelFormatter={(label) => `Tanggal ${label} ${month}`}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
                       />
-                      <Legend verticalAlign="top" height={36} formatter={(value) => <span className="text-sm font-medium text-gray-700">{value === "cumIncome" ? "Pemasukan Aktual" : "Target Pemasukan"}</span>} />
+                      <Legend verticalAlign="top" height={36} formatter={(value) => {
+                        let label = value;
+                        if (value === "cumIncome") label = "Aktual Kumulatif";
+                        if (value === "targetCumIncome") label = "Target Kumulatif";
+                        if (value === "actualIncome") label = "Pemasukan Harian";
+                        return <span className="text-sm font-medium text-gray-700">{label}</span>;
+                      }} />
+                      <Bar dataKey="actualIncome" fill="#a7f3d0" radius={[4, 4, 0, 0]} maxBarSize={40} />
                       <Line type="monotone" dataKey="targetCumIncome" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
                       <Line type="monotone" dataKey="cumIncome" stroke="#10b981" strokeWidth={4} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} connectNulls={false} />
-                    </LineChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -361,7 +375,7 @@ export default function AdminDashboard() {
                 </h3>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eff6ff" />
                       <XAxis dataKey="date" tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
                       <YAxis
@@ -370,14 +384,27 @@ export default function AdminDashboard() {
                         width={40}
                       />
                       <Tooltip
-                        formatter={(value: any, name: any) => [value, name === "cumVisits" ? "Aktual Kumulatif" : "Target (Goals)"]}
+                        formatter={(value: any, name: any) => {
+                          let label = name;
+                          if (name === "cumVisits") label = "Aktual Kumulatif";
+                          if (name === "targetCumVisits") label = "Target Kumulatif (Goals)";
+                          if (name === "actualVisits") label = "Kunjungan Harian";
+                          return [value, label];
+                        }}
                         labelFormatter={(label) => `Tanggal ${label} ${month}`}
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' }}
                       />
-                      <Legend verticalAlign="top" height={36} formatter={(value) => <span className="text-sm font-medium text-gray-700">{value === "cumVisits" ? "Kunjungan Aktual" : "Target Kunjungan"}</span>} />
+                      <Legend verticalAlign="top" height={36} formatter={(value) => {
+                        let label = value;
+                        if (value === "cumVisits") label = "Aktual Kumulatif";
+                        if (value === "targetCumVisits") label = "Target Kumulatif";
+                        if (value === "actualVisits") label = "Kunjungan Harian";
+                        return <span className="text-sm font-medium text-gray-700">{label}</span>;
+                      }} />
+                      <Bar dataKey="actualVisits" fill="#bfdbfe" radius={[4, 4, 0, 0]} maxBarSize={40} />
                       <Line type="monotone" dataKey="targetCumVisits" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
                       <Line type="monotone" dataKey="cumVisits" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} connectNulls={false} />
-                    </LineChart>
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
