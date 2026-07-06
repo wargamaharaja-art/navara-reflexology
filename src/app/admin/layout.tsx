@@ -151,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/60 md:via-emerald-50/30 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`

@@ -153,7 +153,86 @@ export default function AdminDashboard() {
 
         <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
 
-          {/* Seabank-style Top Balance Card */}
+          {/* Desktop KPI Cards */}
+          <div className="hidden md:block bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-gray-500" />
+                <h3 className="text-lg font-bold text-gray-800">Target & Pencapaian KPI</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-500">Bulan:</span>
+                <input
+                  type="month"
+                  value={month}
+                  onChange={e => setMonth(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                />
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors ml-2"
+                  title="Ubah Target"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {isEditing ? (
+              <form onSubmit={handleSaveTarget} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Pemasukan (Rp)</label>
+                  <input
+                    type="number"
+                    required
+                    value={editIncome}
+                    onChange={e => setEditIncome(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Kunjungan (Orang)</label>
+                  <input
+                    type="number"
+                    required
+                    value={editVisits}
+                    onChange={e => setEditVisits(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors w-full">Batal</button>
+                  <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-colors flex items-center justify-center gap-2 w-full">
+                    <Save className="w-4 h-4" /> Simpan
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Target Pemasukan</p>
+                    <p className="text-2xl font-extrabold text-emerald-900">{formatRupiah(targetIncome)}</p>
+                  </div>
+                  <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-500">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Target Kunjungan</p>
+                    <p className="text-2xl font-extrabold text-blue-900">{targetVisits} <span className="text-sm font-medium text-blue-700">Pasien</span></p>
+                  </div>
+                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-500">
+                    <Users className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="md:hidden space-y-4">
+            {/* Seabank-style Top Balance Card */}
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-[20px] md:rounded-[32px] p-5 md:p-8 text-white relative overflow-hidden shadow-lg border border-emerald-400/50">
             {/* Background Watermark/Curves */}
             <div className="absolute -right-10 -bottom-10 w-40 h-40 border-[20px] border-emerald-400/30 rounded-full pointer-events-none"></div>
@@ -230,6 +309,8 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+
+          </div>
 
           {/* Charts Section */}
           {loading ? (
