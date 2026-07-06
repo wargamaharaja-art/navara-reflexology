@@ -20,6 +20,7 @@ import {
   User,
   Clock,
   Package,
+  Trash2,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────
@@ -306,7 +307,7 @@ function EditModal({
 // ─────────────────────────────────────────────
 // Row Detail Expand
 // ─────────────────────────────────────────────
-function InvoiceRow({ invoice, onEdit }: { invoice: Invoice; onEdit: () => void }) {
+function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: () => void; onDelete: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const badge = PAYMENT_BADGE[invoice.paymentMethod] ?? { label: invoice.paymentMethod, cls: "bg-gray-100 text-gray-600 border border-gray-200" };
 
@@ -359,6 +360,13 @@ function InvoiceRow({ invoice, onEdit }: { invoice: Invoice; onEdit: () => void 
               title="Edit transaksi"
             >
               <Edit2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(); }}
+              className="p-1.5 rounded-lg hover:bg-red-100 text-red-500 transition-colors"
+              title="Hapus transaksi"
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
             <button
               onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
@@ -460,6 +468,8 @@ export default function TransaksiPelangganPage() {
   const [activeMethod, setActiveMethod] = useState("ALL");
   const [search, setSearch] = useState("");
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -492,6 +502,23 @@ export default function TransaksiPelangganPage() {
     setInvoices(prev => prev.map(inv => (inv.id === updated.id ? updated : inv)));
     setEditTarget(null);
     showToast("success", "Transaksi berhasil diperbarui");
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/invoices/${deleteTarget.id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Gagal menghapus");
+      setInvoices(prev => prev.filter(inv => inv.id !== deleteTarget.id));
+      showToast("success", `Transaksi ${deleteTarget.invoiceNumber} berhasil dihapus`);
+    } catch (e: unknown) {
+      showToast("error", e instanceof Error ? e.message : "Gagal menghapus transaksi");
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
   }
 
   // Filtered list
@@ -711,6 +738,7 @@ export default function TransaksiPelangganPage() {
                     key={inv.id}
                     invoice={inv}
                     onEdit={() => setEditTarget(inv)}
+                    onDelete={() => setDeleteTarget(inv)}
                   />
                 ))}
               </tbody>
@@ -726,6 +754,49 @@ export default function TransaksiPelangganPage() {
           onClose={() => setEditTarget(null)}
           onSaved={handleSaved}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Hapus Transaksi?</h3>
+                <p className="text-xs text-gray-500">{deleteTarget.invoiceNumber}</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-1">
+              Apakah Anda yakin ingin menghapus transaksi <span className="font-bold">{deleteTarget.patientName}</span> sebesar <span className="font-bold text-red-600">{fmtRp(deleteTarget.grandTotal)}</span>?
+            </p>
+            <p className="text-xs text-red-500 mb-5 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" /> Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                disabled={deleting}
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Menghapus...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Hapus</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

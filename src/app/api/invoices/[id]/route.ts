@@ -114,3 +114,35 @@ export async function PUT(
     return NextResponse.json({ error: "Gagal mengupdate struk" }, { status: 500 });
   }
 }
+
+// DELETE: Delete an existing invoice and its linked finance transaction (admin only)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Check if invoice exists
+    const existing = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+    if (existing.length === 0) {
+      return NextResponse.json({ error: "Struk tidak ditemukan" }, { status: 404 });
+    }
+
+    // Delete the linked finance transaction first (foreign key safety)
+    await db.delete(financeTransactions).where(eq(financeTransactions.referenceId, id));
+
+    // Delete the invoice
+    await db.delete(invoices).where(eq(invoices.id, id));
+
+    return NextResponse.json({ success: true, message: "Transaksi berhasil dihapus" });
+  } catch (error) {
+    console.error("DELETE /api/invoices/[id] error:", error);
+    return NextResponse.json({ error: "Gagal menghapus transaksi" }, { status: 500 });
+  }
+}
