@@ -1092,19 +1092,13 @@ export default function AdminVisitsPage() {
         {/* Desktop Header Section */}
         <div className="hidden md:block">
           <PageHeader 
-            title="Buku Pasien"
-            description="Catat dan pantau seluruh riwayat kunjungan pasien klinik."
+            title="Kunjungan"
+            description="Catat dan pantau seluruh riwayat kunjungan pasien."
             icon={CalendarCheck}
             rightContent={
-              (activeTab === "list" || activeTab === "recap") ? (
-                <button
-                  onClick={() => setIsFormOpen(true)}
-                  className="group bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 transition-all active:scale-95"
-                >
-                  <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> 
-                  Catat Kunjungan
-                </button>
-              ) : undefined
+              <button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                <Plus className="h-5 w-5" /> Catat Kunjungan
+              </button>
             }
           />
         </div>
@@ -1633,15 +1627,18 @@ export default function AdminVisitsPage() {
               </div>
 
               
-              {!loading && finalVisits.length > 0 && (
-                <Pagination 
-                  currentPage={currentPage} 
-                  totalPages={totalPages} 
-                  onPageChange={setCurrentPage} 
-                  totalItems={finalVisits.length} 
-                  itemsPerPage={itemsPerPage} 
-                />
-              )}
+              {/* Desktop Pagination */}
+              <div className="hidden md:block">
+                {!loading && finalVisits.length > 0 && (
+                  <Pagination 
+                    currentPage={currentPage} 
+                    totalPages={totalPages} 
+                    onPageChange={setCurrentPage} 
+                    totalItems={finalVisits.length} 
+                    itemsPerPage={itemsPerPage} 
+                  />
+                )}
+              </div>
             </div>
           </>
         )}
