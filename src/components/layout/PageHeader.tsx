@@ -14,7 +14,7 @@ export default function PageHeader({
   rightContent,
 }: PageHeaderProps) {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/60 backdrop-blur-2xl text-gray-900 p-6 sm:p-8 rounded-3xl sm:rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 relative">
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/60 backdrop-blur-2xl text-gray-900 p-6 sm:p-8 rounded-3xl sm:rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 relative z-40">
       <div className="absolute inset-0 overflow-hidden rounded-3xl sm:rounded-[32px] pointer-events-none">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/40 rounded-full blur-[80px]"></div>
       </div>
