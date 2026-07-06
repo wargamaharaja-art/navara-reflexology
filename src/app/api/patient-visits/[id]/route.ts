@@ -60,10 +60,20 @@ export async function DELETE(
       }
     }
 
-    // 4. Hapus data keuangan dan jurnal yang terkait
+    // 4. Dapatkan invoice terkait untuk menghapus transaksi keuangan dari POS
+    const relatedInvoices = await db.select({ id: invoices.id })
+      .from(invoices)
+      .where(eq(invoices.visitId, id));
+    
+    const invoiceIds = relatedInvoices.map(inv => inv.id);
+
+    // 5. Hapus data keuangan dan jurnal yang terkait
+    // Transaksi keuangan bisa mereferensikan visitId (dari /pay) atau invoiceId (dari POS)
+    const referenceIdsToSearch = [id, ...invoiceIds];
+
     const relatedFinanceTxs = await db.select({ id: financeTransactions.id })
       .from(financeTransactions)
-      .where(eq(financeTransactions.referenceId, id));
+      .where(inArray(financeTransactions.referenceId, referenceIdsToSearch));
 
     const financeTxIds = relatedFinanceTxs.map(tx => tx.id);
 
@@ -82,14 +92,16 @@ export async function DELETE(
       await db.delete(financeTransactions).where(inArray(financeTransactions.id, financeTxIds));
     }
 
-    // 5. Optional: Delete related therapist commissions first to avoid foreign key constraints errors
+    // 6. Optional: Delete related therapist commissions first to avoid foreign key constraints errors
     // Since we don't have ON DELETE CASCADE set up in schema.ts
     await db.delete(therapistCommissions).where(eq(therapistCommissions.visitId, id));
     
-    // 6. Also delete related invoices to avoid foreign key constraint errors
-    await db.delete(invoices).where(eq(invoices.visitId, id));
+    // 7. Also delete related invoices to avoid foreign key constraint errors
+    if (invoiceIds.length > 0) {
+      await db.delete(invoices).where(inArray(invoices.id, invoiceIds));
+    }
 
-    // 7. Then delete the visit
+    // 8. Then delete the visit
     await db.delete(patientVisits).where(eq(patientVisits.id, id));
 
     return Response.json({ success: true, message: "Data kunjungan dan transaksi terkait berhasil dihapus" });

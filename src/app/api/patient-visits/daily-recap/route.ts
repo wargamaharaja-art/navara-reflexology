@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { patientVisits, patients, services, branches, therapists } from "@/lib/db/schema";
+import { patientVisits, patients, services, branches, therapists, invoices } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { type NextRequest, NextResponse } from "next/server";
@@ -61,12 +61,14 @@ export async function GET(request: NextRequest) {
         notes: patientVisits.notes,
         status: patientVisits.status,
         paymentStatus: patientVisits.paymentStatus,
+        invoiceGrandTotal: invoices.grandTotal,
       })
       .from(patientVisits)
       .innerJoin(patients, eq(patientVisits.patientId, patients.id))
       .innerJoin(services, eq(patientVisits.serviceId, services.id))
       .innerJoin(branches, eq(patientVisits.branchId, branches.id))
       .leftJoin(therapists, eq(patientVisits.therapistId, therapists.id))
+      .leftJoin(invoices, eq(patientVisits.id, invoices.visitId))
       .where(and(...visitConditions))
       .orderBy(desc(patientVisits.visitTime));
 
@@ -92,7 +94,8 @@ export async function GET(request: NextRequest) {
       if (v.paymentStatus === "PAID") {
         totalPaid++;
         if (v.status === "completed") {
-          totalRevenue += v.servicePrice;
+          // Use actual invoice grand total if available, fallback to service price
+          totalRevenue += (v.invoiceGrandTotal ?? v.servicePrice);
         }
       } else {
         totalUnpaid++;
@@ -119,7 +122,7 @@ export async function GET(request: NextRequest) {
           b.totalCompleted++;
         }
         if (v.paymentStatus === "PAID" && v.status === "completed") {
-          b.totalRevenue += v.servicePrice;
+          b.totalRevenue += (v.invoiceGrandTotal ?? v.servicePrice);
         }
         if (v.paymentStatus === "PAID") {
           b.totalPaid++;
