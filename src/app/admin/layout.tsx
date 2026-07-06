@@ -155,7 +155,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-60 bg-emerald-950 text-white transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-emerald-950 to-emerald-900 text-white transform transition-transform duration-300 ease-in-out flex flex-col border-r border-emerald-800/50 shadow-2xl
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         md:sticky md:top-0 md:h-screen md:translate-x-0
       `}>
@@ -174,15 +174,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Profile Card & Branch Selector */}
         {session && (
-          <div className="px-6 py-4 border-b border-background/10 bg-background/5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold shrink-0">
+          <div className="px-5 py-5 border-b border-white/5">
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-inner">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 border border-emerald-300/30 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
                 {session.name.charAt(0).toUpperCase()}
               </div>
-              <div className="overflow-hidden">
-                <p className="font-bold text-sm text-background truncate">{session.name}</p>
-                <div className="flex items-center gap-1 mt-0.5 text-xs text-background/60">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="overflow-hidden flex-1">
+                <p className="font-bold text-sm text-white truncate drop-shadow-sm">{session.name}</p>
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-200/80 font-medium tracking-wide uppercase">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400 shrink-0" />
                   <span className="truncate">
                     {session.role === "SUPER_ADMIN" ? "Super Admin" :
                       session.role === "INVESTOR" ? "Investor" :
@@ -337,13 +337,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         setIsMobileMenuOpen(false);
                       }
                     }}
-                    className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${isExactActive
-                        ? "bg-emerald-600 text-white font-semibold shadow-md"
+                    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 relative group ${isExactActive
+                        ? "bg-gradient-to-r from-emerald-500/20 to-transparent text-emerald-300 font-bold border border-emerald-400/20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] backdrop-blur-md"
                         : isParentActive
-                          ? "bg-white/10 text-white font-medium"
-                          : "text-white/70 hover:bg-white/10 hover:text-white"
+                          ? "bg-white/5 text-emerald-100 font-medium border border-transparent"
+                          : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"
                       }`}
                   >
+                    {isExactActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-emerald-400 rounded-r-full" />}
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <Icon className="h-5 w-5" />

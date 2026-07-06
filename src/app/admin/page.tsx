@@ -176,8 +176,14 @@ export default function AdminDashboard() {
         <div className="hidden md:block">
           <PageHeader
             title="Dashboard Admin"
-            description={`Selamat datang kembali, Developer Admin 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
+            description={`Selamat datang kembali 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
             icon={LayoutDashboard}
+            rightContent={
+              <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-600" />
+                <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
+              </div>
+            }
           />
         </div>
         <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
@@ -209,55 +215,42 @@ export default function AdminDashboard() {
               <div className="relative z-10 w-[45%] bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-inner flex flex-col gap-4">
                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
-                    <span className="text-white font-bold text-lg"><AnimatedNumber value={summaryData.pendapatan} /></span>
+                    <div className="text-right">
+                      <span className="text-white font-bold text-lg"><AnimatedNumber value={summaryData.pendapatan} /></span>
+                      <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↑ 12% <span className="text-white/60 font-medium">vs bulan lalu</span></div>
+                    </div>
                  </div>
                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
-                    <span className="text-rose-200 font-bold text-lg"><AnimatedNumber value={summaryData.pengeluaran} /></span>
+                    <div className="text-right">
+                      <span className="text-rose-200 font-bold text-lg"><AnimatedNumber value={summaryData.pengeluaran} /></span>
+                      <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↓ 5% <span className="text-white/60 font-medium">vs bulan lalu</span></div>
+                    </div>
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
-                    <span className="text-emerald-300 font-black text-xl">{incomePercent}%</span>
+                    <span className="text-emerald-300 font-black text-lg">{incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`}</span>
                  </div>
               </div>
             </div>
 
             {/* Quick Actions */}
             <div className="flex items-center gap-4 mb-8">
-               <Link href="/admin/reservations" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-purple-400 hover:text-purple-600 hover:-translate-y-0.5">
-                  <Inbox className="w-4 h-4" /> + Reservasi Baru
+               <Link href="/admin/reservations" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-purple-400 hover:text-purple-600 hover:-translate-y-1 hover:shadow-md">
+                  <Inbox className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:scale-110 transition-transform" /> + Reservasi Baru
                </Link>
-               <Link href="/admin/visits" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-sky-400 hover:text-sky-600 hover:-translate-y-0.5">
-                  <Users className="w-4 h-4" /> + Tambah Pasien
+               <Link href="/admin/visits" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-sky-400 hover:text-sky-600 hover:-translate-y-1 hover:shadow-md">
+                  <Users className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:scale-110 transition-transform" /> + Tambah Pasien
                </Link>
-               <Link href="/admin/finance" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-teal-400 hover:text-teal-600 hover:-translate-y-0.5">
-                  <Wallet className="w-4 h-4" /> + Input Transaksi
+               <Link href="/admin/finance" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-teal-400 hover:text-teal-600 hover:-translate-y-1 hover:shadow-md">
+                  <Wallet className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:scale-110 transition-transform" /> + Input Transaksi
                </Link>
                <Link href="/admin/finance" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-blue-400 hover:text-blue-600 hover:-translate-y-0.5">
                   <Receipt className="w-4 h-4" /> Cetak Laporan
                </Link>
             </div>
 
-            {/* Business Insights */}
-            <div className="bg-blue-50/50 border border-blue-100 rounded-[24px] p-5 mb-8 flex gap-4 items-start shadow-sm">
-               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                 <Sparkles className="w-5 h-5 text-blue-600" />
-               </div>
-               <div className="flex-1 grid grid-cols-3 gap-6">
-                  <div>
-                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">📈 Tren Pemasukan</h5>
-                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Pendapatan konsisten bulan ini. Perhatikan pencapaian target menuju akhir bulan.</p>
-                  </div>
-                  <div>
-                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">💰 Efisiensi Biaya</h5>
-                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Pengeluaran operasional terkendali. Laba bersih berpotensi lebih tinggi.</p>
-                  </div>
-                  <div>
-                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">👥 Retensi Pasien</h5>
-                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Hari ini ada tambahan {summaryData.pasienHarian} kunjungan pasien baru dan lama.</p>
-                  </div>
-               </div>
-            </div>
+
 
             {/* Refactored Inner Cards Hierarchy */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8">
@@ -316,6 +309,52 @@ export default function AdminDashboard() {
                           🟢 ↑ +2
                         </span>
                         <span className="text-[9px] text-indigo-600/70 font-medium">vs kemarin</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reservasi Hari Ini */}
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-[12px] bg-purple-50 border border-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <CalendarCheck className="w-5 h-5 text-purple-700" />
+                      </div>
+                      <span className="text-[11px] font-black text-purple-800 uppercase tracking-wider leading-tight">Reservasi<br/>Baru</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Booking Masuk</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <p className="text-3xl xl:text-4xl font-black text-purple-600 tracking-tighter leading-none"><AnimatedNumber value={8} isCurrency={false}/></p>
+                        <span className="text-[11px] font-bold text-purple-500 uppercase tracking-widest">Sesi</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className="flex items-center text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
+                          🟡 = 0
+                        </span>
+                        <span className="text-[9px] text-purple-600/70 font-medium">vs kemarin</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rating Kepuasan */}
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-[12px] bg-amber-50 border border-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Star className="w-5 h-5 text-amber-700" />
+                      </div>
+                      <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider leading-tight">Rating<br/>Kepuasan</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Rata-rata Penilaian</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <p className="text-3xl xl:text-4xl font-black text-amber-600 tracking-tighter leading-none">4.9</p>
+                        <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">/ 5.0</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className="flex items-center text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                          🟢 ↑ 0.1
+                        </span>
+                        <span className="text-[9px] text-amber-600/70 font-medium">vs minggu lalu</span>
                       </div>
                     </div>
                   </div>
