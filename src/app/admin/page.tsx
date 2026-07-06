@@ -313,48 +313,48 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Reservasi Hari Ini */}
+                  {/* Terapis Bertugas */}
                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-[12px] bg-purple-50 border border-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <CalendarCheck className="w-5 h-5 text-purple-700" />
+                        <Users className="w-5 h-5 text-purple-700" />
                       </div>
-                      <span className="text-[11px] font-black text-purple-800 uppercase tracking-wider leading-tight">Reservasi<br/>Baru</span>
+                      <span className="text-[11px] font-black text-purple-800 uppercase tracking-wider leading-tight">Terapis<br/>Bertugas</span>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-medium mb-1">Booking Masuk</p>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Total Tenaga Kerja</p>
                       <div className="flex items-baseline gap-1.5">
-                        <p className="text-3xl xl:text-4xl font-black text-purple-600 tracking-tighter leading-none"><AnimatedNumber value={8} isCurrency={false}/></p>
-                        <span className="text-[11px] font-bold text-purple-500 uppercase tracking-widest">Sesi</span>
+                        <p className="text-3xl xl:text-4xl font-black text-purple-600 tracking-tighter leading-none"><AnimatedNumber value={summaryData.terapisHarian || 0} isCurrency={false}/></p>
+                        <span className="text-[11px] font-bold text-purple-500 uppercase tracking-widest">Orang</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
                         <span className="flex items-center text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
-                          🟡 = 0
+                          🟢 Hadir
                         </span>
-                        <span className="text-[9px] text-purple-600/70 font-medium">vs kemarin</span>
+                        <span className="text-[9px] text-purple-600/70 font-medium">melayani hari ini</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Rating Kepuasan */}
+                  {/* Total Persediaan */}
                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-[12px] bg-amber-50 border border-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Star className="w-5 h-5 text-amber-700" />
+                        <Package className="w-5 h-5 text-amber-700" />
                       </div>
-                      <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider leading-tight">Rating<br/>Kepuasan</span>
+                      <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider leading-tight">Total<br/>Persediaan</span>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-medium mb-1">Rata-rata Penilaian</p>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Stok Barang Klinik</p>
                       <div className="flex items-baseline gap-1.5">
-                        <p className="text-3xl xl:text-4xl font-black text-amber-600 tracking-tighter leading-none">4.9</p>
-                        <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">/ 5.0</span>
+                        <p className="text-3xl xl:text-4xl font-black text-amber-600 tracking-tighter leading-none"><AnimatedNumber value={summaryData.persediaan || 0} isCurrency={false}/></p>
+                        <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">Item</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
                         <span className="flex items-center text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
-                          🟢 ↑ 0.1
+                          📦 Tersedia
                         </span>
-                        <span className="text-[9px] text-amber-600/70 font-medium">vs minggu lalu</span>
+                        <span className="text-[9px] text-amber-600/70 font-medium">dalam sistem</span>
                       </div>
                     </div>
                   </div>

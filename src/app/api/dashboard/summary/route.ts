@@ -118,6 +118,29 @@ export async function GET(request: Request) {
     const dailyIncomeResult = await dailyIncomeQuery;
     const pendapatanHarian = dailyIncomeResult[0]?.totalAmount || 0;
 
+    // 5.5 Terapis Bertugas Hari Ini
+    let dailyTherapistsQuery = db
+      .select({ count: sql<number>`count(distinct ${patientVisits.therapistId})` })
+      .from(patientVisits)
+      .where(and(
+        sql`date(${patientVisits.visitDate}) = ${todayStr}`,
+        sql`${patientVisits.therapistId} IS NOT NULL`
+      ));
+
+    if (branchFilter) {
+      dailyTherapistsQuery = db
+        .select({ count: sql<number>`count(distinct ${patientVisits.therapistId})` })
+        .from(patientVisits)
+        .where(and(
+          sql`date(${patientVisits.visitDate}) = ${todayStr}`,
+          sql`${patientVisits.therapistId} IS NOT NULL`,
+          eq(patientVisits.branchId, branchFilter)
+        ));
+    }
+
+    const dailyTherapistsResult = await dailyTherapistsQuery;
+    const terapisHarian = dailyTherapistsResult[0]?.count || 0;
+
     // 6. Top Layanan Hari Ini
     let topServicesQuery = db
       .select({
@@ -207,6 +230,7 @@ export async function GET(request: Request) {
         persediaan: totalPersediaan,
         pasienHarian: dailyVisits,
         pendapatanHarian: pendapatanHarian,
+        terapisHarian: terapisHarian,
         topServicesToday: topServicesToday,
       }
     });
