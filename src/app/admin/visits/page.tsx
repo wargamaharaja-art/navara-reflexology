@@ -604,7 +604,7 @@ export default function AdminVisitsPage() {
                           <input
                             type="text"
                             required
-                            disabled
+                            disabled={!!posVisitId}
                             value={posPhone}
                             onChange={e => handlePOSPhoneChange(e.target.value)}
                             placeholder="08123..."
@@ -620,7 +620,7 @@ export default function AdminVisitsPage() {
                         <input
                           type="text"
                           required
-                          disabled
+                          disabled={!!posVisitId}
                           value={posPatientName}
                           onChange={e => setPosPatientName(e.target.value)}
                           placeholder="Nama lengkap"
@@ -635,7 +635,7 @@ export default function AdminVisitsPage() {
                           <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <select
                             required
-                            disabled
+                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN"}
                             value={posBranchId}
                             onChange={e => setPosBranchId(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
@@ -648,7 +648,6 @@ export default function AdminVisitsPage() {
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700">Terapis</label>
                         <select
-                          disabled
                           value={posTherapistId}
                           onChange={e => setPosTherapistId(e.target.value)}
                           className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
@@ -677,10 +676,9 @@ export default function AdminVisitsPage() {
                   <div className="p-6">
                     <div className="relative mb-4">
                       <select
-                        disabled
                         onChange={e => { addPOSItem(e.target.value); e.target.value = ""; }}
                         value=""
-                        className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none cursor-pointer hover:bg-emerald-100"
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
                         {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"].map(cat => {
@@ -717,19 +715,19 @@ export default function AdminVisitsPage() {
                               <p className="text-xs text-gray-500">{formatRupiah(item.price)} / item</p>
                             </div>
                             <div className="flex items-center gap-1">
-                              <button type="button" disabled onClick={() => updatePOSItemQty(item.serviceId, item.qty - 1)}
-                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center opacity-50 cursor-not-allowed">
+                              <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty - 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="w-8 text-center font-bold text-sm">{item.qty}</span>
-                              <button type="button" disabled onClick={() => updatePOSItemQty(item.serviceId, item.qty + 1)}
-                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center opacity-50 cursor-not-allowed">
+                              <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty + 1)}
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
                             <p className="font-bold text-gray-900 text-sm w-24 text-right">{formatRupiah(item.subtotal)}</p>
-                            <button type="button" disabled onClick={() => removePOSItem(item.serviceId)}
-                              className="p-1.5 text-gray-300 opacity-50 cursor-not-allowed rounded-lg">
+                            <button type="button" onClick={() => removePOSItem(item.serviceId)}
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
