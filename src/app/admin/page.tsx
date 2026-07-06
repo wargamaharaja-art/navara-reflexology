@@ -199,9 +199,12 @@ export default function AdminDashboard() {
                 <p className="text-emerald-100 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-300" />
                   Laba Bersih <span className="bg-white/20 text-white px-2 py-0.5 rounded-md text-[9px] ml-1">Bulan Ini</span>
+                  <button onClick={() => setShowBalance(!showBalance)} className="ml-2 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10" title={showBalance ? 'Sembunyikan nominal' : 'Tampilkan nominal'}>
+                    {showBalance ? <Eye className="w-4 h-4 text-white/80" /> : <EyeOff className="w-4 h-4 text-white/80" />}
+                  </button>
                 </p>
                 <h2 className="text-5xl xl:text-6xl font-black text-white tracking-tighter drop-shadow-md pb-1">
-                  <AnimatedNumber value={summaryData.labaBersih} />
+                  {showBalance ? <AnimatedNumber value={summaryData.labaBersih} /> : <span className="tracking-wider">Rp ••••••••</span>}
                 </h2>
                 <div className="flex items-center gap-2 mt-2 text-emerald-50 text-sm font-medium">
                   <span className="bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1">
@@ -216,20 +219,20 @@ export default function AdminDashboard() {
                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
                     <div className="text-right">
-                      <span className="text-white font-bold text-lg"><AnimatedNumber value={summaryData.pendapatan} /></span>
-                      <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↑ 12% <span className="text-white/60 font-medium">vs bulan lalu</span></div>
+                      <span className="text-white font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pendapatan} /> : <span>Rp ••••••</span>}</span>
+                      {showBalance && <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↑ 12% <span className="text-white/60 font-medium">vs bulan lalu</span></div>}
                     </div>
                  </div>
                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
                     <div className="text-right">
-                      <span className="text-rose-200 font-bold text-lg"><AnimatedNumber value={summaryData.pengeluaran} /></span>
-                      <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↓ 5% <span className="text-white/60 font-medium">vs bulan lalu</span></div>
+                      <span className="text-rose-200 font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pengeluaran} /> : <span>Rp ••••••</span>}</span>
+                      {showBalance && <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↓ 5% <span className="text-white/60 font-medium">vs bulan lalu</span></div>}
                     </div>
                  </div>
                  <div className="flex justify-between items-center">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
-                    <span className="text-emerald-300 font-black text-lg">{incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`}</span>
+                    <span className="text-emerald-300 font-black text-lg">{showBalance ? (incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`) : "••%"}</span>
                  </div>
               </div>
             </div>
@@ -280,7 +283,7 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-500 font-medium mb-1">Pemasukan Hari Ini</p>
-                      <p className="text-xl xl:text-2xl font-black text-teal-700 tracking-tighter"><AnimatedNumber value={summaryData.pendapatanHarian} /></p>
+                      <p className="text-xl xl:text-2xl font-black text-teal-700 tracking-tighter">{showBalance ? <AnimatedNumber value={summaryData.pendapatanHarian} /> : <span className="tracking-wider">Rp ••••••</span>}</p>
                       <div className="flex items-center gap-1 mt-1.5">
                         <span className="flex items-center text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">
                           🟢 ↑ +8%
