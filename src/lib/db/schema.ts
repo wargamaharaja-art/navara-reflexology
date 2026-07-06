@@ -43,6 +43,8 @@ export const therapists = pgTable("therapists", {
   photoUrl: text("photo_url"), // URL or base64 data for ID card photo
   birthDate: text("birth_date"),
   pinCode: text("pin_code"),
+  contractStartDate: text("contract_start_date"),
+  contractEndDate: text("contract_end_date"),
   isActive: boolean("is_active").notNull().default(true),
   joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

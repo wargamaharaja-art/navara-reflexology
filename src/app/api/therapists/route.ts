@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode } = body;
+    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode, contractStartDate, contractEndDate } = body;
 
     if (!name || !specialization || !phone || !gender) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -98,6 +98,8 @@ export async function POST(request: Request) {
       photoUrl: photoUrl || null,
       birthDate: birthDate || null,
       pinCode: pinCode || null,
+      contractStartDate: contractStartDate || null,
+      contractEndDate: contractEndDate || null,
       isActive: isActive !== undefined ? isActive : true,
       joinedAt: new Date().toISOString(),
     };

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Users, UploadCloud, X, Search, User, Phone, Briefcase, Percent, MapPin, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit, Trash2, Users, UploadCloud, X, Search, User, Phone, Briefcase, Percent, MapPin, Image as ImageIcon, AlertTriangle, Calendar } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 
@@ -23,6 +23,8 @@ type Therapist = {
   photoUrl?: string | null;
   birthDate?: string | null;
   pinCode?: string | null;
+  contractStartDate?: string | null;
+  contractEndDate?: string | null;
 };
 
 type Branch = {
@@ -60,6 +62,8 @@ export default function AdminTherapistsPage() {
     photoUrl: "",
     birthDate: "",
     pinCode: "",
+    contractStartDate: "",
+    contractEndDate: "",
   });
 
   const fetchTherapists = async () => {
@@ -126,6 +130,8 @@ export default function AdminTherapistsPage() {
       photoUrl: therapist.photoUrl || "",
       birthDate: therapist.birthDate || "",
       pinCode: therapist.pinCode || "",
+      contractStartDate: therapist.contractStartDate || "",
+      contractEndDate: therapist.contractEndDate || "",
     });
     setIsFormOpen(true);
   };
@@ -189,7 +195,7 @@ export default function AdminTherapistsPage() {
         });
       }
       setIsFormOpen(false);
-      setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "" });
+      setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
       fetchTherapists();
     } catch (err) {
       console.error(err);
@@ -204,6 +210,24 @@ export default function AdminTherapistsPage() {
                           t.specialization.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesBranch && matchesSearch;
   }).sort((a, b) => a.name.localeCompare(b.name));
+
+  const getContractStatus = (endDate?: string | null) => {
+    if (!endDate) return null;
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to midnight for accurate day calculation
+    const diffTime = end.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { status: 'expired', label: 'Expired', days: diffDays, color: 'bg-red-100 text-red-700' };
+    if (diffDays <= 30) return { status: 'warning', label: `Sisa ${diffDays} Hari`, days: diffDays, color: 'bg-orange-100 text-orange-700 border border-orange-200' };
+    return { status: 'safe', label: 'Aman', days: diffDays, color: 'bg-green-100 text-green-700' };
+  };
+
+  const expiringContracts = therapists.filter(t => {
+    const status = getContractStatus(t.contractEndDate);
+    return status?.status === 'warning' || status?.status === 'expired';
+  });
 
   useEffect(() => {
     setCurrentPage(1);
@@ -242,7 +266,7 @@ export default function AdminTherapistsPage() {
               )}
               <button 
                 onClick={() => {
-                  setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "" });
+                  setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
                   setIsFormOpen(true);
                 }}
                 className="w-full sm:w-auto bg-white text-indigo-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10 active:scale-95"
@@ -398,6 +422,24 @@ export default function AdminTherapistsPage() {
                         </select>
                       </div>
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" /> Tanggal Mulai Kontrak</label>
+                      <input 
+                        type="date" 
+                        value={formData.contractStartDate} 
+                        onChange={e => setFormData({...formData, contractStartDate: e.target.value})} 
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-gray-700 flex items-center gap-2"><Calendar className="w-4 h-4 text-gray-400" /> Tanggal Akhir Kontrak</label>
+                      <input 
+                        type="date" 
+                        value={formData.contractEndDate} 
+                        onChange={e => setFormData({...formData, contractEndDate: e.target.value})} 
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium" 
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -471,6 +513,25 @@ export default function AdminTherapistsPage() {
         </div>
         )}
 
+        {expiringContracts.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <AlertTriangle className="w-24 h-24 text-orange-600" />
+            </div>
+            <div className="flex items-start sm:items-center gap-4 relative z-10">
+              <div className="p-3 bg-white/60 border border-orange-100 rounded-xl shrink-0 shadow-sm">
+                <AlertTriangle className="h-6 w-6 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-orange-900">Peringatan Masa Kontrak</h4>
+                <p className="text-sm text-orange-800 mt-1 font-medium">
+                  Terdapat <span className="font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">{expiringContracts.length} terapis</span> yang masa kontraknya akan segera habis (&le; 30 hari) atau sudah berakhir.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           {loading ? (
             <div className="text-center py-12 text-gray-500">Memuat data terapis...</div>
@@ -523,6 +584,18 @@ export default function AdminTherapistsPage() {
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">Spesialisasi</span>
                         <span className="font-medium bg-gray-100 px-2 py-0.5 rounded text-xs">{therapist.specialization}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-gray-500">Masa Kontrak</span>
+                        <span className="font-medium text-xs flex items-center">
+                          {therapist.contractEndDate ? (
+                            <span className={`px-2 py-0.5 rounded font-bold ${getContractStatus(therapist.contractEndDate)?.color}`}>
+                              {getContractStatus(therapist.contractEndDate)?.label}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 italic">Tidak ada</span>
+                          )}
+                        </span>
                       </div>
                       <div className="flex justify-between border-b pb-2">
                         <span className="text-gray-500">No. HP</span>
@@ -621,6 +694,22 @@ export default function AdminTherapistsPage() {
                   <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2">
                     <p className="text-xs text-gray-500 mb-1 font-medium">Penempatan Cabang</p>
                     <p className="font-semibold text-gray-900">{getBranchName(selectedTherapist.branchId)}</p>
+                  </div>
+                  <div className="bg-gray-50 p-3 rounded-xl border border-gray-100 col-span-2">
+                    <p className="text-xs text-gray-500 mb-1 font-medium">Masa Kontrak</p>
+                    <div className="flex items-center gap-3">
+                      <p className="font-semibold text-gray-900">
+                        {selectedTherapist.contractStartDate && selectedTherapist.contractEndDate ? 
+                          `${new Date(selectedTherapist.contractStartDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})} - ${new Date(selectedTherapist.contractEndDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'})}` 
+                          : "Tidak ditentukan"
+                        }
+                      </p>
+                      {selectedTherapist.contractEndDate && (
+                        <span className={`text-xs px-2.5 py-1 rounded font-bold shadow-sm ${getContractStatus(selectedTherapist.contractEndDate)?.color}`}>
+                          {getContractStatus(selectedTherapist.contractEndDate)?.label}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
                     <p className="text-xs text-gray-500 mb-1 font-medium">Pasien Bulan Ini</p>

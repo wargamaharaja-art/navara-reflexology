@@ -39,7 +39,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode } = body;
+    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode, contractStartDate, contractEndDate } = body;
 
     const existing = await db.select().from(therapists).where(eq(therapists.id, id)).limit(1);
     if (existing.length === 0) {
@@ -65,6 +65,8 @@ export async function PUT(
         photoUrl: photoUrl !== undefined ? photoUrl : undefined,
         birthDate: birthDate !== undefined ? birthDate : undefined,
         pinCode: pinCode !== undefined ? pinCode : undefined,
+        contractStartDate: contractStartDate !== undefined ? contractStartDate : undefined,
+        contractEndDate: contractEndDate !== undefined ? contractEndDate : undefined,
         baseSalary: baseSalary !== undefined ? parseInt(baseSalary) : undefined,
         commissionRate: commissionRate !== undefined ? parseInt(commissionRate) : undefined,
         isActive,

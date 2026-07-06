@@ -151,11 +151,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/60 md:via-emerald-50/30 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-emerald-950 text-white transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 left-0 z-50 w-60 bg-emerald-950 text-white transform transition-transform duration-300 ease-in-out flex flex-col
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         md:sticky md:top-0 md:h-screen md:translate-x-0
       `}>

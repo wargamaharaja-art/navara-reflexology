@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -13,6 +13,27 @@ const formatRupiah = (amount: number) => {
     currency: "IDR",
     minimumFractionDigits: 0,
   }).format(amount);
+};
+
+const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrency?: boolean }) => {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let startTime: number | null = null;
+    const duration = 700;
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(ease * value));
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setCount(value);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [value]);
+  return <>{isCurrency ? formatRupiah(count) : count}</>;
 };
 
 export default function AdminDashboard() {
@@ -26,13 +47,15 @@ export default function AdminDashboard() {
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [summaryData, setSummaryData] = useState({
+  const [summaryData, setSummaryData] = useState<any>({
     kasDanBank: 0,
     pendapatan: 0,
     labaBersih: 0,
+    pengeluaran: 0,
     persediaan: 0,
     pasienHarian: 0,
     pendapatanHarian: 0,
+    topServicesToday: [],
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -122,6 +145,12 @@ export default function AdminDashboard() {
     { name: "Layanan", icon: Activity, href: "/admin/services", color: "text-rose-400", bg: "bg-rose-400/10" }
   ];
 
+  const totalCumIncome = chartData.length > 0 ? chartData[chartData.length - 1].cumIncome : 0;
+  const incomePercent = targetIncome > 0 ? Math.min(100, Math.round((totalCumIncome / targetIncome) * 100)) : 0;
+  
+  const totalCumVisits = chartData.length > 0 ? chartData[chartData.length - 1].cumVisits : 0;
+  const visitsPercent = targetVisits > 0 ? Math.min(100, Math.round((totalCumVisits / targetVisits) * 100)) : 0;
+
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -147,187 +176,331 @@ export default function AdminDashboard() {
         <div className="hidden md:block">
           <PageHeader
             title="Dashboard Admin"
-            description="Selamat datang! Ini adalah ringkasan performa dan kondisi keuangan klinik Navara Reflexology."
+            description={`Selamat datang kembali, Developer Admin 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
             icon={LayoutDashboard}
           />
         </div>
-
         <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
 
           {/* Desktop KPI Cards (Mockup Style) */}
-          <div className="hidden md:flex flex-col gap-8 mb-8">
-            {/* Total Aset Tersedia Card */}
-            <div className="bg-white rounded-[32px] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 relative overflow-hidden">
-              {/* Decorative background glow */}
-              <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-100/40 rounded-full blur-3xl -ml-20 -mt-20 pointer-events-none"></div>
+          <div className="hidden md:flex flex-col mb-8">
+            {/* Laba Bersih Highlight Card */}
+            <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 rounded-[28px] p-8 shadow-sm border border-emerald-500/30 relative overflow-hidden mb-6 flex justify-between items-center group">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
               
-              <div className="flex justify-between items-start mb-8 relative z-10">
-                <div>
-                  <p className="text-gray-500 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <Wallet className="w-4 h-4 text-emerald-500" />
-                    Total Aset Tersedia (Kas)
-                  </p>
-                  <h2 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-transparent tracking-tighter drop-shadow-sm pb-2">
-                    {formatRupiah(summaryData.kasDanBank)}
-                  </h2>
+              <div className="relative z-10 w-1/2">
+                <p className="text-emerald-100 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-300" />
+                  Laba Bersih <span className="bg-white/20 text-white px-2 py-0.5 rounded-md text-[9px] ml-1">Bulan Ini</span>
+                </p>
+                <h2 className="text-5xl xl:text-6xl font-black text-white tracking-tighter drop-shadow-md pb-1">
+                  <AnimatedNumber value={summaryData.labaBersih} />
+                </h2>
+                <div className="flex items-center gap-2 mt-2 text-emerald-50 text-sm font-medium">
+                  <span className="bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1">
+                    ↑ 18%
+                  </span>
+                  vs bulan lalu
                 </div>
               </div>
 
-              {/* Refactored Inner Cards Hierarchy */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-10">
-                
-                {/* Kategori A: Kinerja Bisnis */}
-                <div className="bg-gray-50/50 rounded-[28px] p-5 md:p-6 border border-gray-100/50">
-                  <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-6 rounded-full bg-blue-500"></div>
-                      <h4 className="text-sm font-black text-gray-700 uppercase tracking-widest">Kinerja Bisnis</h4>
-                    </div>
-                    <div className="bg-white text-gray-600 px-3 py-1.5 rounded-full flex items-center gap-2 border border-gray-200 shadow-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                      <span className="text-[10px] md:text-xs font-bold tracking-wide">Bulan Ini</span>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 xl:gap-5">
-                    {/* Omzet */}
-                    <div className="bg-white border border-gray-100/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
-                          <Package className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Omzet</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 font-medium mb-1">Total Pendapatan Kotor</p>
-                        <p className="text-xl xl:text-2xl font-black text-gray-900 tracking-tight">{formatRupiah(summaryData.pendapatan)}</p>
-                      </div>
-                    </div>
+              {/* Right Side Summary */}
+              <div className="relative z-10 w-[45%] bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-inner flex flex-col gap-4">
+                 <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                    <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
+                    <span className="text-white font-bold text-lg"><AnimatedNumber value={summaryData.pendapatan} /></span>
+                 </div>
+                 <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                    <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
+                    <span className="text-rose-200 font-bold text-lg"><AnimatedNumber value={summaryData.pengeluaran} /></span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                    <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
+                    <span className="text-emerald-300 font-black text-xl">{incomePercent}%</span>
+                 </div>
+              </div>
+            </div>
 
-                    {/* Laba Bersih */}
-                    <div className="bg-white border border-gray-100/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
-                          <Activity className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Laba Bersih</span>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-gray-500 font-medium mb-1">Setelah Dipotong Biaya</p>
-                        <p className="text-xl xl:text-2xl font-black text-amber-600 tracking-tight">{formatRupiah(summaryData.labaBersih)}</p>
-                      </div>
+            {/* Quick Actions */}
+            <div className="flex items-center gap-4 mb-8">
+               <Link href="/admin/reservations" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-purple-400 hover:text-purple-600 hover:-translate-y-0.5">
+                  <Inbox className="w-4 h-4" /> + Reservasi Baru
+               </Link>
+               <Link href="/admin/visits" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-sky-400 hover:text-sky-600 hover:-translate-y-0.5">
+                  <Users className="w-4 h-4" /> + Tambah Pasien
+               </Link>
+               <Link href="/admin/finance" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-teal-400 hover:text-teal-600 hover:-translate-y-0.5">
+                  <Wallet className="w-4 h-4" /> + Input Transaksi
+               </Link>
+               <Link href="/admin/finance" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-blue-400 hover:text-blue-600 hover:-translate-y-0.5">
+                  <Receipt className="w-4 h-4" /> Cetak Laporan
+               </Link>
+            </div>
+
+            {/* Business Insights */}
+            <div className="bg-blue-50/50 border border-blue-100 rounded-[24px] p-5 mb-8 flex gap-4 items-start shadow-sm">
+               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                 <Sparkles className="w-5 h-5 text-blue-600" />
+               </div>
+               <div className="flex-1 grid grid-cols-3 gap-6">
+                  <div>
+                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">📈 Tren Pemasukan</h5>
+                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Pendapatan konsisten bulan ini. Perhatikan pencapaian target menuju akhir bulan.</p>
+                  </div>
+                  <div>
+                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">💰 Efisiensi Biaya</h5>
+                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Pengeluaran operasional terkendali. Laba bersih berpotensi lebih tinggi.</p>
+                  </div>
+                  <div>
+                    <h5 className="text-blue-900 font-bold text-sm mb-1 flex items-center gap-1.5">👥 Retensi Pasien</h5>
+                    <p className="text-blue-700 text-xs font-medium leading-relaxed">Hari ini ada tambahan {summaryData.pasienHarian} kunjungan pasien baru dan lama.</p>
+                  </div>
+               </div>
+            </div>
+
+            {/* Refactored Inner Cards Hierarchy */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8">
+              
+              {/* Kategori B: Operasional */}
+              <div className="bg-white rounded-[32px] p-6 md:p-8 shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-emerald-600 animate-pulse" />
                     </div>
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Operasional</h4>
+                  </div>
+                  <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full flex items-center gap-2 border border-emerald-100 shadow-sm">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[10px] md:text-xs font-bold tracking-wide">Hari Ini</span>
                   </div>
                 </div>
-
-                {/* Kategori B: Operasional */}
-                <div className="bg-emerald-50/30 rounded-[28px] p-5 md:p-6 border border-emerald-100/50">
-                  <div className="flex items-center gap-2 mb-5">
-                    <div className="w-1.5 h-6 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Operasional <span className="text-emerald-600/70 font-semibold text-xs ml-1">(Hari Ini)</span></h4>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 xl:gap-5">
-                    {/* Pendapatan Hari Ini */}
-                    <div className="bg-gradient-to-br from-white to-emerald-50/50 border border-emerald-100/80 shadow-[0_4px_20px_rgba(16,185,129,0.05)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                      <div className="flex items-center gap-3 mb-4 relative z-10">
-                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
-                          <TrendingUp className="w-5 h-5 text-emerald-700" />
-                        </div>
-                        <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider leading-tight">Pendapatan<br/>Harian</span>
+                <div className="grid grid-cols-2 gap-4 xl:gap-5">
+                  {/* Pendapatan Hari Ini */}
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-teal-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-[12px] bg-teal-50 border border-teal-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <TrendingUp className="w-5 h-5 text-teal-700" />
                       </div>
-                      <div className="relative z-10">
-                        <p className="text-2xl xl:text-3xl font-black text-emerald-600 tracking-tighter">{formatRupiah(summaryData.pendapatanHarian)}</p>
+                      <span className="text-[11px] font-black text-teal-800 uppercase tracking-wider leading-tight">Pendapatan<br/>Harian</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Pemasukan Hari Ini</p>
+                      <p className="text-xl xl:text-2xl font-black text-teal-700 tracking-tighter"><AnimatedNumber value={summaryData.pendapatanHarian} /></p>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className="flex items-center text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">
+                          🟢 ↑ +8%
+                        </span>
+                        <span className="text-[9px] text-teal-600/70 font-medium">vs kemarin</span>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Pasien Hari Ini */}
-                    <div className="bg-gradient-to-br from-white to-indigo-50/50 border border-indigo-100/80 shadow-[0_4px_20px_rgba(99,102,241,0.05)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-[0_8px_24px_rgba(99,102,241,0.1)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                      <div className="flex items-center gap-3 mb-4 relative z-10">
-                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
-                          <Users className="w-5 h-5 text-indigo-700" />
-                        </div>
-                        <span className="text-[11px] font-black text-indigo-800 uppercase tracking-wider leading-tight">Kunjungan<br/>Pasien</span>
+                  {/* Pasien Hari Ini */}
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-indigo-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 rounded-[12px] bg-indigo-50 border border-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <Users className="w-5 h-5 text-indigo-700" />
                       </div>
-                      <div className="relative z-10 flex items-baseline gap-1.5">
-                        <p className="text-3xl xl:text-4xl font-black text-indigo-600 tracking-tighter leading-none">{summaryData.pasienHarian}</p>
+                      <span className="text-[11px] font-black text-indigo-800 uppercase tracking-wider leading-tight">Kunjungan<br/>Pasien</span>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Total Tamu Masuk</p>
+                      <div className="flex items-baseline gap-1.5">
+                        <p className="text-3xl xl:text-4xl font-black text-indigo-600 tracking-tighter leading-none"><AnimatedNumber value={summaryData.pasienHarian} isCurrency={false}/></p>
                         <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">Orang</span>
                       </div>
+                      <div className="flex items-center gap-1 mt-1.5">
+                        <span className="flex items-center text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                          🟢 ↑ +2
+                        </span>
+                        <span className="text-[9px] text-indigo-600/70 font-medium">vs kemarin</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
+              {/* Kategori A: Top Layanan Hari Ini */}
+              <div className="bg-white rounded-[32px] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col min-h-[300px]">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                      <Star className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <h4 className="text-sm font-black text-gray-700 uppercase tracking-widest">Top Layanan Hari Ini</h4>
+                  </div>
+                  <div className="bg-gray-50 text-gray-600 px-3 py-1.5 rounded-full flex items-center gap-2 border border-gray-200 shadow-sm">
+                    <span className="text-[10px] md:text-xs font-bold tracking-wide">⭐ Layanan Terlaris</span>
+                  </div>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-center gap-5 xl:gap-6">
+                  {summaryData.topServicesToday?.map((service: any, index: number) => (
+                    <div key={index} className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-sm font-bold text-gray-700">
+                        <span className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white ${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-blue-500' : index === 2 ? 'bg-amber-500' : 'bg-purple-500'}`}>{index + 1}</span>
+                          {service.name} <span className="text-[11px] text-gray-400 font-medium">({service.count}x)</span>
+                        </span>
+                        <span className="font-black text-gray-900">{service.percentage}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+                        <div 
+                          className={`h-full rounded-full ${index === 0 ? 'bg-emerald-500' : index === 1 ? 'bg-blue-500' : index === 2 ? 'bg-amber-500' : 'bg-purple-500'} relative overflow-hidden`}
+                          style={{ width: `${service.percentage}%` }}
+                        >
+                          <div className="absolute inset-0 bg-white/20 w-full h-full" style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!summaryData.topServicesToday || summaryData.topServicesToday.length === 0) && (
+                    <div className="text-center text-gray-400 text-sm py-8 font-medium">Belum ada layanan hari ini</div>
+                  )}
+                </div>
+              </div>
+
             </div>
 
             {/* Menu Fitur Section */}
             <div className="mt-2 hidden md:block">
               <div className="flex justify-between items-center mb-6 px-2">
-                <h3 className="text-xl font-black text-gray-900 tracking-tight">Menu Fitur Utama</h3>
+                <div>
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-emerald-500" />
+                    Menu Fitur Utama
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 font-medium">Akses cepat ke seluruh modul sistem</p>
+                </div>
               </div>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                 {/* Reservasi Online */}
-                <Link href="/admin/reservations" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 group-hover:scale-110 transition-all">
-                    <Inbox className="w-6 h-6 xl:w-7 xl:h-7 text-purple-500" />
+                <Link href="/admin/reservations" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-purple-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-purple-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-purple-50 flex items-center justify-center group-hover:bg-purple-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-purple-100/50">
+                      <Inbox className="w-7 h-7 xl:w-8 xl:h-8 text-purple-500 group-hover:text-white transition-colors" />
+                    </div>
+                    {/* Badge Status */}
+                    <div className="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-rose-100 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
+                      <span className="text-[10px] font-bold tracking-wide">4 Baru</span>
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Reservasi Online</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">Reservasi Online</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Kelola jadwal & booking pasien</p>
+                  </div>
                 </Link>
 
                 {/* Buku Pasien */}
-                <Link href="/admin/visits" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 group-hover:scale-110 transition-all">
-                    <CalendarCheck className="w-6 h-6 xl:w-7 xl:h-7 text-sky-500" />
+                <Link href="/admin/visits" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-sky-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-sky-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-sky-50 flex items-center justify-center group-hover:bg-sky-500 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 shadow-inner border border-sky-100/50">
+                      <CalendarCheck className="w-7 h-7 xl:w-8 xl:h-8 text-sky-500 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Buku Pasien</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-sky-600 transition-colors">Buku Pasien</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Rekam medis & history</p>
+                  </div>
                 </Link>
 
                 {/* Transaksi Pelanggan */}
-                <Link href="/admin/transactions" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 group-hover:scale-110 transition-all">
-                    <BookOpen className="w-6 h-6 xl:w-7 xl:h-7 text-teal-500" />
+                <Link href="/admin/transactions" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-teal-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-teal-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-teal-50 flex items-center justify-center group-hover:bg-teal-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-teal-100/50">
+                      <BookOpen className="w-7 h-7 xl:w-8 xl:h-8 text-teal-500 group-hover:text-white transition-colors" />
+                    </div>
+                    {/* Badge Status */}
+                    <div className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-emerald-100 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      <span className="text-[10px] font-bold tracking-wide">Hari ini 25 trx</span>
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Transaksi Pelanggan</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">Transaksi Pelanggan</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Catat & validasi kas masuk</p>
+                  </div>
                 </Link>
 
                 {/* Layanan Terapi */}
-                <Link href="/admin/services" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 group-hover:scale-110 transition-all">
-                    <Activity className="w-6 h-6 xl:w-7 xl:h-7 text-rose-500" />
+                <Link href="/admin/services" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-rose-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-rose-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-rose-50 flex items-center justify-center group-hover:bg-rose-500 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 shadow-inner border border-rose-100/50">
+                      <Activity className="w-7 h-7 xl:w-8 xl:h-8 text-rose-500 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Layanan Terapi</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-rose-600 transition-colors">Layanan Terapi</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Katalog menu & harga layanan</p>
+                  </div>
                 </Link>
                 
                 {/* Pegawai */}
-                <Link href="/admin/therapists" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 group-hover:scale-110 transition-all">
-                    <Users className="w-6 h-6 xl:w-7 xl:h-7 text-indigo-500" />
+                <Link href="/admin/therapists" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-indigo-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-indigo-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-indigo-100/50">
+                      <Users className="w-7 h-7 xl:w-8 xl:h-8 text-indigo-500 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Data Pegawai</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-indigo-600 transition-colors">Data Pegawai</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Kelola data terapis & admin</p>
+                  </div>
                 </Link>
 
                 {/* Inventaris */}
-                <Link href="/admin/inventory" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 group-hover:scale-110 transition-all">
-                    <Package className="w-6 h-6 xl:w-7 xl:h-7 text-emerald-500" />
+                <Link href="/admin/inventory" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-emerald-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 shadow-inner border border-emerald-100/50">
+                      <Package className="w-7 h-7 xl:w-8 xl:h-8 text-emerald-500 group-hover:text-white transition-colors" />
+                    </div>
+                    {/* Badge Status */}
+                    <div className="bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-amber-100 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                      <span className="text-[10px] font-bold tracking-wide">3 Menipis</span>
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Inventaris Klinik</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">Inventaris Klinik</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Stok obat & perlengkapan</p>
+                  </div>
                 </Link>
 
                 {/* Keuangan */}
-                <Link href="/admin/finance" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all">
-                    <Wallet className="w-6 h-6 xl:w-7 xl:h-7 text-blue-500" />
+                <Link href="/admin/finance" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-blue-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-blue-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-blue-50 flex items-center justify-center group-hover:bg-blue-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-blue-100/50">
+                      <Wallet className="w-7 h-7 xl:w-8 xl:h-8 text-blue-500 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Buku Keuangan</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">Buku Keuangan</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Laba rugi & mutasi kas</p>
+                  </div>
                 </Link>
 
                 {/* Pengaturan */}
-                <Link href="/admin/settings" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
-                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-100 group-hover:scale-110 transition-all">
-                    <Settings className="w-6 h-6 xl:w-7 xl:h-7 text-slate-500" />
+                <Link href="/admin/settings" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-slate-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-slate-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-slate-50 flex items-center justify-center group-hover:bg-slate-500 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-300 shadow-inner border border-slate-100/50">
+                      <Settings className="w-7 h-7 xl:w-8 xl:h-8 text-slate-500 group-hover:text-white transition-colors" />
+                    </div>
                   </div>
-                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Pengaturan</span>
+                  <div className="relative z-10 mt-auto">
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-slate-600 transition-colors">Pengaturan</h4>
+                    <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Konfigurasi & izin cabang</p>
+                  </div>
                 </Link>
               </div>
             </div>
@@ -343,13 +516,13 @@ export default function AdminDashboard() {
             <div className="relative z-10 flex justify-between items-start mb-4">
                <div>
                   <div className="flex items-center gap-2 mb-1.5">
-                     <span className="text-xs font-semibold text-emerald-50 tracking-wide">Total Kas & Bank</span>
+                     <span className="text-xs font-semibold text-emerald-50 tracking-wide">Laba Bersih</span>
                      <button onClick={() => setShowBalance(!showBalance)} className="hover:bg-emerald-400/30 p-1 rounded-full transition-colors">
                         {showBalance ? <Eye className="w-4 h-4 text-emerald-50" /> : <EyeOff className="w-4 h-4 text-emerald-50" />}
                      </button>
                   </div>
                   <h2 className="text-3xl md:text-5xl font-black tracking-tight">
-                     {showBalance ? formatRupiah(summaryData.kasDanBank) : "Rp ••••••••"}
+                     {showBalance ? formatRupiah(summaryData.labaBersih) : "Rp ••••••••"}
                   </h2>
                </div>
                <Link href="/admin/finance" className="bg-emerald-700/60 hover:bg-emerald-700 backdrop-blur-sm px-3 py-1.5 rounded-full text-[10px] md:text-xs font-bold flex items-center gap-1 transition-colors border border-emerald-500/50 shadow-inner">
@@ -369,10 +542,10 @@ export default function AdminDashboard() {
                </div>
                <div>
                  <Link href="/admin/finance" className="flex items-center gap-1 text-[10px] md:text-xs font-semibold text-emerald-100 hover:text-white mb-1 w-max">
-                    Laba Bersih <ChevronRight className="w-3 h-3" />
+                    Pengeluaran <ChevronRight className="w-3 h-3" />
                  </Link>
                  <p className="text-[15px] md:text-xl font-bold mt-0.5">
-                    {showBalance ? formatRupiah(summaryData.labaBersih) : "Rp ••••••••"}
+                    {showBalance ? formatRupiah(summaryData.pengeluaran) : "Rp ••••••••"}
                  </p>
                  <p className="text-[9px] text-emerald-200 mt-1 bg-emerald-700/40 px-1.5 py-0.5 rounded-sm inline-block border border-emerald-600/50">Hingga hari ini</p>
                </div>
@@ -424,11 +597,48 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 gap-8">
 
               {/* Income Chart */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-500" /> Progres Capaian Pemasukan
-                </h3>
-                <div className="h-[400px] sm:h-80 w-full">
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6 md:p-8 relative overflow-hidden group hover:border-emerald-200 transition-colors duration-300">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-500" /> Progres Capaian Pemasukan
+                    </h3>
+                    <p className="text-sm text-gray-500 font-medium mt-1">Total Pemasukan: {formatRupiah(summaryData.pendapatan)}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full border border-emerald-100 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      <span className="text-xs font-bold tracking-wide">Target {incomePercent}% Tercapai</span>
+                    </div>
+                    {isEditing ? (
+                      <form onSubmit={handleSaveTarget} className="mt-2 flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-500 font-bold">Target: Rp</span>
+                          <input 
+                            type="number" 
+                            value={editIncome}
+                            onChange={(e) => setEditIncome(e.target.value)}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-xs w-28 focus:outline-none focus:border-emerald-500"
+                            placeholder="Misal 15000000"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setIsEditing(false)} className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded transition-colors">Batal</button>
+                          <button type="submit" className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded transition-colors">Simpan</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex flex-col items-end gap-1 mt-1.5">
+                        <p className="text-[10px] text-gray-400 font-medium">Target bulan ini: {formatRupiah(targetIncome)}</p>
+                        <button onClick={() => setIsEditing(true)} className="text-[9px] font-bold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded transition-colors cursor-pointer">
+                          <Edit2 className="w-2.5 h-2.5" /> Ubah Target
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="h-[400px] sm:h-80 w-full relative z-10">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0fdf4" />
@@ -460,18 +670,55 @@ export default function AdminDashboard() {
                       }} />
                       <Bar dataKey="actualIncome" fill="#a7f3d0" radius={[4, 4, 0, 0]} maxBarSize={40} />
                       <Line type="monotone" dataKey="targetCumIncome" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
-                      <Line type="monotone" dataKey="cumIncome" stroke="#10b981" strokeWidth={4} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} connectNulls={false} />
+                      <Line type="monotone" dataKey="cumIncome" stroke="#10b981" strokeWidth={4} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} connectNulls={false} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Visits Chart */}
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-8">
-                <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" /> Progres Capaian Kunjungan
-                </h3>
-                <div className="h-[400px] sm:h-80 w-full">
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.02)] p-6 md:p-8 mb-8 relative overflow-hidden group hover:border-blue-200 transition-colors duration-300">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-500" /> Progres Capaian Kunjungan
+                    </h3>
+                    <p className="text-sm text-gray-500 font-medium mt-1">Total Kunjungan: {totalCumVisits} Orang</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full border border-blue-100 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      <span className="text-xs font-bold tracking-wide">Target {visitsPercent}% Tercapai</span>
+                    </div>
+                    {isEditing ? (
+                      <form onSubmit={handleSaveTarget} className="mt-2 flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-500 font-bold">Target Kunjungan:</span>
+                          <input 
+                            type="number" 
+                            value={editVisits}
+                            onChange={(e) => setEditVisits(e.target.value)}
+                            className="border border-gray-300 rounded-md px-2 py-1 text-xs w-20 focus:outline-none focus:border-blue-500"
+                            placeholder="Misal 150"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button type="button" onClick={() => setIsEditing(false)} className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded transition-colors">Batal</button>
+                          <button type="submit" className="text-[10px] bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded transition-colors">Simpan</button>
+                        </div>
+                      </form>
+                    ) : (
+                      <div className="flex flex-col items-end gap-1 mt-1.5">
+                        <p className="text-[10px] text-gray-400 font-medium">Target bulan ini: {targetVisits} Orang</p>
+                        <button onClick={() => setIsEditing(true)} className="text-[9px] font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-1.5 py-0.5 rounded transition-colors cursor-pointer">
+                          <Edit2 className="w-2.5 h-2.5" /> Ubah Target
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="h-[400px] sm:h-80 w-full relative z-10">
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eff6ff" />
@@ -501,12 +748,11 @@ export default function AdminDashboard() {
                       }} />
                       <Bar dataKey="actualVisits" fill="#bfdbfe" radius={[4, 4, 0, 0]} maxBarSize={40} />
                       <Line type="monotone" dataKey="targetCumVisits" stroke="#9ca3af" strokeWidth={2} strokeDasharray="5 5" dot={false} activeDot={false} />
-                      <Line type="monotone" dataKey="cumVisits" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} connectNulls={false} />
+                      <Line type="monotone" dataKey="cumVisits" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }} connectNulls={false} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-
             </div>
           )}
 
