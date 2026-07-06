@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen } from "lucide-react";
+import { TrendingUp, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -32,6 +32,7 @@ export default function AdminDashboard() {
     labaBersih: 0,
     persediaan: 0,
     pasienHarian: 0,
+    pendapatanHarian: 0,
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -153,82 +154,183 @@ export default function AdminDashboard() {
 
         <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
 
-          {/* Desktop KPI Cards */}
-          <div className="hidden md:block bg-white rounded-[32px] p-8 shadow-sm border border-gray-100 mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-gray-500" />
-                <h3 className="text-lg font-bold text-gray-800">Target & Pencapaian KPI</h3>
+          {/* Desktop KPI Cards (Mockup Style) */}
+          <div className="hidden md:flex flex-col gap-8 mb-8">
+            {/* Total Aset Tersedia Card */}
+            <div className="bg-white rounded-[32px] p-8 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 relative overflow-hidden">
+              {/* Decorative background glow */}
+              <div className="absolute top-0 left-0 w-64 h-64 bg-emerald-100/40 rounded-full blur-3xl -ml-20 -mt-20 pointer-events-none"></div>
+              
+              <div className="flex justify-between items-start mb-8 relative z-10">
+                <div>
+                  <p className="text-gray-500 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-emerald-500" />
+                    Total Aset Tersedia (Kas)
+                  </p>
+                  <h2 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-700 bg-clip-text text-transparent tracking-tighter drop-shadow-sm pb-2">
+                    {formatRupiah(summaryData.kasDanBank)}
+                  </h2>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-500">Bulan:</span>
-                <input
-                  type="month"
-                  value={month}
-                  onChange={e => setMonth(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 text-gray-700 font-semibold px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
-                />
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="p-2 text-gray-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors ml-2"
-                  title="Ubah Target"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
+
+              {/* Refactored Inner Cards Hierarchy */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-10">
+                
+                {/* Kategori A: Kinerja Bisnis */}
+                <div className="bg-gray-50/50 rounded-[28px] p-5 md:p-6 border border-gray-100/50">
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-6 rounded-full bg-blue-500"></div>
+                      <h4 className="text-sm font-black text-gray-700 uppercase tracking-widest">Kinerja Bisnis</h4>
+                    </div>
+                    <div className="bg-white text-gray-600 px-3 py-1.5 rounded-full flex items-center gap-2 border border-gray-200 shadow-sm">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      <span className="text-[10px] md:text-xs font-bold tracking-wide">Bulan Ini</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 xl:gap-5">
+                    {/* Omzet */}
+                    <div className="bg-white border border-gray-100/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
+                          <Package className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Omzet</span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-medium mb-1">Total Pendapatan Kotor</p>
+                        <p className="text-xl xl:text-2xl font-black text-gray-900 tracking-tight">{formatRupiah(summaryData.pendapatan)}</p>
+                      </div>
+                    </div>
+
+                    {/* Laba Bersih */}
+                    <div className="bg-white border border-gray-100/80 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-amber-50 to-amber-100 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
+                          <Activity className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <span className="text-[11px] font-black text-gray-500 uppercase tracking-wider">Laba Bersih</span>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 font-medium mb-1">Setelah Dipotong Biaya</p>
+                        <p className="text-xl xl:text-2xl font-black text-amber-600 tracking-tight">{formatRupiah(summaryData.labaBersih)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kategori B: Operasional */}
+                <div className="bg-emerald-50/30 rounded-[28px] p-5 md:p-6 border border-emerald-100/50">
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="w-1.5 h-6 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <h4 className="text-sm font-black text-emerald-800 uppercase tracking-widest">Operasional <span className="text-emerald-600/70 font-semibold text-xs ml-1">(Hari Ini)</span></h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 xl:gap-5">
+                    {/* Pendapatan Hari Ini */}
+                    <div className="bg-gradient-to-br from-white to-emerald-50/50 border border-emerald-100/80 shadow-[0_4px_20px_rgba(16,185,129,0.05)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-[0_8px_24px_rgba(16,185,129,0.1)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                      <div className="flex items-center gap-3 mb-4 relative z-10">
+                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-inner">
+                          <TrendingUp className="w-5 h-5 text-emerald-700" />
+                        </div>
+                        <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider leading-tight">Pendapatan<br/>Harian</span>
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-2xl xl:text-3xl font-black text-emerald-600 tracking-tighter">{formatRupiah(summaryData.pendapatanHarian)}</p>
+                      </div>
+                    </div>
+
+                    {/* Pasien Hari Ini */}
+                    <div className="bg-gradient-to-br from-white to-indigo-50/50 border border-indigo-100/80 shadow-[0_4px_20px_rgba(99,102,241,0.05)] rounded-[20px] p-5 flex flex-col justify-between min-h-[145px] hover:shadow-[0_8px_24px_rgba(99,102,241,0.1)] hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-200/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                      <div className="flex items-center gap-3 mb-4 relative z-10">
+                        <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 shadow-inner">
+                          <Users className="w-5 h-5 text-indigo-700" />
+                        </div>
+                        <span className="text-[11px] font-black text-indigo-800 uppercase tracking-wider leading-tight">Kunjungan<br/>Pasien</span>
+                      </div>
+                      <div className="relative z-10 flex items-baseline gap-1.5">
+                        <p className="text-3xl xl:text-4xl font-black text-indigo-600 tracking-tighter leading-none">{summaryData.pasienHarian}</p>
+                        <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">Orang</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {isEditing ? (
-              <form onSubmit={handleSaveTarget} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Pemasukan (Rp)</label>
-                  <input
-                    type="number"
-                    required
-                    value={editIncome}
-                    onChange={e => setEditIncome(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Kunjungan (Orang)</label>
-                  <input
-                    type="number"
-                    required
-                    value={editVisits}
-                    onChange={e => setEditVisits(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors w-full">Batal</button>
-                  <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-colors flex items-center justify-center gap-2 w-full">
-                    <Save className="w-4 h-4" /> Simpan
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Target Pemasukan</p>
-                    <p className="text-2xl font-extrabold text-emerald-900">{formatRupiah(targetIncome)}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-500">
-                    <TrendingUp className="w-6 h-6" />
-                  </div>
-                </div>
-                <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-600 text-xs font-bold uppercase tracking-wider mb-1">Target Kunjungan</p>
-                    <p className="text-2xl font-extrabold text-blue-900">{targetVisits} <span className="text-sm font-medium text-blue-700">Pasien</span></p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-500">
-                    <Users className="w-6 h-6" />
-                  </div>
-                </div>
+            {/* Menu Fitur Section */}
+            <div className="mt-2 hidden md:block">
+              <div className="flex justify-between items-center mb-6 px-2">
+                <h3 className="text-xl font-black text-gray-900 tracking-tight">Menu Fitur Utama</h3>
               </div>
-            )}
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                {/* Reservasi Online */}
+                <Link href="/admin/reservations" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-purple-50 flex items-center justify-center group-hover:bg-purple-100 group-hover:scale-110 transition-all">
+                    <Inbox className="w-6 h-6 xl:w-7 xl:h-7 text-purple-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Reservasi Online</span>
+                </Link>
+
+                {/* Buku Pasien */}
+                <Link href="/admin/visits" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-sky-50 flex items-center justify-center group-hover:bg-sky-100 group-hover:scale-110 transition-all">
+                    <CalendarCheck className="w-6 h-6 xl:w-7 xl:h-7 text-sky-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Buku Pasien</span>
+                </Link>
+
+                {/* Transaksi Pelanggan */}
+                <Link href="/admin/transactions" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-teal-50 flex items-center justify-center group-hover:bg-teal-100 group-hover:scale-110 transition-all">
+                    <BookOpen className="w-6 h-6 xl:w-7 xl:h-7 text-teal-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Transaksi Pelanggan</span>
+                </Link>
+
+                {/* Layanan Terapi */}
+                <Link href="/admin/services" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 group-hover:scale-110 transition-all">
+                    <Activity className="w-6 h-6 xl:w-7 xl:h-7 text-rose-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Layanan Terapi</span>
+                </Link>
+                
+                {/* Pegawai */}
+                <Link href="/admin/therapists" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-indigo-50 flex items-center justify-center group-hover:bg-indigo-100 group-hover:scale-110 transition-all">
+                    <Users className="w-6 h-6 xl:w-7 xl:h-7 text-indigo-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Data Pegawai</span>
+                </Link>
+
+                {/* Inventaris */}
+                <Link href="/admin/inventory" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-100 group-hover:scale-110 transition-all">
+                    <Package className="w-6 h-6 xl:w-7 xl:h-7 text-emerald-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Inventaris Klinik</span>
+                </Link>
+
+                {/* Keuangan */}
+                <Link href="/admin/finance" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 group-hover:scale-110 transition-all">
+                    <Wallet className="w-6 h-6 xl:w-7 xl:h-7 text-blue-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Buku Keuangan</span>
+                </Link>
+
+                {/* Pengaturan */}
+                <Link href="/admin/settings" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 transition-all group">
+                  <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-slate-100 group-hover:scale-110 transition-all">
+                    <Settings className="w-6 h-6 xl:w-7 xl:h-7 text-slate-500" />
+                  </div>
+                  <span className="text-[13px] xl:text-[15px] font-black text-gray-900 text-center">Pengaturan</span>
+                </Link>
+              </div>
+            </div>
           </div>
 
           <div className="md:hidden space-y-4">

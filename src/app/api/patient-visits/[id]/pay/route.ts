@@ -53,10 +53,13 @@ export async function POST(
     const basePrice = serviceRecord.length > 0 ? serviceRecord[0].price : 0;
     const serviceName = serviceRecord.length > 0 ? serviceRecord[0].name : visit.serviceId;
 
+    const currentIso = new Date().toISOString();
+    // Gunakan tanggal kedatangan pasien (visitDate) untuk catatan keuangan
+    const trxDate = `${visit.visitDate}T${currentIso.split("T")[1]}`;
+
     if (basePrice > 0) {
       // A. Catat Pemasukan (Income)
       const newTrxId = crypto.randomUUID();
-      const trxDate = new Date().toISOString();
 
       await db.insert(financeTransactions).values({
         id: newTrxId,
@@ -246,7 +249,7 @@ export async function POST(
           paymentMethod,
           amountPaid: basePrice,
           changeAmount: 0,
-          createdAt: payDate,
+          createdAt: trxDate,
         });
       }
     } catch (invoiceErr) {

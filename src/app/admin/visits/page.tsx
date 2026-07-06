@@ -145,6 +145,7 @@ export default function AdminVisitsPage() {
   const [posPatientName, setPosPatientName] = useState("");
   const [posBranchId, setPosBranchId] = useState("");
   const [posTherapistId, setPosTherapistId] = useState("");
+  const [posVisitDate, setPosVisitDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
   const [posItems, setPosItems] = useState<InvoiceItem[]>([]);
   const [posDiscount, setPosDiscount] = useState(0);
   const [posPaymentMethod, setPosPaymentMethod] = useState("CASH");
@@ -375,6 +376,7 @@ export default function AdminVisitsPage() {
           amountPaid: totalPaid,
           notes: posNotes || null,
           visitId: posVisitId,
+          transactionDate: posVisitDate,
         }),
       });
 
@@ -409,6 +411,7 @@ export default function AdminVisitsPage() {
     setPosAmountPaid(0);
     setPosNotes("");
     setPosCreatedInvoice(null);
+    setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
     setPosVisitId(null);
     setPosModalOpen(false);
   };
@@ -531,6 +534,14 @@ export default function AdminVisitsPage() {
       setPosItems([]);
     }
     
+    // Set date based on visit if available, else today
+    const visit = visits.find(v => v.id === visitId);
+    if (visit && visit.visitDate) {
+      setPosVisitDate(visit.visitDate);
+    } else {
+      setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+    }
+    
     setPosVisitId(visitId);
     setPosModalOpen(true);
   };
@@ -614,6 +625,20 @@ export default function AdminVisitsPage() {
                         {patients.find(p => p.phone === posPhone) && (
                           <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
                         )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">Tanggal Transaksi</label>
+                        <div className="relative">
+                          <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          <input
+                            type="date"
+                            required
+                            disabled={!!posVisitId}
+                            value={posVisitDate}
+                            onChange={e => setPosVisitDate(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700">Nama Pasien</label>

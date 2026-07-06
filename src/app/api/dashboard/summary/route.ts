@@ -91,6 +91,33 @@ export async function GET(request: Request) {
     const dailyVisitsResult = await dailyVisitsQuery;
     const dailyVisits = dailyVisitsResult[0]?.count || 0;
 
+    // 5. Pendapatan Hari Ini
+    let dailyIncomeQuery = db
+      .select({
+        totalAmount: sql<number>`SUM(${financeTransactions.amount})`
+      })
+      .from(financeTransactions)
+      .where(and(
+        sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
+        eq(financeTransactions.type, "INCOME")
+      ));
+
+    if (branchFilter) {
+      dailyIncomeQuery = db
+        .select({
+          totalAmount: sql<number>`SUM(${financeTransactions.amount})`
+        })
+        .from(financeTransactions)
+        .where(and(
+          sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
+          eq(financeTransactions.type, "INCOME"),
+          eq(financeTransactions.branchId, branchFilter)
+        ));
+    }
+
+    const dailyIncomeResult = await dailyIncomeQuery;
+    const pendapatanHarian = dailyIncomeResult[0]?.totalAmount || 0;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -99,6 +126,7 @@ export async function GET(request: Request) {
         labaBersih: labaBersih,
         persediaan: totalPersediaan,
         pasienHarian: dailyVisits,
+        pendapatanHarian: pendapatanHarian,
       }
     });
 

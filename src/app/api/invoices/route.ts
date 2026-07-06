@@ -164,9 +164,26 @@ export async function POST(request: Request) {
     // 5. Generate invoice number
     const invoiceNumber = await generateInvoiceNumber(finalBranchId);
 
-    // 6. Create the invoice
+    // 6. Resolve Transaction Date
+    let transactionDate = new Date().toISOString();
+    let visitDateStr = transactionDate.split("T")[0]; // default to today
+
+    if (visitId) {
+      const existingVisits = await db.select().from(patientVisits).where(eq(patientVisits.id, visitId)).limit(1);
+      if (existingVisits.length > 0) {
+        visitDateStr = existingVisits[0].visitDate;
+        // Gunakan tanggal dari kunjungan, tapi pertahankan waktu saat ini agar tidak error timezone/format
+        const timePart = transactionDate.split("T")[1];
+        transactionDate = `${visitDateStr}T${timePart}`;
+      }
+    } else if (body.transactionDate) {
+      transactionDate = body.transactionDate;
+      visitDateStr = transactionDate.split("T")[0];
+    }
+
     const invoiceId = crypto.randomUUID();
-    const now = new Date().toISOString();
+    const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
+
 
     await db.insert(invoices).values({
       id: invoiceId,
