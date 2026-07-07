@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { therapists, therapistMonthlyReports, patientVisits, attendance, therapistCommissions } from "@/lib/db/schema";
-import { eq, and, like } from "drizzle-orm";
+import { eq, and, like, gte, lte } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -65,7 +65,6 @@ export async function GET(request: Request) {
     const savedReportsMap = new Map(savedReports.map(r => [r.therapistId, r]));
 
     // 3. Pre-fetch semua komisi dan kunjungan bulan ini sekali saja (efisien)
-    const { gte, lte } = require("drizzle-orm");
     const allMonthCommissions = await db
       .select({
         therapistId: therapistCommissions.therapistId,
