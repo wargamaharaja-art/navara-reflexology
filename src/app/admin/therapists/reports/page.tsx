@@ -4,9 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, Clock, CheckCircle, AlertCircle, Save, Send, Copy, Award, Edit, Sparkles, AlertTriangle, User, DollarSign, Activity, Download, FileText, Table } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+
 
 type MonthlyReport = {
   id: string | null;
@@ -57,6 +55,9 @@ export default function TherapistReportsPage() {
   // Modal Edit state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeReport, setActiveReport] = useState<MonthlyReport | null>(null);
+
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
 
   const fetchReports = useCallback(async (targetMonth: string, start?: string, end?: string) => {
     setLoading(true);
@@ -211,7 +212,7 @@ export default function TherapistReportsPage() {
     return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
     
     const formattedData = reports.map(r => ({
@@ -227,6 +228,7 @@ export default function TherapistReportsPage() {
       "Status Laporan": r.isSaved ? "Tersimpan" : "Draft"
     }));
 
+    const XLSX = await import("xlsx");
     const worksheet = XLSX.utils.json_to_sheet(formattedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Gaji Terapis");
@@ -238,9 +240,12 @@ export default function TherapistReportsPage() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
 
+    const { jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+    
     const doc = new jsPDF("landscape");
     
     // Title
@@ -285,6 +290,8 @@ export default function TherapistReportsPage() {
       
     doc.save(fileName);
   };
+
+  if (!isMounted) return null;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
@@ -460,7 +467,7 @@ export default function TherapistReportsPage() {
                     <tr key={r.therapistId} className="hover:bg-blue-50/10 transition-colors">
                       <td className="px-6 py-4 font-bold text-gray-900">
                         <div>{r.therapistName}</div>
-                        <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">ID: {r.therapistId.substring(0, 8)}...</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5 uppercase tracking-wide">ID: {r.therapistId?.substring(0, 8) || "N/A"}...</div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {r.isSaved ? (
