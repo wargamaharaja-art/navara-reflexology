@@ -188,10 +188,8 @@ export default function TherapistReportsPage() {
     if (!report.id) return;
     const reportUrl = `${window.location.origin}/therapist/report/${report.id}`;
     
-    // Format month to readable string, e.g. June 2026
-    const [yearStr, monthStr] = report.month.split("-");
-    const dateObj = new Date(parseInt(yearStr), parseInt(monthStr) - 1, 1);
-    const readableMonth = dateObj.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    // Format period to readable string
+    const readableMonth = getPeriodLabel(report);
 
     const messageText = `Halo ${report.therapistName}, berikut adalah Rapor Kinerja & Slip Gaji Bulanan Anda untuk periode *${readableMonth}*.\n\nSilakan buka tautan berikut untuk melihat rincian privat Anda:\n${reportUrl}\n\nMasukkan PIN keamanan Anda (6 digit Tanggal Lahir Anda: DDMMYY) untuk masuk. Terima kasih!`;
     
