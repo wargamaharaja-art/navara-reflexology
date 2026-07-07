@@ -11,7 +11,9 @@ type MonthlyReport = {
   therapistId: string;
   therapistName: string;
   branchId: string | null;
-  month: string;
+  month: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   totalTreatments: number;
   attendancePresent: number;
   attendanceLate: number;
@@ -207,9 +209,16 @@ export default function TherapistReportsPage() {
     }).format(amount);
   };
 
-  const getMonthReadable = (monthCode: string) => {
+  const getMonthReadable = (monthCode: string | null | undefined) => {
+    if (!monthCode) return "";
     const [y, m] = monthCode.split("-");
     return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  };
+
+  const getPeriodLabel = (report: MonthlyReport) => {
+    if (report.month) return getMonthReadable(report.month);
+    if (report.startDate && report.endDate) return `${report.startDate} s/d ${report.endDate}`;
+    return "-";
   };
 
   const handleExportExcel = async () => {
@@ -549,7 +558,7 @@ export default function TherapistReportsPage() {
                     Kelola Rapor & Gaji Bulanan
                   </h3>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Terapis: <span className="font-bold text-gray-700">{activeReport.therapistName}</span> | Periode: <span className="font-bold text-gray-700">{getMonthReadable(activeReport.month)}</span>
+                    Terapis: <span className="font-bold text-gray-700">{activeReport.therapistName}</span> | Periode: <span className="font-bold text-gray-700">{getPeriodLabel(activeReport)}</span>
                   </p>
                 </div>
                 <button
