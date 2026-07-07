@@ -53,10 +53,25 @@ export default function AdminLoginPage() {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(40px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
         .animate-fade-in-up {
           animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           opacity: 0;
         }
+        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; opacity: 0; }
+        .animate-scale-in { animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
         .delay-100 { animation-delay: 100ms; }
         .delay-200 { animation-delay: 200ms; }
         .delay-300 { animation-delay: 300ms; }
@@ -80,19 +95,26 @@ export default function AdminLoginPage() {
         <div className="absolute bottom-[-10%] left-[20%] w-[400px] h-[400px] rounded-full bg-blue-400/5 blur-[80px]" />
       </div>
 
-      {/* Left Panel: Branding (40%) */}
-      <div className="w-full md:w-[40%] bg-gradient-to-br from-[#059669] to-[#047857] p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden z-10 min-h-[350px] md:min-h-screen">
-        {/* Background Logo Watermark */}
-        <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none mix-blend-overlay">
-          <Image src="/navara-logo.png" alt="Watermark" width={800} height={800} className="object-cover scale-150 rotate-[-15deg] blur-sm" priority />
+      {/* Left Panel: Branding */}
+      <div className="w-full md:w-[40%] lg:w-[40%] p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden z-10 min-h-[350px] md:min-h-screen animate-fade-in">
+        {/* Background Image with Blur */}
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="/login-bg.png" 
+            alt="Clinic Interior" 
+            fill 
+            className="object-cover" 
+            priority
+          />
         </div>
         
-        {/* Gradient Overlay for better readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent pointer-events-none" />
+        {/* Backdrop Blur & Overlay */}
+        <div className="absolute inset-0 bg-[#047857]/50 backdrop-blur-[6px] z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-0 pointer-events-none" />
 
         {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col animate-fade-in-up">
-          <div className="flex items-center gap-3 mb-8 md:mb-12">
+        <div className="relative z-10 flex-1 flex flex-col">
+          <div className="flex items-center gap-3 mb-8 md:mb-12 animate-fade-in-up">
             <div className="bg-white p-2 rounded-xl shadow-lg">
               <Image src="/navara-logo.png" alt="Navara Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             </div>
@@ -113,24 +135,24 @@ export default function AdminLoginPage() {
 
         {/* Value Props */}
         <div className="relative z-10 mt-6 md:mt-16 space-y-4 animate-fade-in-up delay-300">
-          <div className="flex items-center gap-3 text-white/95 drop-shadow-md">
-            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-            <span className="font-semibold text-[15px]">Reservasi Online Real-time</span>
+          <div className="flex items-center gap-3 text-white drop-shadow-md">
+            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <span className="font-semibold text-base">Reservasi Online Real-time</span>
           </div>
-          <div className="flex items-center gap-3 text-white/95 drop-shadow-md">
-            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-            <span className="font-semibold text-[15px]">Laporan Finansial Akurat</span>
+          <div className="flex items-center gap-3 text-white drop-shadow-md">
+            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <span className="font-semibold text-base">Manajemen Terapis</span>
           </div>
-          <div className="flex items-center gap-3 text-white/95 drop-shadow-md">
-            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-            <span className="font-semibold text-[15px]">Keamanan Data Terjamin</span>
+          <div className="flex items-center gap-3 text-white drop-shadow-md">
+            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <span className="font-semibold text-base">Dashboard Operasional</span>
           </div>
         </div>
       </div>
 
-      {/* Right Panel: Login Form (60%) */}
-      <div className="w-full md:w-[60%] flex items-center justify-center p-6 md:p-12 relative z-10">
-        <div className="w-full max-w-[440px] animate-fade-in-up delay-200">
+      {/* Right Panel: Login Form */}
+      <div className="w-full md:w-[60%] lg:w-[60%] flex items-center justify-center p-6 md:p-12 relative z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-emerald-50/30 to-emerald-100/20">
+        <div className="w-full max-w-[440px] animate-slide-up delay-100">
           
           <div className="mb-10 text-center md:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/50 text-emerald-700 font-bold text-[10px] md:text-xs uppercase tracking-widest mb-4 border border-emerald-200/50 shadow-sm">
@@ -144,7 +166,7 @@ export default function AdminLoginPage() {
             </p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-[20px] border border-white/60 rounded-[28px] md:rounded-[32px] p-6 md:p-10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] animate-fade-in-up delay-300">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[28px] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] animate-scale-in delay-200">
             
             {error && (
               <div className="bg-red-50 text-red-700 border border-red-200 rounded-2xl px-4 py-3 mb-6 text-sm font-medium flex items-center gap-2">
@@ -206,7 +228,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full relative overflow-hidden group bg-gradient-to-r from-[#059669] to-[#10B981] hover:from-[#047857] hover:to-[#059669] text-white font-bold text-[18px] py-4 rounded-2xl transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-[0_8px_25px_rgba(5,150,105,0.3)] hover:-translate-y-0.5 mt-2 flex items-center justify-center gap-2"
+                className="w-full relative overflow-hidden group bg-gradient-to-r from-[#059669] to-[#10B981] hover:from-[#047857] hover:to-[#059669] text-white font-bold text-[18px] py-4 rounded-2xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-[0_15px_35px_rgba(5,150,105,0.4)] hover:scale-[1.02] mt-2 flex items-center justify-center gap-2"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out" />
                 {loading ? (
