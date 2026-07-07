@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, ShieldCheck, Server, Cloud, CheckCircle2, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Check, ShieldCheck, Zap, Cloud } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -12,9 +13,27 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Mouse position for parallax
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     setIsMounted(true);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      // 3% parallax effect as requested
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 15,
+        y: (e.clientY / window.innerHeight - 0.5) * 15,
+      });
+    };
+
+    // Only apply on desktop
+    if (window.innerWidth >= 768) {
+      window.addEventListener("mousemove", handleMouseMove);
+    }
+    
+    return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,61 +63,23 @@ export default function AdminLoginPage() {
     }
   };
 
-  if (!isMounted) return null; // Avoid hydration mismatch
+  if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-[#F4FBF8] text-[#1F2937] overflow-hidden font-sans relative">
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in-up {
-          animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          opacity: 0;
-        }
-        .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; opacity: 0; }
-        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; opacity: 0; }
-        .animate-scale-in { animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-        .delay-100 { animation-delay: 100ms; }
-        .delay-200 { animation-delay: 200ms; }
-        .delay-300 { animation-delay: 300ms; }
-        .delay-400 { animation-delay: 400ms; }
-        .delay-500 { animation-delay: 500ms; }
-        
-        /* Floating label styles */
-        .floating-input:focus ~ .floating-label,
-        .floating-input:not(:placeholder-shown) ~ .floating-label {
-          transform: translateY(-50%) scale(0.85);
-          top: 0;
-          color: #059669;
-          background-color: white;
-          padding: 0 4px;
-        }
-      `}} />
-
-      {/* Decorative Background Elements for Right Panel */}
-      <div className="absolute right-0 top-0 w-full md:w-[60%] h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[#10B981]/10 blur-[80px]" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[400px] h-[400px] rounded-full bg-blue-400/5 blur-[80px]" />
-      </div>
-
-      {/* Left Panel: Branding */}
-      <div className="w-full md:w-[40%] lg:w-[40%] p-8 md:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden z-10 min-h-[350px] md:min-h-screen animate-fade-in">
-        {/* Background Image with Blur */}
-        <div className="absolute inset-0 z-0">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#F2FAF8] text-[#1F2937] overflow-hidden font-sans">
+      
+      {/* LEFT PANEL (40% on desktop, 35% on tablet) */}
+      <div className="hidden md:flex md:w-[35%] lg:w-[40%] relative overflow-hidden flex-col justify-between p-10 lg:p-14 xl:p-16 z-10 bg-emerald-900">
+        {/* Background Image & Overlay */}
+        <motion.div 
+          className="absolute inset-0 z-0"
+          animate={{
+            x: mousePosition.x,
+            y: mousePosition.y,
+            scale: 1.05 // to avoid edges showing during parallax
+          }}
+          transition={{ type: "tween", ease: "easeOut", duration: 0.2 }}
+        >
           <Image 
             src="/login-bg.png" 
             alt="Clinic Interior" 
@@ -106,166 +87,258 @@ export default function AdminLoginPage() {
             className="object-cover" 
             priority
           />
+          {/* Overlay with linear gradient & blur */}
+          <div 
+            className="absolute inset-0 backdrop-blur-[6px]"
+            style={{
+              background: 'linear-gradient(rgba(11,82,63,0.72), rgba(20,56,48,0.78))'
+            }}
+          />
+        </motion.div>
+
+        {/* Floating Gradients */}
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white opacity-[0.18] rounded-full blur-[100px] -translate-x-1/2 -translate-y-1/2 z-0 pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-emerald-300 opacity-[0.12] rounded-full blur-[120px] translate-x-1/4 translate-y-1/4 z-0 pointer-events-none" />
+
+        {/* Logo Area */}
+        <motion.div 
+          className="relative z-10 flex items-center gap-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <div className="bg-white rounded-[20px] p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-center justify-center" style={{ width: '60px', height: '60px' }}>
+            <Image src="/navara-logo.png" alt="Navara Logo" width={44} height={44} className="w-[44px] h-[44px] object-contain" />
+          </div>
+          <span className="text-white text-2xl font-black tracking-tight">Navara Reflexology</span>
+        </motion.div>
+
+        {/* Hero Text */}
+        <div className="relative z-10 mt-auto mb-12">
+          <motion.h1 
+            className="text-white tracking-tight text-4xl lg:text-5xl xl:text-[54px] leading-[1.1] font-extrabold"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
+          >
+            Kelola Reservasi.<br/>
+            Tingkatkan Pelayanan.<br/>
+            Majukan Klinik Anda.
+          </motion.h1>
+          <motion.p 
+            className="text-emerald-50 text-lg lg:text-xl max-w-md mt-6 opacity-90 leading-relaxed font-medium"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+          >
+            Platform manajemen klinik modern<br className="hidden xl:block" />
+            yang membantu operasional lebih cepat,<br className="hidden xl:block" />
+            aman, dan efisien.
+          </motion.p>
         </div>
-        
-        {/* Backdrop Blur & Overlay */}
-        <div className="absolute inset-0 bg-[#047857]/50 backdrop-blur-[6px] z-0 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent z-0 pointer-events-none" />
 
-        {/* Content */}
-        <div className="relative z-10 flex-1 flex flex-col">
-          <div className="flex items-center gap-3 mb-8 md:mb-12 animate-fade-in-up">
-            <div className="bg-white p-2 rounded-xl shadow-lg">
-              <Image src="/navara-logo.png" alt="Navara Logo" width={40} height={40} className="w-10 h-10 object-contain" />
-            </div>
-            <span className="text-white text-2xl font-black tracking-tight drop-shadow-md">Navara Reflexology</span>
-          </div>
-
-          <div className="mt-auto md:mt-16 mb-4 md:mb-0">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white leading-[1.15] tracking-tight mb-6 animate-fade-in-up delay-100 drop-shadow-lg">
-              Kelola Reservasi,<br/>
-              Tingkatkan Pelayanan,<br/>
-              Majukan Klinik.
-            </h1>
-            <p className="text-emerald-50 text-lg md:text-xl max-w-md animate-fade-in-up delay-200 opacity-95 leading-relaxed font-medium drop-shadow-md">
-              Sistem manajemen klinik yang cepat, aman, dan modern. Dirancang khusus untuk operasional Navara Reflexology.
-            </p>
-          </div>
-        </div>
-
-        {/* Value Props */}
-        <div className="relative z-10 mt-6 md:mt-16 space-y-4 animate-fade-in-up delay-300">
-          <div className="flex items-center gap-3 text-white drop-shadow-md">
-            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-            <span className="font-semibold text-base">Reservasi Online Real-time</span>
-          </div>
-          <div className="flex items-center gap-3 text-white drop-shadow-md">
-            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-            <span className="font-semibold text-base">Manajemen Terapis</span>
-          </div>
-          <div className="flex items-center gap-3 text-white drop-shadow-md">
-            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-            <span className="font-semibold text-base">Dashboard Operasional</span>
-          </div>
+        {/* Feature List */}
+        <div className="relative z-10 space-y-4">
+          {[
+            "Reservasi Real-time",
+            "Kelola Terapis",
+            "Laporan Otomatis",
+            "Multi Cabang"
+          ].map((feature, i) => (
+            <motion.div 
+              key={i}
+              className="flex items-center gap-3 text-white"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 + (i * 0.05) }}
+            >
+              <div className="w-5 h-5 rounded-full bg-emerald-500/30 flex items-center justify-center border border-emerald-400/30">
+                <Check className="w-3.5 h-3.5 text-emerald-300" />
+              </div>
+              <span className="font-medium text-[16px]">{feature}</span>
+            </motion.div>
+          ))}
         </div>
       </div>
 
-      {/* Right Panel: Login Form */}
-      <div className="w-full md:w-[60%] lg:w-[60%] flex items-center justify-center p-6 md:p-12 relative z-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-emerald-50/30 to-emerald-100/20">
-        <div className="w-full max-w-[440px] animate-slide-up delay-100">
+      {/* RIGHT PANEL (60% on desktop, 65% on tablet) */}
+      <div className="w-full md:w-[65%] lg:w-[60%] min-h-screen flex flex-col items-center justify-center p-6 sm:p-12 lg:p-20 relative z-10">
+        
+        {/* Right Background Gradient */}
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            background: 'linear-gradient(135deg, #F8FCFB 0%, #F2FAF8 50%, #EDF8F5 100%)'
+          }}
+        />
+        {/* Top Right Radial Glow */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-200 opacity-[0.12] rounded-full blur-[100px] translate-x-1/4 -translate-y-1/4 z-0 pointer-events-none" />
+
+        {/* Mobile Logo (Only visible on small screens) */}
+        <motion.div 
+          className="md:hidden flex items-center justify-center gap-3 mb-10 relative z-10"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+           <div className="bg-white rounded-2xl p-2 shadow-sm border border-emerald-100 flex items-center justify-center" style={{ width: '48px', height: '48px' }}>
+             <Image src="/navara-logo.png" alt="Navara Logo" width={32} height={32} className="w-8 h-8 object-contain" />
+           </div>
+           <span className="text-emerald-900 text-xl font-black tracking-tight">Navara Reflexology</span>
+        </motion.div>
+
+        <div className="w-full max-w-[480px] relative z-10">
           
-          <div className="mb-10 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/50 text-emerald-700 font-bold text-[10px] md:text-xs uppercase tracking-widest mb-4 border border-emerald-200/50 shadow-sm">
-              <span className="text-sm md:text-base leading-none">👋</span> Selamat Datang Kembali
+          {/* Heading Area */}
+          <motion.div 
+            className="mb-8 text-center md:text-left"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-6" style={{ background: '#E8FFF5', border: '1px solid #B9F2DA', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+              <span className="text-sm leading-none">👋</span> 
+              <span className="text-emerald-700 font-bold text-xs uppercase tracking-wider">Selamat Datang Kembali</span>
             </div>
-            <h2 className="text-[32px] md:text-[42px] font-black text-[#1F2937] tracking-tight mb-3 leading-none">
+            <h2 className="text-[#1F2937] tracking-tight mb-4 leading-none text-4xl lg:text-5xl xl:text-[56px] font-extrabold">
               Admin Dashboard
             </h2>
-            <p className="text-[#1F2937]/60 text-[16px] md:text-[18px] font-medium leading-snug">
-              Masuk untuk mengelola operasional<br className="hidden md:block" /> Navara Reflexology.
+            <p className="text-[#475467] text-[16px] md:text-[18px] leading-relaxed max-w-[420px] mx-auto md:mx-0">
+              Masuk untuk mengelola seluruh<br className="hidden sm:block" /> operasional Navara Reflexology.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[28px] p-6 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] animate-scale-in delay-200">
-            
+          {/* Login Card */}
+          <motion.div 
+            className="p-8 sm:p-10"
+            style={{
+              background: 'rgba(255,255,255,0.82)',
+              backdropFilter: 'blur(18px)',
+              WebkitBackdropFilter: 'blur(18px)',
+              border: '1px solid rgba(255,255,255,0.75)',
+              borderRadius: '30px',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.10)'
+            }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.3 }}
+          >
             {error && (
-              <div className="bg-red-50 text-red-700 border border-red-200 rounded-2xl px-4 py-3 mb-6 text-sm font-medium flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-red-50 text-red-700 border border-red-200 rounded-2xl px-4 py-3 mb-6 text-sm font-medium flex items-center gap-2"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" />
                 {error}
-              </div>
+              </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-5">
               
               {/* Username Input */}
-              <div className="relative group">
+              <div className="space-y-1.5">
+                <label htmlFor="username" className="text-sm font-semibold text-gray-700 ml-1">Username</label>
                 <input
                   id="username"
                   type="text"
                   required
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="floating-input w-full rounded-2xl border-2 border-gray-200 bg-transparent px-4 py-4 text-[16px] font-medium text-gray-900 focus:border-[#059669] focus:outline-none focus:ring-4 focus:ring-[#059669]/10 transition-all duration-300"
-                  placeholder=" "
+                  className="w-full bg-white border border-gray-200 text-gray-900 px-5 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-emerald-400 focus:border-emerald-500 focus:shadow-[0_0_0_5px_rgba(22,163,74,0.12)]"
+                  style={{ height: '60px', borderRadius: '18px', fontSize: '16px' }}
+                  placeholder="Masukkan username"
                 />
-                <label htmlFor="username" className="floating-label absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium transition-all duration-300 pointer-events-none flex items-center gap-2">
-                  Username
-                </label>
               </div>
 
               {/* Password Input */}
-              <div className="relative group">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="floating-input w-full rounded-2xl border-2 border-gray-200 bg-transparent px-4 py-4 pr-12 text-[16px] font-medium text-gray-900 focus:border-[#059669] focus:outline-none focus:ring-4 focus:ring-[#059669]/10 transition-all duration-300"
-                  placeholder=" "
-                />
-                <label htmlFor="password" className="floating-label absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium transition-all duration-300 pointer-events-none flex items-center gap-2">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#059669] transition-colors p-1"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-sm font-semibold text-gray-700 ml-1">Password</label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full bg-white border border-gray-200 text-gray-900 px-5 pr-12 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-emerald-400 focus:border-emerald-500 focus:shadow-[0_0_0_5px_rgba(22,163,74,0.12)]"
+                    style={{ height: '60px', borderRadius: '18px', fontSize: '16px' }}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-emerald-600 transition-colors p-2"
+                    aria-label="Lihat Password"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between mt-2">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-[#059669] focus:ring-[#059669] transition-colors" />
-                  <span className="text-sm font-medium text-gray-500 group-hover:text-gray-700 transition-colors">Ingat saya</span>
+              <div className="flex items-center justify-between pt-1 pb-2">
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <input type="checkbox" className="w-4 h-4 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 transition-colors cursor-pointer" />
+                  <span className="text-sm font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Ingat saya</span>
                 </label>
-                <a href="#" className="text-sm font-bold text-[#059669] hover:text-[#047857] transition-colors">Lupa Password?</a>
+                <a href="#" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors">Lupa Password?</a>
               </div>
 
               {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full relative overflow-hidden group bg-gradient-to-r from-[#059669] to-[#10B981] hover:from-[#047857] hover:to-[#059669] text-white font-bold text-[18px] py-4 rounded-2xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hover:shadow-[0_15px_35px_rgba(5,150,105,0.4)] hover:scale-[1.02] mt-2 flex items-center justify-center gap-2"
+                className="w-full group relative flex items-center justify-center gap-2 text-white font-bold text-[18px] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed hover:-translate-y-[2px]"
+                style={{ 
+                  height: '60px', 
+                  borderRadius: '18px',
+                  background: 'linear-gradient(to right, #18B678, #119C67)',
+                  boxShadow: '0 15px 35px rgba(22,163,74,0.25)'
+                }}
               >
-                <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-700 ease-in-out" />
                 {loading ? (
-                  <span className="flex items-center gap-2 relative z-10">
+                  <span className="flex items-center gap-2">
                     <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     Memverifikasi...
                   </span>
                 ) : (
-                  <span className="flex items-center gap-2 relative z-10">
-                    Masuk Sekarang <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <span className="flex items-center gap-2">
+                    Masuk Sekarang 
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="group-hover:translate-x-1 transition-transform duration-300">
+                      <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </span>
                 )}
               </button>
             </form>
-          </div>
+          </motion.div>
 
-          {/* Quick Trust / Badges */}
-          <div className="mt-8 flex items-center justify-center gap-4 md:gap-6 animate-fade-in-up delay-400">
-            <div className="flex flex-col items-center gap-1.5 group">
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:-translate-y-1 transition-transform">
-                <ShieldCheck className="w-4 h-4 text-[#059669]" />
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Data<br/>Terenkripsi</span>
+          {/* Bottom Information */}
+          <motion.div 
+            className="mt-8 flex flex-wrap items-center justify-center md:justify-start gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.4 }}
+          >
+            <div className="flex items-center gap-2 bg-white/60 hover:bg-white transition-all duration-300 hover:-translate-y-1 cursor-default backdrop-blur-sm border border-emerald-100/50 px-3 py-2 shadow-sm" style={{ borderRadius: '14px' }}>
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-gray-600">Data Aman</span>
             </div>
-            <div className="flex flex-col items-center gap-1.5 group">
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:-translate-y-1 transition-transform">
-                <Server className="w-4 h-4 text-[#10B981]" />
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Server<br/>Aktif</span>
+            
+            <div className="w-[1px] h-4 bg-emerald-200/50" />
+
+            <div className="flex items-center gap-2 bg-white/60 hover:bg-white transition-all duration-300 hover:-translate-y-1 cursor-default backdrop-blur-sm border border-emerald-100/50 px-3 py-2 shadow-sm" style={{ borderRadius: '14px' }}>
+              <Zap className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-gray-600">Cepat</span>
             </div>
-            <div className="flex flex-col items-center gap-1.5 group">
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:-translate-y-1 transition-transform">
-                <Cloud className="w-4 h-4 text-emerald-400" />
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center">Backup<br/>Otomatis</span>
+
+            <div className="w-[1px] h-4 bg-emerald-200/50 hidden sm:block" />
+
+            <div className="flex items-center gap-2 bg-white/60 hover:bg-white transition-all duration-300 hover:-translate-y-1 cursor-default backdrop-blur-sm border border-emerald-100/50 px-3 py-2 shadow-sm hidden sm:flex" style={{ borderRadius: '14px' }}>
+              <Cloud className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-gray-600">Cloud Ready</span>
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>

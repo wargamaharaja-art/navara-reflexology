@@ -6,7 +6,7 @@ import {
   Plus, CalendarCheck, Search, User, Phone, MapPin, Activity, Store, 
   UserCheck, Calendar, Clock, FileText, X, ChevronDown, Users, TrendingUp, 
   Check, Receipt, Printer, MessageCircle, Link2, Download, AlertCircle, 
-  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet
+  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet, Save
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
@@ -29,7 +29,7 @@ type PatientVisit = {
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
 type Branch = { id: string; name: string; address?: string; phone?: string };
-type Service = { id: string; name: string; price?: number; category?: string };
+type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number };
 
 type InvoiceItem = {
   serviceId: string;
@@ -73,6 +73,7 @@ export default function AdminVisitsPage() {
   const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -173,6 +174,8 @@ export default function AdminVisitsPage() {
         ...prev,
         phone: val,
         name: existing.name,
+        gender: existing.gender || "L",
+        address: existing.address || "",
       }));
     } else {
       setFormData(prev => ({ ...prev, phone: val }));
@@ -588,6 +591,28 @@ export default function AdminVisitsPage() {
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
     return matchBranch && matchDate && matchSearch;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // KPI Calculations (Actual Data)
+  const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+  
+  const branchVisits = visits.filter(v => selectedBranchId === "ALL" || v.branchId === selectedBranchId);
+  const kpiVisitsToday = branchVisits.filter(v => v.visitDate === todayDateString).length;
+  const kpiRevenueToday = branchVisits
+    .filter(v => v.visitDate === todayDateString && v.paymentStatus === "PAID")
+    .reduce((sum, v) => {
+      const service = services.find(s => s.id === v.serviceId);
+      return sum + (service?.price || 0);
+    }, 0);
+  const kpiNewPatientsToday = branchVisits
+    .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
+    .length;
+  const kpiRetention = kpiVisitsToday > 0 
+    ? Math.round(((kpiVisitsToday - kpiNewPatientsToday) / kpiVisitsToday) * 100)
+    : 0;
+
+  const kpiRevenueFormatted = kpiRevenueToday >= 1000000 
+    ? `Rp ${(kpiRevenueToday / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Juta`
+    : formatRupiah(kpiRevenueToday);
 
   const totalPages = Math.ceil(finalVisits.length / itemsPerPage);
   const paginatedVisits = finalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -1193,34 +1218,49 @@ export default function AdminVisitsPage() {
                 
                 {/* Kolom Kiri: Data Pasien */}
                 <div className="lg:col-span-5 space-y-5">
-                  <h4 className="text-sm font-bold text-teal-600 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <User className="w-4 h-4"/> Data Pasien
-                  </h4>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
+                      <User className="w-4 h-4"/> Data Pasien
+                    </h4>
+                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                      {formData.name && formData.phone ? "✓ Data Terisi" : "1/4 Terisi"}
+                    </span>
+                  </div>
                   
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nomor Telepon/WA</label>
-                    <div className="relative">
-                      <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Misal: 08123..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                  <div className="space-y-1.5 relative">
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                      Nomor Telepon/WA <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-teal-500' : 'text-gray-400 group-focus-within:text-teal-500'}`} />
+                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-teal-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-teal-400 focus:border-teal-500 text-teal-900' : 'border-gray-300 focus:border-teal-500 text-gray-900'}`} />
+                      {patients.find(p => p.phone === formData.phone) && (
+                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-teal-500" />
+                      )}
                     </div>
-                    {patients.find(p => p.phone === formData.phone) && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><UserCheck className="w-3 h-3"/> Pasien terdaftar ditemukan.</p>
-                    )}
+                    {patients.find(p => p.phone === formData.phone) ? (
+                      <p className="text-[11px] font-bold text-teal-700 mt-1 flex items-center gap-1 bg-teal-50 px-2 py-1 rounded-md w-max border border-teal-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
+                    ) : formData.phone.length > 8 ? (
+                      <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><Plus className="w-3.5 h-3.5"/> + Pasien baru</p>
+                    ) : null}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nama Lengkap</label>
-                    <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" placeholder="Nama Pasien" />
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Nama Lengkap <span className="text-red-500 font-bold">*</span></label>
+                    <div className="relative">
+                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
+                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-teal-500" />}
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Jenis Kelamin</label>
-                    <div className="flex gap-4">
-                      <label className={`flex-1 flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl border cursor-pointer transition-all ${formData.gender === 'L' ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Jenis Kelamin <span className="text-red-500 font-bold">*</span></label>
+                    <div className="flex gap-3">
+                      <label className={`flex-1 flex justify-center items-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.gender === 'L' ? 'bg-blue-600 border-blue-600 text-white font-bold shadow-md shadow-blue-500/20 scale-[1.02]' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'}`}>
                         <input type="radio" name="gender" value="L" checked={formData.gender === 'L'} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="hidden" />
                         Laki-laki
                       </label>
-                      <label className={`flex-1 flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl border cursor-pointer transition-all ${formData.gender === 'P' ? 'bg-pink-50 border-pink-200 text-pink-700 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                      <label className={`flex-1 flex justify-center items-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.gender === 'P' ? 'bg-pink-600 border-pink-600 text-white font-bold shadow-md shadow-pink-500/20 scale-[1.02]' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'}`}>
                         <input type="radio" name="gender" value="P" checked={formData.gender === 'P'} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="hidden" />
                         Perempuan
                       </label>
@@ -1228,10 +1268,10 @@ export default function AdminVisitsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Alamat</label>
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-1">Alamat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
                     <div className="relative">
-                      <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
-                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" placeholder="Detail alamat..."></textarea>
+                      <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-300" />
+                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
                     </div>
                   </div>
                 </div>
@@ -1332,7 +1372,7 @@ export default function AdminVisitsPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Cabang</label>
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Cabang <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
                         <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <select 
@@ -1340,20 +1380,21 @@ export default function AdminVisitsPage() {
                           disabled={session?.role === "BRANCH_ADMIN"}
                           value={formData.branchId} 
                           onChange={e => setFormData({ ...formData, branchId: e.target.value })} 
-                          className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors appearance-none disabled:opacity-70"
+                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none disabled:opacity-70 font-medium"
                         >
                           <option value="">Pilih Cabang</option>
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
+                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-teal-500" />}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Terapis Penanggung Jawab</label>
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Terapis Penanggung Jawab <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
                     <div className="relative">
                       <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <select value={formData.therapistId} onChange={e => setFormData({ ...formData, therapistId: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors appearance-none">
+                      <select value={formData.therapistId} onChange={e => setFormData({ ...formData, therapistId: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all appearance-none font-medium">
                         <option value="">Tanpa Terapis Khusus</option>
                         {therapists.filter(t => !formData.branchId || !t.branchId || t.branchId === formData.branchId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                       </select>
@@ -1362,33 +1403,58 @@ export default function AdminVisitsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Tanggal</label>
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tanggal <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
                         <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium" />
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Tensi Darah</label>
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tensi Darah <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
                       <div className="relative">
                         <Activity className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
+                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all font-medium" />
+                        {!formData.bloodPressure && <span title="Tensi belum diisi" className="absolute right-3 top-1/2 -translate-y-1/2"><AlertCircle className="w-4 h-4 text-amber-400" /></span>}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat</label>
-                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
+                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
                   </div>
-                </div>
+                  
+                  {/* Summary Ringkasan */}
+                  {selectedServices.length > 0 && (
+                    <div className="mt-6 bg-teal-50/50 border border-teal-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
+                      <h5 className="text-xs font-bold text-teal-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
+                      <div className="space-y-2">
+                        {selectedServices.map(id => {
+                          const s = services.find(srv => srv.id === id);
+                          return (
+                            <div key={id} className="flex justify-between text-sm">
+                              <span className="text-gray-600">{s?.name} <span className="text-gray-400 text-xs">({s?.durationMinutes}m)</span></span>
+                              <span className="font-semibold text-gray-800">{formatRupiah(s?.price || 0)}</span>
+                            </div>
+                          );
+                        })}
+                        <div className="border-t border-teal-200/50 pt-2 mt-2 flex justify-between font-bold">
+                          <span className="text-teal-900">Estimasi Total</span>
+                          <span className="text-teal-700">
+                            {formatRupiah(selectedServices.reduce((sum, id) => sum + (services.find(s => s.id === id)?.price || 0), 0))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
+                </div>
               </div>
               
-              <div className="mt-8 flex gap-3 justify-end pt-5 border-t border-gray-100">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Batalkan</button>
-                <button type="submit" disabled={saving} className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 text-white px-8 py-2.5 rounded-xl font-semibold shadow-md transition-colors flex items-center gap-2">
-                  {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-5 h-5"/>}
+              <div className="sticky bottom-0 bg-white z-20 pb-6 pt-4 border-t border-gray-100 mt-8 flex gap-3 justify-end shadow-[0_-10px_20px_rgba(255,255,255,1)]">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm">Batalkan</button>
+                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
+                  {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5"/>}
                   {saving ? "Memproses..." : "Simpan Kunjungan"}
                 </button>
               </div>
@@ -1419,6 +1485,26 @@ export default function AdminVisitsPage() {
               </div>
             )}
 
+            {/* Insight Panel KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: "Kunjungan Hari Ini", value: kpiVisitsToday.toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                { label: "Pendapatan Hari Ini", value: kpiRevenueFormatted, icon: Wallet, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Pasien Baru", value: kpiNewPatientsToday.toString(), icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-50" },
+                { label: "Retensi", value: `${kpiRetention}%`, icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
+              ].map((kpi, idx) => (
+                <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${kpi.bg}`}>
+                    <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-0.5">{kpi.label}</p>
+                    <p className="text-lg font-bold text-gray-900">{kpi.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Tabel Data Panel */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
               
@@ -1440,9 +1526,20 @@ export default function AdminVisitsPage() {
                       className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-auto text-gray-600" 
                     />
                   </div>
-                  <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-64" />
+                  <div className="flex items-center gap-2">
+                    <div className="hidden lg:flex bg-gray-100 p-1 rounded-lg">
+                      <button onClick={() => setTableDensity("compact")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "compact" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Compact</button>
+                      <button onClick={() => setTableDensity("comfortable")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "comfortable" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Comfort</button>
+                      <button onClick={() => setTableDensity("large")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "large" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Large</button>
+                    </div>
+                    <div className="relative group">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors w-full sm:w-64" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-60 group-focus-within:opacity-0 transition-opacity">
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">⌘</kbd>
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">K</kbd>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1521,15 +1618,15 @@ export default function AdminVisitsPage() {
                 <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
-                    <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
-                      <th className="px-6 py-4 font-semibold">Waktu & Tgl</th>
+                    <tr className="bg-[#F8FAFC] text-[11px] font-extrabold uppercase tracking-widest text-gray-500 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                      <th className="px-6 py-4">Waktu & Tgl</th>
                       <th className="px-6 py-4 font-semibold">Profil Pasien</th>
                       <th className="px-6 py-4 font-semibold">Info Layanan</th>
                       {selectedBranchId === "ALL" && (
                         <th className="px-6 py-4 font-semibold">Cabang</th>
                       )}
-                      <th className="px-6 py-4 font-semibold">Status Pembayaran</th>
-                      <th className="px-6 py-4 font-semibold w-1/4">Catatan Medis</th>
+                      <th className="px-6 py-4">Status Pembayaran</th>
+                      <th className="px-6 py-4 w-1/4">Catatan Medis</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1541,25 +1638,30 @@ export default function AdminVisitsPage() {
                         </div>
                       </td></tr>
                     ) : finalVisits.length === 0 ? (
-                      <tr><td colSpan={6} className="px-6 py-16 text-center">
-                        <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                          <CalendarCheck className="h-8 w-8 text-gray-300" />
+                      <tr><td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="bg-[#F8FAFC] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border border-gray-100 shadow-sm">
+                          <Calendar className="h-10 w-10 text-teal-500/70" />
                         </div>
-                        <p className="text-gray-500 font-medium">Buku pasien masih kosong</p>
-                        <p className="text-sm text-gray-400 mt-1">Belum ada riwayat kunjungan yang sesuai dengan filter.</p>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada kunjungan hari ini</h3>
+                        <p className="text-sm text-gray-500 mb-6">Klik "Catat Kunjungan" untuk mulai mencatat pasien.</p>
+                        <button onClick={() => setIsFormOpen(true)} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 mx-auto">
+                          <Plus className="w-4 h-4" /> Catat Kunjungan
+                        </button>
                       </td></tr>
                     ) : (
                       paginatedVisits.map(v => {
                         const visitNumber = getVisitSequenceNumber(v.patientId, v.id);
                         const isNewPatient = visitNumber === 1;
                         
+                        const tdClass = `px-6 ${tableDensity === "compact" ? "py-2" : tableDensity === "large" ? "py-6" : "py-4"}`;
+                        
                         return (
-                          <tr key={v.id} className="hover:bg-indigo-50/30 transition-colors group">
-                            <td className="px-6 py-4">
+                          <tr key={v.id} className="hover:bg-[#F8FAFC] hover:shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] cursor-pointer transition-all duration-200 group relative">
+                            <td className={tdClass}>
                               <div className="font-semibold text-gray-900">{v.visitDate.split('-').reverse().join('/')}</div>
                               <div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock className="w-3 h-3"/> {v.visitTime}</div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               <div className="font-bold text-gray-900 flex items-center gap-2">
                                 {getPatientName(v.patientId)}
                                 <button
@@ -1582,7 +1684,7 @@ export default function AdminVisitsPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
                                 <Activity className="w-3.5 h-3.5 text-teal-500"/> {getServiceName(v.serviceId)}
                               </div>
@@ -1591,28 +1693,28 @@ export default function AdminVisitsPage() {
                               </div>
                             </td>
                             {selectedBranchId === "ALL" && (
-                              <td className="px-6 py-4">
+                              <td className={tdClass}>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
                                   <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
                                 </div>
                               </td>
                             )}
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               {v.paymentStatus === "PAID" ? (
-                                <div className="flex flex-col items-start gap-1.5">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <div className="flex flex-col items-start gap-1">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200 w-full justify-center group-hover:shadow-sm transition-shadow">
                                     <Check className="w-3 h-3" /> Lunas
                                   </span>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1 w-full">
                                     <button 
                                       onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
-                                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
+                                      className="text-[10px] flex-1 font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center justify-center gap-1"
                                     >
                                       <Plus className="w-3 h-3"/> Tambah Layanan
                                     </button>
                                     <button
                                       onClick={() => handleDeleteVisit(v.id)}
-                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                                       title="Hapus Data Kunjungan"
                                     >
                                       <Trash2 className="w-3 h-3" />
@@ -1620,24 +1722,24 @@ export default function AdminVisitsPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-start gap-1">
                                   <button 
                                     onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                                   >
                                     Ke Kasir
                                   </button>
                                   <button
                                     onClick={() => handleDeleteVisit(v.id)}
-                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
+                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
                                     title="Hapus Data Kunjungan"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-3 h-3" /> Hapus
                                   </button>
                                 </div>
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               <p className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={v.notes || ""}>
                                 {v.notes || <span className="text-gray-400 italic">Tidak ada catatan</span>}
                               </p>

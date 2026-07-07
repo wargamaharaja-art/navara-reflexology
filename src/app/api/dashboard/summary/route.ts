@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { financeTransactions, inventoryItems, patientVisits, services } from "@/lib/db/schema";
+import { financeTransactions, inventoryItems, patientVisits, services, attendance } from "@/lib/db/schema";
 import { sql, eq, and, inArray, desc } from "drizzle-orm";
 import { getActiveBranchFilter } from "@/lib/auth";
 
@@ -118,23 +118,23 @@ export async function GET(request: Request) {
     const dailyIncomeResult = await dailyIncomeQuery;
     const pendapatanHarian = dailyIncomeResult[0]?.totalAmount || 0;
 
-    // 5.5 Terapis Bertugas Hari Ini
+    // 5.5 Terapis Bertugas Hari Ini (Berdasarkan Absensi)
     let dailyTherapistsQuery = db
-      .select({ count: sql<number>`count(distinct ${patientVisits.therapistId})` })
-      .from(patientVisits)
+      .select({ count: sql<number>`count(distinct ${attendance.therapistId})` })
+      .from(attendance)
       .where(and(
-        sql`date(${patientVisits.visitDate}) = ${todayStr}`,
-        sql`${patientVisits.therapistId} IS NOT NULL`
+        eq(attendance.date, todayStr),
+        inArray(attendance.status, ["PRESENT", "LATE"])
       ));
 
     if (branchFilter) {
       dailyTherapistsQuery = db
-        .select({ count: sql<number>`count(distinct ${patientVisits.therapistId})` })
-        .from(patientVisits)
+        .select({ count: sql<number>`count(distinct ${attendance.therapistId})` })
+        .from(attendance)
         .where(and(
-          sql`date(${patientVisits.visitDate}) = ${todayStr}`,
-          sql`${patientVisits.therapistId} IS NOT NULL`,
-          eq(patientVisits.branchId, branchFilter)
+          eq(attendance.date, todayStr),
+          inArray(attendance.status, ["PRESENT", "LATE"]),
+          eq(attendance.branchId, branchFilter)
         ));
     }
 
