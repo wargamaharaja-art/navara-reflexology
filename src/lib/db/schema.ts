@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, json } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, json, index } from "drizzle-orm/pg-core";
 
 // ============================================
 // BRANCHES (Cabang Klinik)
@@ -45,9 +45,12 @@ export const therapists = pgTable("therapists", {
   pinCode: text("pin_code"),
   contractStartDate: text("contract_start_date"),
   contractEndDate: text("contract_end_date"),
+  availabilityStatus: text("availability_status", { enum: ["AVAILABLE", "BUSY", "BREAK", "OFF"] }).notNull().default("AVAILABLE"),
   isActive: boolean("is_active").notNull().default(true),
   joinedAt: text("joined_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  branchIdx: index("therapist_branch_idx").on(table.branchId),
+}));
 
 // ============================================
 // INVENTORY (Master Barang Gudang)
@@ -100,7 +103,10 @@ export const financeTransactions = pgTable("finance_transactions", {
   paymentMethod: text("payment_method").notNull().default("CASH"), // e.g., "CASH", "TRANSFER", "EWALLET"
   attachmentUrl: text("attachment_url"), // URL/Link bukti transaksi
   date: text("date").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  branchIdx: index("finance_branch_idx").on(table.branchId),
+  dateIdx: index("finance_date_idx").on(table.date),
+}));
 
 // ============================================
 // PATIENTS (Buku Pasien)
@@ -126,13 +132,21 @@ export const patientVisits = pgTable("patient_visits", {
   therapistId: text("therapist_id").references(() => therapists.id),
   visitDate: text("visit_date").notNull(),
   visitTime: text("visit_time").notNull(),
+  checkInTime: text("check_in_time"), // HH:mm — jam mulai terapi
+  checkOutTime: text("check_out_time"), // HH:mm — jam selesai terhitung/manual
+  actualCheckOutTime: text("actual_check_out_time"), // HH:mm — jam selesai aktual (auto-release)
+  therapistStatusSnapshot: text("therapist_status_snapshot"), // Status terapis saat kunjungan dibuat
   bloodPressure: text("blood_pressure"),
   notes: text("notes"),
-  status: text("status", { enum: ["completed", "cancelled"] }).notNull().default("completed"),
+  status: text("status", { enum: ["completed", "cancelled", "in_progress"] }).notNull().default("completed"),
   paymentStatus: text("payment_status", { enum: ["UNPAID", "PAID"] }).notNull().default("UNPAID"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  branchIdx: index("visit_branch_idx").on(table.branchId),
+  dateIdx: index("visit_date_idx").on(table.visitDate),
+  therapistIdx: index("visit_therapist_idx").on(table.therapistId),
+}));
 
 // ============================================
 // RESERVATIONS (Pemesanan via Web)
@@ -149,7 +163,10 @@ export const reservations = pgTable("reservations", {
   status: text("status", { enum: ["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"] }).notNull().default("PENDING"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  branchIdx: index("reservation_branch_idx").on(table.branchId),
+  dateIdx: index("reservation_date_idx").on(table.date),
+}));
 
 // ============================================
 // SETTINGS (Informasi Perusahaan Global)
@@ -186,7 +203,10 @@ export const therapistCommissions = pgTable("therapist_commissions", {
   status: text("status", { enum: ["PENDING", "PAID"] }).notNull().default("PENDING"),
   paidAt: text("paid_at"), // When status becomes PAID
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  therapistIdx: index("commission_therapist_idx").on(table.therapistId),
+  visitIdx: index("commission_visit_idx").on(table.visitId),
+}));
 
 // ============================================
 // MONTHLY TARGETS (KPI Bulanan)
@@ -313,7 +333,11 @@ export const attendance = pgTable("attendance", {
   status: text("status", { enum: ["PRESENT", "LATE", "ABSENT"] }).notNull().default("PRESENT"),
   notes: text("notes"),
   photoUrl: text("photo_url"),
-});
+}, (table) => ({
+  branchIdx: index("attendance_branch_idx").on(table.branchId),
+  therapistIdx: index("attendance_therapist_idx").on(table.therapistId),
+  dateIdx: index("attendance_date_idx").on(table.date),
+}));
 
 // ============================================
 // THERAPIST SERVICE COMMISSIONS (Override Komisi)
@@ -390,7 +414,11 @@ export const invoices = pgTable("invoices", {
   changeAmount: integer("change_amount").notNull().default(0),
   notes: text("notes"),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
-});
+}, (table) => ({
+  branchIdx: index("invoice_branch_idx").on(table.branchId),
+  dateIdx: index("invoice_date_idx").on(table.createdAt),
+  therapistIdx: index("invoice_therapist_idx").on(table.therapistId),
+}));
 
 export type Invoice = typeof invoices.$inferSelect;
 export type NewInvoice = typeof invoices.$inferInsert;
@@ -435,3 +463,20 @@ export const staffPayrollReports = pgTable("staff_payroll_reports", {
 
 export type StaffPayrollReport = typeof staffPayrollReports.$inferSelect;
 export type NewStaffPayrollReport = typeof staffPayrollReports.$inferInsert;
+
+// ============================================
+// SYSTEM LOGS (Audit Trail)
+// ============================================
+export const systemLogs = pgTable("system_logs", {
+  id: text("id").primaryKey(), // UUID
+  userId: text("user_id").notNull(), // Bisa admin/cashier id
+  userName: text("user_name").notNull(),
+  action: text("action").notNull(), // e.g. "DELETE_INVOICE", "UPDATE_PRICE", "CANCEL_RESERVATION"
+  entityType: text("entity_type").notNull(), // e.g. "invoice", "service", "reservation"
+  entityId: text("entity_id").notNull(),
+  details: text("details"), // JSON string info tambahan
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export type SystemLog = typeof systemLogs.$inferSelect;
+export type NewSystemLog = typeof systemLogs.$inferInsert;

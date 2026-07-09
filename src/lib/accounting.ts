@@ -11,7 +11,8 @@ export async function createJournalEntry({
   referenceId,
   debitAccountId,
   creditAccountId,
-  amount
+  amount,
+  tx
 }: {
   date?: string;
   description: string;
@@ -19,11 +20,14 @@ export async function createJournalEntry({
   debitAccountId: string; // Akun yang di-debet (bertambah jika Aset/Beban)
   creditAccountId: string; // Akun yang di-kredit (bertambah jika Kewajiban/Modal/Pendapatan)
   amount: number;
+  tx?: any; // Drizzle transaction instance
 }) {
   const jId = "jrn_" + Math.random().toString(36).substr(2, 9);
   const trxDate = date || new Date().toISOString();
 
-  await db.insert(journalEntries).values({
+  const dbInstance = tx || db;
+
+  await dbInstance.insert(journalEntries).values({
     id: jId,
     date: trxDate,
     description,
@@ -31,7 +35,7 @@ export async function createJournalEntry({
     createdAt: trxDate,
   });
 
-  await db.insert(journalLines).values([
+  await dbInstance.insert(journalLines).values([
     {
       id: "jline_" + Math.random().toString(36).substr(2, 9),
       entryId: jId,

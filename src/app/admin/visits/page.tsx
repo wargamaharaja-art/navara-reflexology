@@ -6,10 +6,12 @@ import {
   Plus, CalendarCheck, Search, User, Phone, MapPin, Activity, Store, 
   UserCheck, Calendar, Clock, FileText, X, ChevronDown, Users, TrendingUp, 
   Check, Receipt, Printer, MessageCircle, Link2, Download, AlertCircle, 
-  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet, Save
+  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet, Save, Timer
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
+import TherapistPicker from "@/components/ui/TherapistPicker";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 
 type PatientVisit = {
@@ -100,6 +102,11 @@ export default function AdminVisitsPage() {
   const [posVisitId, setPosVisitId] = useState<string | null>(null);
   const [posModalOpen, setPosModalOpen] = useState(false);
 
+  const getFormattedTime = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
   const [formData, setFormData] = useState({
     phone: "",
     name: "",
@@ -109,11 +116,35 @@ export default function AdminVisitsPage() {
     branchId: "",
     therapistId: "",
     visitDate: new Date().toISOString().split('T')[0],
-    visitTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    visitTime: getFormattedTime(),
+    checkInTime: getFormattedTime(),
+    checkOutTime: "",
     bloodPressure: "",
     notes: "",
     status: "completed",
   });
+
+  // Auto-calculate checkOutTime berdasarkan checkInTime + total durasi layanan
+  useEffect(() => {
+    if (!formData.checkInTime || selectedServices.length === 0) {
+      return;
+    }
+    const totalMinutes = selectedServices.reduce((sum, id) => {
+      const svc = services.find(s => s.id === id);
+      return sum + (svc?.durationMinutes || 0);
+    }, 0);
+    if (totalMinutes <= 0) return;
+
+    // Menangani format separator waktu (bisa : atau .)
+    const normalizedTime = formData.checkInTime.replace(".", ":");
+    const [h, m] = normalizedTime.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return;
+    const totalMins = h * 60 + m + totalMinutes;
+    const outH = Math.floor(totalMins / 60) % 24;
+    const outM = totalMins % 60;
+    const autoOut = `${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}`;
+    setFormData(prev => ({ ...prev, checkOutTime: autoOut }));
+  }, [formData.checkInTime, selectedServices, services]);
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -472,25 +503,48 @@ export default function AdminVisitsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedServices.length === 0) return alert("Pilih minimal 1 layanan!");
+    
+    // Validasi jam
+    if (formData.checkInTime && formData.checkOutTime) {
+      if (formData.checkOutTime <= formData.checkInTime) {
+        return alert("Jam keluar harus lebih besar dari jam masuk!");
+      }
+    }
+
     setSaving(true);
     try {
       const primaryServiceId = selectedServices[0];
       const extraServiceNames = selectedServices.slice(1).map(id => services.find(s => s.id === id)?.name).join(", ");
       const finalNotes = extraServiceNames ? `${formData.notes ? formData.notes + '\n\n' : ''}Layanan Tambahan: ${extraServiceNames}` : formData.notes;
 
-      await fetch("/api/patient-visits", {
+      const res = await fetch("/api/patient-visits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           serviceId: primaryServiceId,
-          notes: finalNotes
+          notes: finalNotes,
+          checkInTime: formData.checkInTime || null,
+          checkOutTime: formData.checkOutTime || null,
         }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        if (res.status === 409) {
+          alert(errData.error || "Konflik data!");
+          setSaving(false);
+          return;
+        }
+      }
+
       setIsFormOpen(false);
       setFormData(prev => ({
         ...prev,
-        phone: "", name: "", address: "", bloodPressure: "", notes: ""
+        phone: "", name: "", address: "", bloodPressure: "", notes: "",
+        checkInTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        checkOutTime: "",
+        therapistId: "",
       }));
       setSelectedServices([]);
       fetchData();
@@ -557,16 +611,25 @@ export default function AdminVisitsPage() {
   const getServiceName = (id: string) => services.find(s => s.id === id)?.name || id;
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
-  const handleDeleteVisit = async (visitId: string) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus data kunjungan ini? Tindakan ini tidak dapat dibatalkan.")) {
-      return;
-    }
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteVisit = (visitId: string) => {
+    setVisitToDelete(visitId);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteVisit = async () => {
+    if (!visitToDelete) return;
+    setIsDeleting(true);
     try {
-      const res = await fetch(`/api/patient-visits/${visitId}`, {
+      const res = await fetch(`/api/patient-visits/${visitToDelete}`, {
         method: "DELETE",
       });
       if (res.ok) {
-        alert("Data kunjungan berhasil dihapus");
+        setDeleteModalOpen(false);
+        setVisitToDelete(null);
         fetchData();
       } else {
         const err = await res.json();
@@ -575,6 +638,8 @@ export default function AdminVisitsPage() {
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1390,18 +1455,23 @@ export default function AdminVisitsPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Terapis Penanggung Jawab <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
-                    <div className="relative">
-                      <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <select value={formData.therapistId} onChange={e => setFormData({ ...formData, therapistId: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all appearance-none font-medium">
-                        <option value="">Tanpa Terapis Khusus</option>
-                        {therapists.filter(t => !formData.branchId || !t.branchId || t.branchId === formData.branchId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
-                    </div>
+                  {/* Terapis Penanggung Jawab — Premium Card Picker */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                      <UserCheck className="w-4 h-4 text-teal-600" />
+                      Terapis Penanggung Jawab
+                      <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span>
+                    </label>
+                    <TherapistPicker
+                      branchId={formData.branchId}
+                      selectedTherapistId={formData.therapistId}
+                      onSelect={(id) => setFormData({ ...formData, therapistId: id })}
+                      pollInterval={5000}
+                    />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Tanggal + Jam Masuk + Jam Keluar */}
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tanggal <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
@@ -1409,6 +1479,51 @@ export default function AdminVisitsPage() {
                         <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium" />
                       </div>
                     </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                        <Clock className="w-4 h-4 text-teal-600" />
+                        Jam Masuk <span className="text-red-500 font-bold">*</span>
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="time" 
+                          required
+                          value={formData.checkInTime} 
+                          onChange={e => setFormData({ ...formData, checkInTime: e.target.value })} 
+                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                        <Timer className="w-4 h-4 text-amber-600" />
+                        Jam Keluar
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="time" 
+                          value={formData.checkOutTime} 
+                          onChange={e => setFormData({ ...formData, checkOutTime: e.target.value })} 
+                          className="w-full px-4 py-3 bg-amber-50/50 border-2 border-amber-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-amber-900" 
+                        />
+                      </div>
+                      {formData.checkOutTime && formData.checkInTime && (
+                        <p className="text-[10px] text-teal-600 font-bold flex items-center gap-1">
+                          ⏱ Durasi: {(() => {
+                            const [h1, m1] = formData.checkInTime.split(":").map(Number);
+                            const [h2, m2] = formData.checkOutTime.split(":").map(Number);
+                            const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+                            if (diff <= 0) return "Tidak valid";
+                            const hours = Math.floor(diff / 60);
+                            const mins = diff % 60;
+                            return hours > 0 ? `${hours} jam ${mins} menit` : `${mins} menit`;
+                          })()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tensi Darah <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
                       <div className="relative">
@@ -2333,6 +2448,18 @@ export default function AdminVisitsPage() {
           </div>
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="Hapus Kunjungan?"
+        message="Apakah Anda yakin ingin menghapus data kunjungan ini? Tindakan ini tidak dapat dibatalkan dan semua data terkait akan hilang permanen."
+        onConfirm={confirmDeleteVisit}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setVisitToDelete(null);
+        }}
+        isLoading={isDeleting}
+      />
 
       </div>
     </div>

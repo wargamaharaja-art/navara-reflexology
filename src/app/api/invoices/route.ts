@@ -9,12 +9,13 @@ import { financeTransactions, therapistCommissions, therapistServiceCommissions 
 import crypto from "crypto";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
-async function generateInvoiceNumber(branchId: string): Promise<string> {
+async function generateInvoiceNumber(branchId: string, tx?: any): Promise<string> {
   const now = new Date();
   const dateStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).replace(/-/g, "");
 
   // Get branch code (first 3 letters uppercase)
-  const branchRecords = await db.select().from(branches).where(eq(branches.id, branchId)).limit(1);
+  const dbInstance = tx || db;
+  const branchRecords = await dbInstance.select().from(branches).where(eq(branches.id, branchId)).limit(1);
   const branchCode = branchRecords.length > 0
     ? branchRecords[0].name.substring(0, 3).toUpperCase()
     : branchId.substring(0, 3).toUpperCase();
@@ -22,7 +23,7 @@ async function generateInvoiceNumber(branchId: string): Promise<string> {
   const prefix = `INV-${branchCode}-${dateStr}`;
 
   // Find the latest invoice with this prefix to get the next sequence
-  const existing = await db
+  const existing = await dbInstance
     .select()
     .from(invoices)
     .where(like(invoices.invoiceNumber, `${prefix}%`))
@@ -75,7 +76,10 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ data: formatted });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === "Cabang tidak ditemukan") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     console.error("GET /api/invoices error:", error);
     return NextResponse.json({ error: "Gagal memuat data struk" }, { status: 500 });
   }
@@ -118,250 +122,253 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Cabang wajib ditentukan" }, { status: 400 });
     }
 
-    // 1. Upsert patient
-    let patientId = "";
-    const existingPatient = await db.select().from(patients).where(eq(patients.phone, patientPhone)).limit(1);
-
-    if (existingPatient.length > 0) {
-      patientId = existingPatient[0].id;
-      // Update name if changed
-      if (existingPatient[0].name !== patientName) {
-        await db.update(patients)
-          .set({ name: patientName, updatedAt: new Date().toISOString() })
-          .where(eq(patients.id, patientId));
+    const txResult = await db.transaction(async (tx) => {
+      // 1. Upsert patient
+      let patientId = "";
+      const existingPatient = await tx.select().from(patients).where(eq(patients.phone, patientPhone)).limit(1);
+  
+      if (existingPatient.length > 0) {
+        patientId = existingPatient[0].id;
+        // Update name if changed
+        if (existingPatient[0].name !== patientName) {
+          await tx.update(patients)
+            .set({ name: patientName, updatedAt: new Date().toISOString() })
+            .where(eq(patients.id, patientId));
+        }
+      } else {
+        patientId = `P-${Date.now()}`;
+        await tx.insert(patients).values({
+          id: patientId,
+          name: patientName,
+          phone: patientPhone,
+          address: patientAddress || null,
+          gender: patientGender || null,
+        });
       }
-    } else {
-      patientId = `P-${Date.now()}`;
-      await db.insert(patients).values({
-        id: patientId,
-        name: patientName,
-        phone: patientPhone,
-        address: patientAddress || null,
-        gender: patientGender || null,
+  
+      // 2. Get branch info
+      const branchRecords = await tx.select().from(branches).where(eq(branches.id, finalBranchId)).limit(1);
+      const branch = branchRecords[0];
+      if (!branch) {
+        throw new Error("Cabang tidak ditemukan");
+      }
+  
+      // 3. Get therapist info
+      let therapistName = null;
+      if (therapistId) {
+        const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
+        if (therapistRecords.length > 0) {
+          therapistName = therapistRecords[0].name;
+        }
+      }
+  
+      // 4. Calculate totals
+      const subtotal = items.reduce((sum: number, item: any) => sum + (item.subtotal || item.price * item.qty), 0);
+      const grandTotal = subtotal - discount + tax;
+  
+      // 5. Generate invoice number
+      const invoiceNumber = await generateInvoiceNumber(finalBranchId, tx);
+  
+      // 6. Resolve Transaction Date
+      let transactionDate = new Date().toISOString();
+      let visitDateStr = transactionDate.split("T")[0]; // default to today
+  
+      if (visitId) {
+        const existingVisits = await tx.select().from(patientVisits).where(eq(patientVisits.id, visitId)).limit(1);
+        if (existingVisits.length > 0) {
+          visitDateStr = existingVisits[0].visitDate;
+          // Gunakan tanggal dari kunjungan, tapi pertahankan waktu saat ini agar tidak error timezone/format
+          const timePart = transactionDate.split("T")[1];
+          transactionDate = `${visitDateStr}T${timePart}`;
+        }
+      } else if (body.transactionDate) {
+        transactionDate = body.transactionDate;
+        visitDateStr = transactionDate.split("T")[0];
+      }
+  
+      const invoiceId = crypto.randomUUID();
+      const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
+  
+  
+      await tx.insert(invoices).values({
+        id: invoiceId,
+        invoiceNumber,
+        visitId: visitId || null,
+        patientId,
+        patientName,
+        patientPhone,
+        therapistId: therapistId || null,
+        therapistName,
+        branchId: finalBranchId,
+        branchName: branch.name,
+        branchAddress: branch.address,
+        branchPhone: branch.phone,
+        items: JSON.stringify(items),
+        subtotal,
+        discount,
+        tax,
+        grandTotal,
+        paymentMethod: splitPayments && splitPayments.length > 1 ? "SPLIT" : paymentMethod,
+        splitPayments: splitPayments ? JSON.stringify(splitPayments) : null,
+        amountPaid: amountPaid || grandTotal,
+        changeAmount: Math.max(0, (amountPaid || grandTotal) - grandTotal),
+        notes: notes || null,
+        createdAt: now,
       });
-    }
-
-    // 2. Get branch info
-    const branchRecords = await db.select().from(branches).where(eq(branches.id, finalBranchId)).limit(1);
-    const branch = branchRecords[0];
-    if (!branch) {
-      return NextResponse.json({ error: "Cabang tidak ditemukan" }, { status: 404 });
-    }
-
-    // 3. Get therapist info
-    let therapistName = null;
-    if (therapistId) {
-      const therapistRecords = await db.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
-      if (therapistRecords.length > 0) {
-        therapistName = therapistRecords[0].name;
-      }
-    }
-
-    // 4. Calculate totals
-    const subtotal = items.reduce((sum: number, item: any) => sum + (item.subtotal || item.price * item.qty), 0);
-    const grandTotal = subtotal - discount + tax;
-
-    // 5. Generate invoice number
-    const invoiceNumber = await generateInvoiceNumber(finalBranchId);
-
-    // 6. Resolve Transaction Date
-    let transactionDate = new Date().toISOString();
-    let visitDateStr = transactionDate.split("T")[0]; // default to today
-
-    if (visitId) {
-      const existingVisits = await db.select().from(patientVisits).where(eq(patientVisits.id, visitId)).limit(1);
-      if (existingVisits.length > 0) {
-        visitDateStr = existingVisits[0].visitDate;
-        // Gunakan tanggal dari kunjungan, tapi pertahankan waktu saat ini agar tidak error timezone/format
-        const timePart = transactionDate.split("T")[1];
-        transactionDate = `${visitDateStr}T${timePart}`;
-      }
-    } else if (body.transactionDate) {
-      transactionDate = body.transactionDate;
-      visitDateStr = transactionDate.split("T")[0];
-    }
-
-    const invoiceId = crypto.randomUUID();
-    const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
-
-
-    await db.insert(invoices).values({
-      id: invoiceId,
-      invoiceNumber,
-      visitId: visitId || null,
-      patientId,
-      patientName,
-      patientPhone,
-      therapistId: therapistId || null,
-      therapistName,
-      branchId: finalBranchId,
-      branchName: branch.name,
-      branchAddress: branch.address,
-      branchPhone: branch.phone,
-      items: JSON.stringify(items),
-      subtotal,
-      discount,
-      tax,
-      grandTotal,
-      paymentMethod: splitPayments && splitPayments.length > 1 ? "SPLIT" : paymentMethod,
-      splitPayments: splitPayments ? JSON.stringify(splitPayments) : null,
-      amountPaid: amountPaid || grandTotal,
-      changeAmount: Math.max(0, (amountPaid || grandTotal) - grandTotal),
-      notes: notes || null,
-      createdAt: now,
-    });
-
-    // 7. Create finance transaction (INCOME)
-    if (splitPayments && splitPayments.length > 1) {
-      for (const sp of splitPayments) {
-        if (sp.amount <= 0) continue;
+  
+      // 7. Create finance transaction (INCOME)
+      if (splitPayments && splitPayments.length > 1) {
+        for (const sp of splitPayments) {
+          if (sp.amount <= 0) continue;
+          const finTrxId = crypto.randomUUID();
+          await tx.insert(financeTransactions).values({
+            id: finTrxId,
+            type: "INCOME",
+            category: "Pendapatan Layanan",
+            amount: sp.amount,
+            description: `Struk ${invoiceNumber} - ${patientName} (${sp.method})`,
+            referenceId: invoiceId,
+            branchId: finalBranchId,
+            paymentMethod: sp.method,
+            date: now,
+          });
+  
+          // 8. Create journal entry
+          await createJournalEntry({
+            date: now,
+            description: `[POS] ${invoiceNumber} - ${patientName} (${sp.method})`,
+            referenceId: finTrxId,
+            debitAccountId: COA.KAS,
+            creditAccountId: COA.PENDAPATAN_LAYANAN,
+            amount: sp.amount,
+          tx});
+        }
+      } else {
         const finTrxId = crypto.randomUUID();
-        await db.insert(financeTransactions).values({
+        await tx.insert(financeTransactions).values({
           id: finTrxId,
           type: "INCOME",
           category: "Pendapatan Layanan",
-          amount: sp.amount,
-          description: `Struk ${invoiceNumber} - ${patientName} (${sp.method})`,
+          amount: grandTotal,
+          description: `Struk ${invoiceNumber} - ${patientName}`,
           referenceId: invoiceId,
           branchId: finalBranchId,
-          paymentMethod: sp.method,
+          paymentMethod,
           date: now,
         });
-
+  
         // 8. Create journal entry
         await createJournalEntry({
           date: now,
-          description: `[POS] ${invoiceNumber} - ${patientName} (${sp.method})`,
+          description: `[POS] ${invoiceNumber} - ${patientName}`,
           referenceId: finTrxId,
           debitAccountId: COA.KAS,
           creditAccountId: COA.PENDAPATAN_LAYANAN,
-          amount: sp.amount,
+          amount: grandTotal,
+        tx});
+      }
+  
+      // 9. Create patient visit record if not linked to an existing one (POS standalone)
+      let finalVisitId = visitId || null;
+      if (!finalVisitId && items.length > 0) {
+        // Create a patient visit for the first service item so commissions can be tracked
+        const primaryItem = items[0];
+        finalVisitId = `V-${Date.now()}`;
+        await tx.insert(patientVisits).values({
+          id: finalVisitId,
+          patientId,
+          serviceId: primaryItem.serviceId || primaryItem.name,
+          branchId: finalBranchId,
+          therapistId: therapistId || null,
+          visitDate: now.split("T")[0],
+          visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
+          notes: `POS Struk ${invoiceNumber}`,
+          status: "completed",
+          paymentStatus: "PAID",
         });
       }
-    } else {
-      const finTrxId = crypto.randomUUID();
-      await db.insert(financeTransactions).values({
-        id: finTrxId,
-        type: "INCOME",
-        category: "Pendapatan Layanan",
-        amount: grandTotal,
-        description: `Struk ${invoiceNumber} - ${patientName}`,
-        referenceId: invoiceId,
-        branchId: finalBranchId,
-        paymentMethod,
-        date: now,
-      });
-
-      // 8. Create journal entry
-      await createJournalEntry({
-        date: now,
-        description: `[POS] ${invoiceNumber} - ${patientName}`,
-        referenceId: finTrxId,
-        debitAccountId: COA.KAS,
-        creditAccountId: COA.PENDAPATAN_LAYANAN,
-        amount: grandTotal,
-      });
-    }
-
-    // 9. Create patient visit record if not linked to an existing one (POS standalone)
-    let finalVisitId = visitId || null;
-    if (!finalVisitId && items.length > 0) {
-      // Create a patient visit for the first service item so commissions can be tracked
-      const primaryItem = items[0];
-      finalVisitId = `V-${Date.now()}`;
-      await db.insert(patientVisits).values({
-        id: finalVisitId,
-        patientId,
-        serviceId: primaryItem.serviceId || primaryItem.name,
-        branchId: finalBranchId,
-        therapistId: therapistId || null,
-        visitDate: now.split("T")[0],
-        visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
-        notes: `POS Struk ${invoiceNumber}`,
-        status: "completed",
-        paymentStatus: "PAID",
-      });
-    }
-
-    // 10. Create therapist commission if applicable
-    if (therapistId && finalVisitId) {
-      const therapistRecords = await db.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
-      if (therapistRecords.length > 0) {
-        const therapist = therapistRecords[0];
-
-        // Calculate commission for each item
-        for (const item of items) {
-          const serviceId = item.serviceId;
-          if (!serviceId) continue;
-
-          const customOverride = await db
-            .select()
-            .from(therapistServiceCommissions)
-            .where(
-              and(
-                eq(therapistServiceCommissions.therapistId, therapistId),
-                eq(therapistServiceCommissions.serviceId, serviceId)
+  
+      // 10. Create therapist commission if applicable
+      if (therapistId && finalVisitId) {
+        const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
+        if (therapistRecords.length > 0) {
+          const therapist = therapistRecords[0];
+  
+          // Calculate commission for each item
+          for (const item of items) {
+            const serviceId = item.serviceId;
+            if (!serviceId) continue;
+  
+            const customOverride = await db
+              .select()
+              .from(therapistServiceCommissions)
+              .where(
+                and(
+                  eq(therapistServiceCommissions.therapistId, therapistId),
+                  eq(therapistServiceCommissions.serviceId, serviceId)
+                )
               )
-            )
-            .limit(1);
-
-          let commissionAmount = 0;
-          if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-            commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
-          }
-
-          if (commissionAmount > 0) {
-            await db.insert(therapistCommissions).values({
-              id: crypto.randomUUID(),
-              therapistId,
-              visitId: finalVisitId,
-              amount: commissionAmount,
-              status: "PENDING",
-            });
-
-            // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
-            const commTrxId = crypto.randomUUID();
-            await db.insert(financeTransactions).values({
-              id: commTrxId,
-              type: "EXPENSE",
-              category: "Bagi Hasil Terapis",
-              amount: commissionAmount,
-              description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${item.name || serviceId} pasien ${patientName}`,
-              referenceId: finalVisitId,
-              branchId: finalBranchId,
-              paymentMethod: "CASH", // Asumsi disisihkan via kas
-              date: now
-            });
-
-            // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
-            await createJournalEntry({
-              date: now,
-              description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${item.name || serviceId}`,
-              referenceId: commTrxId,
-              debitAccountId: COA.BEBAN_KOMISI,
-              creditAccountId: COA.KAS,
-              amount: commissionAmount
-            });
+              .limit(1);
+  
+            let commissionAmount = 0;
+            if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
+              commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
+            }
+  
+            if (commissionAmount > 0) {
+              await tx.insert(therapistCommissions).values({
+                id: crypto.randomUUID(),
+                therapistId,
+                visitId: finalVisitId,
+                amount: commissionAmount,
+                status: "PENDING",
+              });
+  
+              // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
+              const commTrxId = crypto.randomUUID();
+              await tx.insert(financeTransactions).values({
+                id: commTrxId,
+                type: "EXPENSE",
+                category: "Bagi Hasil Terapis",
+                amount: commissionAmount,
+                description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${item.name || serviceId} pasien ${patientName}`,
+                referenceId: finalVisitId,
+                branchId: finalBranchId,
+                paymentMethod: "CASH", // Asumsi disisihkan via kas
+                date: now
+              });
+  
+              // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
+              await createJournalEntry({
+                date: now,
+                description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${item.name || serviceId}`,
+                referenceId: commTrxId,
+                debitAccountId: COA.BEBAN_KOMISI,
+                creditAccountId: COA.KAS,
+                amount: commissionAmount, tx});
+            }
           }
         }
       }
-    }
-
-    // 11. If existing visit was provided, mark as PAID
-    if (visitId) {
-      await db.update(patientVisits)
-        .set({ paymentStatus: "PAID", updatedAt: now })
-        .where(eq(patientVisits.id, visitId));
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
+  
+      // 11. If existing visit was provided, mark as PAID
+      if (visitId) {
+        await tx.update(patientVisits)
+          .set({ paymentStatus: "PAID", updatedAt: now })
+          .where(eq(patientVisits.id, visitId));
+      }
+  
+        return {
         id: invoiceId,
         invoiceNumber,
         grandTotal,
         changeAmount: Math.max(0, (amountPaid || grandTotal) - grandTotal),
-      }
+      };
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: txResult
     }, { status: 201 });
   } catch (error) {
     console.error("POST /api/invoices error:", error);

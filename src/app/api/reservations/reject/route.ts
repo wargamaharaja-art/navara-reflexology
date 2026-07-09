@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { reservations } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { logSystemAction } from "@/lib/logger";
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
     await db.update(reservations)
       .set({ status: "CANCELLED", updatedAt: new Date().toISOString() })
       .where(eq(reservations.id, id));
+
+    await logSystemAction("CANCEL_RESERVATION", "reservation", id, `Reservasi ditolak/dibatalkan (ID: ${id})`);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -13,6 +13,7 @@ export default function AttendanceKiosk() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string; details?: any } | null>(null);
   const [hasCamera, setHasCamera] = useState<boolean | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Fallback branch if not provided from context
   const branchId = "karawaci"; // Should ideally be selected by admin before turning on kiosk
@@ -43,32 +44,32 @@ export default function AttendanceKiosk() {
   }, []);
 
   const handlePinClick = (num: string) => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     if (message?.type === "success") setMessage(null); // Clear success message on new input
 
     if (pin.length < 6) {
       const newPin = pin + num;
       setPin(newPin);
       if (newPin.length === 6) {
-        submitAttendance(newPin);
+        setCountdown(3);
       }
     }
   };
 
   const handleClear = () => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     setPin("");
     setMessage(null);
   };
 
   const handleDelete = () => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     setPin(prev => prev.slice(0, -1));
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (loading) return;
+      if (loading || countdown !== null) return;
       
       if (e.key >= "0" && e.key <= "9") {
         handlePinClick(e.key);
@@ -81,7 +82,19 @@ export default function AttendanceKiosk() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [loading, pin]); // Need pin here because handlePinClick uses pin state
+  }, [loading, pin, countdown]); 
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      submitAttendance(pin);
+      setCountdown(null);
+    }
+  }, [countdown, pin]);
 
 
   const capturePhoto = (): string | null => {
@@ -200,6 +213,15 @@ export default function AttendanceKiosk() {
             
             {/* Guide markers */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-dashed border-white/30 rounded-full pointer-events-none z-10 hidden md:block" />
+
+            {/* Countdown Overlay */}
+            {countdown !== null && countdown > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 backdrop-blur-sm rounded-3xl">
+                <div className="text-8xl md:text-9xl font-black text-white animate-ping drop-shadow-2xl">
+                  {countdown}
+                </div>
+              </div>
+            )}
           </div>
           <p className="text-center text-slate-400 mt-4 text-sm flex items-center justify-center gap-2">
             <Camera className="w-4 h-4" /> Pastikan wajah Anda terlihat jelas di kamera

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { invoices, financeTransactions } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { logSystemAction } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 
 // GET: Public endpoint - fetch invoice detail by ID (no auth required)
@@ -139,6 +140,8 @@ export async function DELETE(
 
     // Delete the invoice
     await db.delete(invoices).where(eq(invoices.id, id));
+
+    await logSystemAction("DELETE_INVOICE", "invoice", id, `Struk dihapus: ${existing[0].invoiceNumber} - ${existing[0].patientName} (${existing[0].grandTotal})`);
 
     return NextResponse.json({ success: true, message: "Transaksi berhasil dihapus" });
   } catch (error) {

@@ -36,6 +36,64 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
   return <>{isCurrency ? formatRupiah(count) : count}</>;
 };
 
+// Therapist Status Dashboard Widget
+function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
+  const [counts, setCounts] = useState({ AVAILABLE: 0, BUSY: 0, BREAK: 0, OFF: 0, total: 0 });
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("/api/therapists/availability");
+        if (res.ok) {
+          const data = await res.json();
+          const list = data.data || [];
+          setCounts({
+            AVAILABLE: list.filter((t: any) => t.availabilityStatus === "AVAILABLE").length,
+            BUSY: list.filter((t: any) => t.availabilityStatus === "BUSY").length,
+            BREAK: list.filter((t: any) => t.availabilityStatus === "BREAK").length,
+            OFF: list.filter((t: any) => t.availabilityStatus === "OFF").length,
+            total: list.length,
+          });
+        }
+      } catch {}
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-10 h-10 rounded-[12px] bg-purple-50 border border-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <Users className="w-5 h-5 text-purple-700" />
+        </div>
+        <span className="text-[11px] font-black text-purple-800 uppercase tracking-wider leading-tight">Status<br/>Terapis</span>
+      </div>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-gray-600 font-medium flex items-center gap-1.5">🟢 Tersedia</span>
+          <span className="text-sm font-black text-emerald-600">{counts.AVAILABLE}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-gray-600 font-medium flex items-center gap-1.5">🟡 Bertugas</span>
+          <span className="text-sm font-black text-amber-600">{counts.BUSY}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] text-gray-600 font-medium flex items-center gap-1.5">🔴 Tidak Masuk</span>
+          <span className="text-sm font-black text-red-600">{counts.OFF}</span>
+        </div>
+        {counts.BREAK > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-gray-600 font-medium flex items-center gap-1.5">🟠 Istirahat</span>
+            <span className="text-sm font-black text-orange-600">{counts.BREAK}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
@@ -316,28 +374,8 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Terapis Bertugas */}
-                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-[12px] bg-purple-50 border border-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Users className="w-5 h-5 text-purple-700" />
-                      </div>
-                      <span className="text-[11px] font-black text-purple-800 uppercase tracking-wider leading-tight">Terapis<br/>Bertugas</span>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-gray-500 font-medium mb-1">Total Tenaga Kerja</p>
-                      <div className="flex items-baseline gap-1.5">
-                        <p className="text-3xl xl:text-4xl font-black text-purple-600 tracking-tighter leading-none"><AnimatedNumber value={summaryData.terapisHarian || 0} isCurrency={false}/></p>
-                        <span className="text-[11px] font-bold text-purple-500 uppercase tracking-widest">Orang</span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1.5">
-                        <span className="flex items-center text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-100">
-                          🟢 Hadir
-                        </span>
-                        <span className="text-[9px] text-purple-600/70 font-medium">melayani hari ini</span>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Terapis Hari Ini — Live Status */}
+                  <TherapistStatusWidget showBalance={showBalance} />
 
                   {/* Total Persediaan */}
                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">

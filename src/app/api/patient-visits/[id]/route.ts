@@ -9,6 +9,7 @@ import {
   therapistMonthlyReports
 } from "@/lib/db/schema";
 import { eq, inArray, and } from "drizzle-orm";
+import { logSystemAction } from "@/lib/logger";
 
 export async function DELETE(
   request: Request,
@@ -103,6 +104,8 @@ export async function DELETE(
 
     // 8. Then delete the visit
     await db.delete(patientVisits).where(eq(patientVisits.id, id));
+
+    await logSystemAction("DELETE_VISIT", "patient_visit", id, `Kunjungan dihapus (ID: ${id}) beserta seluruh struk dan jurnal yang berkaitan.`);
 
     return Response.json({ success: true, message: "Data kunjungan dan transaksi terkait berhasil dihapus" });
   } catch (error) {

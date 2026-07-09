@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { patientVisits, patients } from "@/lib/db/schema";
+import { patientVisits, patients, therapists } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
@@ -39,7 +39,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       phone, name, address, gender, // Patient info
-      serviceId, branchId, therapistId, visitDate, visitTime, bloodPressure, notes, status // Visit info
+      serviceId, branchId, therapistId, visitDate, visitTime, 
+      checkInTime, checkOutTime, // Jam masuk & keluar
+      bloodPressure, notes, status // Visit info
     } = body;
 
     if (!phone || !name || !serviceId || !branchId || !visitDate || !visitTime) {
@@ -50,6 +52,29 @@ export async function POST(request: Request) {
     const finalBranchId = session.role === "BRANCH_ADMIN" ? session.branchId : branchId;
     if (!finalBranchId) {
       return Response.json({ error: "Cabang wajib ditentukan" }, { status: 400 });
+    }
+
+    // === OPTIMISTIC LOCK: Cek apakah terapis masih AVAILABLE ===
+    if (therapistId && checkInTime) {
+      const therapistCheck = await db
+        .select({ id: therapists.id, availabilityStatus: therapists.availabilityStatus })
+        .from(therapists)
+        .where(eq(therapists.id, therapistId))
+        .limit(1);
+
+      if (therapistCheck.length > 0 && therapistCheck[0].availabilityStatus === "BUSY") {
+        return Response.json(
+          { error: "Terapis baru saja dipilih oleh admin lain. Silakan pilih terapis lain." },
+          { status: 409 }
+        );
+      }
+
+      if (therapistCheck.length > 0 && (therapistCheck[0].availabilityStatus === "BREAK" || therapistCheck[0].availabilityStatus === "OFF")) {
+        return Response.json(
+          { error: "Terapis sedang tidak tersedia (istirahat/tidak masuk). Silakan pilih terapis lain." },
+          { status: 409 }
+        );
+      }
     }
 
     // 1. Cek apakah pasien dengan nomor telepon ini sudah ada
@@ -90,6 +115,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Tentukan status kunjungan: jika ada checkInTime + terapis, berarti sedang berlangsung
+    const visitStatus = (checkInTime && therapistId) ? "in_progress" : (status || "completed");
+
     // 4. Buat record kunjungan
     const newVisitId = `V-${Date.now()}`;
     const result = await db.insert(patientVisits).values({
@@ -100,10 +128,26 @@ export async function POST(request: Request) {
       therapistId: therapistId || null,
       visitDate,
       visitTime,
+      checkInTime: checkInTime || null,
+      checkOutTime: checkOutTime || null,
+      therapistStatusSnapshot: therapistId ? "BUSY" : null,
       bloodPressure: bloodPressure || null,
       notes: notes || null,
-      status: status || "completed",
+      status: visitStatus,
     }).returning();
+
+    // === AUTO-LOCK TERAPIS: Set status BUSY setelah kunjungan tersimpan ===
+    if (therapistId && checkInTime) {
+      await db
+        .update(therapists)
+        .set({ availabilityStatus: "BUSY" })
+        .where(
+          and(
+            eq(therapists.id, therapistId),
+            eq(therapists.availabilityStatus, "AVAILABLE") // Double-check: hanya jika masih AVAILABLE
+          )
+        );
+    }
 
     return Response.json({ data: result[0], patientId });
   } catch (error) {

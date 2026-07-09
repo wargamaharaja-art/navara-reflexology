@@ -261,7 +261,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   ...(session?.role === "SUPER_ADMIN" ? [
                     { name: "Info Perusahaan", href: "/admin/settings", icon: Store },
                     { name: "Cabang", href: "/admin/branches", icon: MapPin },
-                    { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users }
+                    { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users },
+                    { name: "System Logs", href: "/admin/system-logs", icon: Activity }
                   ] : []),
                   { name: "Sinkronisasi Komisi", href: "/admin/settings/commissions", icon: Award }
                 ]
