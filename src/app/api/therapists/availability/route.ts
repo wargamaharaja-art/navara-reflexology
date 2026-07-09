@@ -17,8 +17,10 @@ export async function GET(request: Request) {
     const branchFilter = branchId || (await getActiveBranchFilter());
 
     const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const now = new Date();
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    // Ambil waktu sekarang di zona waktu Jakarta
+    const nowStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+    const nowJkt = new Date(nowStr);
+    const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
 
     // Ambil terapis aktif di cabang ini
     const conditions: any[] = [eq(therapists.isActive, true)];
