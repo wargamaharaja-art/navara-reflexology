@@ -9,7 +9,9 @@ export async function GET() {
   try {
     const now = new Date();
     const todayStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const currentTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const nowStr = now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+    const nowJkt = new Date(nowStr);
+    const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
 
     // Cari kunjungan hari ini yang:
     // - status masih in_progress

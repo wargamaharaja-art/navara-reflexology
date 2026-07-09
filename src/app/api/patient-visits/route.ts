@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { patientVisits, patients, therapists } from "@/lib/db/schema";
-import { eq, desc, and, like } from "drizzle-orm";
+import { eq, desc, and, like, isNull } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET() {
@@ -63,10 +63,46 @@ export async function POST(request: Request) {
         .limit(1);
 
       if (therapistCheck.length > 0 && therapistCheck[0].availabilityStatus === "BUSY") {
-        return Response.json(
-          { error: "Terapis baru saja dipilih oleh admin lain. Silakan pilih terapis lain." },
-          { status: 409 }
-        );
+        // Cek apakah sebenarnya sudah overdue
+        const nowStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+        const nowJkt = new Date(nowStr);
+        const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
+        const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+
+        const activeVisit = await db
+          .select({ id: patientVisits.id, checkOutTime: patientVisits.checkOutTime })
+          .from(patientVisits)
+          .where(
+            and(
+              eq(patientVisits.therapistId, therapistId),
+              eq(patientVisits.status, "in_progress"),
+              isNull(patientVisits.actualCheckOutTime),
+              eq(patientVisits.visitDate, todayStr)
+            )
+          )
+          .limit(1);
+
+        if (activeVisit.length > 0 && activeVisit[0].checkOutTime && activeVisit[0].checkOutTime <= currentTime) {
+          // Overdue! Auto release now so we can proceed
+          await db
+            .update(patientVisits)
+            .set({
+              actualCheckOutTime: currentTime,
+              status: "completed",
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(patientVisits.id, activeVisit[0].id));
+            
+          await db
+            .update(therapists)
+            .set({ availabilityStatus: "AVAILABLE" })
+            .where(eq(therapists.id, therapistId));
+        } else {
+          return Response.json(
+            { error: "Terapis baru saja dipilih oleh admin lain. Silakan pilih terapis lain." },
+            { status: 409 }
+          );
+        }
       }
 
       if (therapistCheck.length > 0 && (therapistCheck[0].availabilityStatus === "BREAK" || therapistCheck[0].availabilityStatus === "OFF")) {
