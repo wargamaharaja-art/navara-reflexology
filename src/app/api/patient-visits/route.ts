@@ -132,16 +132,22 @@ export async function POST(request: Request) {
     }
 
     // 3. ISS-011: Cek duplikasi kunjungan (pasien + layanan + tanggal sama)
+    // Diperlonggar: hanya blokir jika masih in_progress dan dengan terapis yang sama (mencegah double-click),
+    // sehingga akun pasien generic/walk-in tetap bisa digunakan bersamaan untuk terapis berbeda.
+    const duplicateConditions: any[] = [
+      eq(patientVisits.patientId, patientId),
+      eq(patientVisits.serviceId, serviceId),
+      like(patientVisits.visitDate, visitDate),
+      eq(patientVisits.status, "in_progress")
+    ];
+    if (therapistId) {
+      duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
+    }
+
     const duplicateCheck = await db
       .select({ id: patientVisits.id })
       .from(patientVisits)
-      .where(
-        and(
-          eq(patientVisits.patientId, patientId),
-          eq(patientVisits.serviceId, serviceId),
-          like(patientVisits.visitDate, visitDate)
-        )
-      )
+      .where(and(...duplicateConditions))
       .limit(1);
 
     if (duplicateCheck.length > 0) {
