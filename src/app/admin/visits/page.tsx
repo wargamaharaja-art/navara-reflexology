@@ -77,7 +77,7 @@ export default function AdminVisitsPage() {
   const [saving, setSaving] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
   const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
   
   // Pagination
