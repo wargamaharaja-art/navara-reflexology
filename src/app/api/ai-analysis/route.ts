@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     })();
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
     if (!apiKey) {
       return NextResponse.json(
         { success: false, error: "API Key Gemini tidak ditemukan di environment variables (.env). Mohon tambahkan GEMINI_API_KEY." },
@@ -129,7 +129,7 @@ Format output menggunakan standar Markdown.
 
     // 5. Kirim ke Gemini AI
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     const result = await model.generateContent(prompt);
     const aiResponse = result.response.text();
