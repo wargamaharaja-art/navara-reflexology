@@ -78,14 +78,22 @@ export async function GET(request: Request) {
 
       // Kunjungan terapis hari ini
       const therapistVisits = todayVisits.filter((v) => v.therapistId === t.id);
-      const completedToday = therapistVisits.filter(
+      let completedToday = therapistVisits.filter(
         (v) => v.status === "completed" || v.actualCheckOutTime
       ).length;
 
-      // Cari kunjungan aktif (in_progress, belum ada actualCheckOutTime)
+      // Kunjungan aktif yang belum lewat waktu selesainya
       const activeVisit = therapistVisits.find(
-        (v) => v.status === "in_progress" && !v.actualCheckOutTime && v.checkInTime
+        (v) => v.status === "in_progress" && !v.actualCheckOutTime && v.checkInTime && (!v.checkOutTime || v.checkOutTime > currentTime)
       );
+
+      // Kunjungan overdue (sedang ditangani tapi waktu sudah terlewat)
+      const overdueVisits = therapistVisits.filter(
+        (v) => v.status === "in_progress" && !v.actualCheckOutTime && v.checkInTime && v.checkOutTime && v.checkOutTime <= currentTime
+      ).length;
+
+      // Tambahkan yang overdue ke hitungan pasien selesai untuk hari ini secara UI
+      completedToday += overdueVisits;
 
       // Tentukan status efektif
       let effectiveStatus = t.availabilityStatus;
@@ -94,7 +102,7 @@ export async function GET(request: Request) {
       } else if (activeVisit) {
         effectiveStatus = "BUSY";
       } else if (effectiveStatus === "BUSY" && !activeVisit) {
-        // Jika DB bilang BUSY tapi tidak ada kunjungan aktif, berarti sudah selesai
+        // Jika DB bilang BUSY tapi tidak ada kunjungan aktif (atau sudah overdue), berarti sudah selesai
         effectiveStatus = "AVAILABLE";
       }
 

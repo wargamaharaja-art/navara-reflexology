@@ -2,6 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./src/lib/db/schema";
 import { COA } from "./src/lib/accounting";
+import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import dotenv from "dotenv";
 
@@ -17,13 +18,13 @@ async function generate() {
   console.log("Memulai proses pembuatan data dummy senilai ~Rp 4.000.000...");
 
   try {
-    const branchRecords = await db.select().from(schema.branches).where(schema.branches.isActive);
+    const branchRecords = await db.select().from(schema.branches).where(eq(schema.branches.isActive, true));
     if (branchRecords.length === 0) {
       throw new Error("Tidak ada cabang aktif yang ditemukan!");
     }
     const branch = branchRecords[0]; // Pakai cabang pertama (Navara Pusat)
 
-    const serviceRecords = await db.select().from(schema.services).where(schema.services.isActive);
+    const serviceRecords = await db.select().from(schema.services).where(eq(schema.services.isActive, true));
     if (serviceRecords.length === 0) {
       throw new Error("Tidak ada layanan aktif yang ditemukan!");
     }
@@ -34,7 +35,7 @@ async function generate() {
       throw new Error("Tidak ada layanan berbayar yang ditemukan!");
     }
 
-    const therapistRecords = await db.select().from(schema.therapists).where(schema.therapists.isActive);
+    const therapistRecords = await db.select().from(schema.therapists).where(eq(schema.therapists.isActive, true));
     
     // Setup patient dummy
     const patientId = "P-DUMMY";
