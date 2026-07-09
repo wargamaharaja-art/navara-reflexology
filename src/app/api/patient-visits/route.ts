@@ -70,28 +70,34 @@ export async function POST(request: Request) {
         const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
 
         const activeVisit = await db
-          .select({ id: patientVisits.id, checkOutTime: patientVisits.checkOutTime })
+          .select({ id: patientVisits.id, checkOutTime: patientVisits.checkOutTime, visitDate: patientVisits.visitDate })
           .from(patientVisits)
           .where(
             and(
               eq(patientVisits.therapistId, therapistId),
               eq(patientVisits.status, "in_progress"),
-              isNull(patientVisits.actualCheckOutTime),
-              eq(patientVisits.visitDate, todayStr)
+              isNull(patientVisits.actualCheckOutTime)
+              // Jangan batasi visitDate hari ini, agar bisa mendeteksi nyangkut dari hari sebelumnya
             )
           )
           .limit(1);
 
-        if (activeVisit.length > 0 && activeVisit[0].checkOutTime && activeVisit[0].checkOutTime <= currentTime) {
-          // Overdue! Auto release now so we can proceed
-          await db
-            .update(patientVisits)
-            .set({
-              actualCheckOutTime: currentTime,
-              status: "completed",
-              updatedAt: new Date().toISOString(),
-            })
-            .where(eq(patientVisits.id, activeVisit[0].id));
+        const isStuckFromYesterday = activeVisit.length > 0 && activeVisit[0].visitDate < todayStr;
+        const isOverdueToday = activeVisit.length > 0 && activeVisit[0].visitDate === todayStr && activeVisit[0].checkOutTime && activeVisit[0].checkOutTime <= currentTime;
+        const hasNoActiveVisitAtAll = activeVisit.length === 0;
+
+        if (hasNoActiveVisitAtAll || isStuckFromYesterday || isOverdueToday) {
+          // Overdue / Stale! Auto release now so we can proceed
+          if (activeVisit.length > 0) {
+            await db
+              .update(patientVisits)
+              .set({
+                actualCheckOutTime: isStuckFromYesterday ? "23:59" : currentTime,
+                status: "completed",
+                updatedAt: new Date().toISOString(),
+              })
+              .where(eq(patientVisits.id, activeVisit[0].id));
+          }
             
           await db
             .update(therapists)
