@@ -236,6 +236,13 @@ export default function AdminVisitsPage() {
           </div>
         );
       } else {
+        if (v.paymentStatus === "PAID") {
+          return (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+              <CheckCircle2 className="w-3 h-3" /> Selesai
+            </div>
+          );
+        }
         return (
           <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
             <AlertCircle className="w-3 h-3 animate-pulse" /> Waktu Habis ({Math.abs(mins)} mnt)
@@ -2417,9 +2424,15 @@ export default function AdminVisitsPage() {
             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">Riwayat Kunjungan Pasien</h3>
-                <p className="text-sm text-gray-500 font-medium mt-0.5">
-                  <User className="w-4 h-4 inline-block mr-1 text-gray-400" />
-                  {getPatientName(selectedPatientHistoryId)}
+                <p className="text-sm text-gray-500 font-medium mt-0.5 flex items-center gap-3">
+                  <span className="flex items-center">
+                    <User className="w-4 h-4 mr-1.5 text-gray-400" />
+                    {getPatientName(selectedPatientHistoryId)}
+                  </span>
+                  <span className="flex items-center text-gray-400 font-normal">
+                    <Phone className="w-3 h-3 mr-1.5" />
+                    {patients.find(p => p.id === selectedPatientHistoryId)?.phone || "-"}
+                  </span>
                 </p>
               </div>
               <button onClick={() => setSelectedPatientHistoryId(null)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">

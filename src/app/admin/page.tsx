@@ -112,7 +112,11 @@ export default function AdminDashboard() {
     pengeluaran: 0,
     persediaan: 0,
     pasienHarian: 0,
+    pasienKemarin: 0,
     pendapatanHarian: 0,
+    transaksiHarian: 0,
+    pendapatanKemarin: 0,
+    reservationsBaru: 0,
     topServicesToday: [],
   });
 
@@ -203,11 +207,12 @@ export default function AdminDashboard() {
     { name: "Layanan", icon: Activity, href: "/admin/services", color: "text-rose-400", bg: "bg-rose-400/10" }
   ];
 
-  const totalCumIncome = chartData.length > 0 ? chartData[chartData.length - 1].cumIncome : 0;
-  const incomePercent = targetIncome > 0 ? Math.min(100, Math.round((totalCumIncome / targetIncome) * 100)) : 0;
+  const lastValidData = chartData.filter(d => d.cumIncome !== null).pop();
+  const totalCumIncome = lastValidData ? lastValidData.cumIncome : 0;
+  const incomePercent = targetIncome > 0 ? Math.min(100, Math.round(((totalCumIncome as number) / targetIncome) * 100)) : 0;
   
-  const totalCumVisits = chartData.length > 0 ? chartData[chartData.length - 1].cumVisits : 0;
-  const visitsPercent = targetVisits > 0 ? Math.min(100, Math.round((totalCumVisits / targetVisits) * 100)) : 0;
+  const totalCumVisits = lastValidData ? lastValidData.cumVisits : 0;
+  const visitsPercent = targetVisits > 0 ? Math.min(100, Math.round(((totalCumVisits as number) / targetVisits) * 100)) : 0;
 
   return (
     <div className="min-h-screen">
@@ -265,8 +270,11 @@ export default function AdminDashboard() {
                   {showBalance ? <AnimatedNumber value={summaryData.labaBersih} /> : <span className="tracking-wider">Rp ••••••••</span>}
                 </h2>
                 <div className="flex items-center gap-2 mt-2 text-emerald-50 text-sm font-medium">
-                  <span className="bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1">
-                    ↑ 18%
+                  <span className={`bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1 ${Number(summaryData.labaBersih) >= Number(summaryData.labaBersihBulanLalu || 0) ? 'text-emerald-100' : 'text-rose-200'}`}>
+                    {Number(summaryData.labaBersih) >= Number(summaryData.labaBersihBulanLalu || 0) ? '↑' : '↓'} 
+                    {Number(summaryData.labaBersihBulanLalu) > 0 
+                      ? `${Math.abs(Math.round((Number(summaryData.labaBersih) - Number(summaryData.labaBersihBulanLalu)) / Number(summaryData.labaBersihBulanLalu) * 100))}%` 
+                      : (Number(summaryData.labaBersih) > 0 ? '100%' : '0%')}
                   </span>
                   vs bulan lalu
                 </div>
@@ -278,14 +286,26 @@ export default function AdminDashboard() {
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
                     <div className="text-right">
                       <span className="text-white font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pendapatan} /> : <span>Rp ••••••</span>}</span>
-                      {showBalance && <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↑ 12% <span className="text-white/60 font-medium">vs bulan lalu</span></div>}
+                      {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pendapatan) >= Number(summaryData.pendapatanBulanLalu || 0) ? 'text-emerald-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
+                        {Number(summaryData.pendapatan) >= Number(summaryData.pendapatanBulanLalu || 0) ? '↑' : '↓'}
+                        {Number(summaryData.pendapatanBulanLalu) > 0 
+                          ? ` ${Math.abs(Math.round((Number(summaryData.pendapatan) - Number(summaryData.pendapatanBulanLalu)) / Number(summaryData.pendapatanBulanLalu) * 100))}%` 
+                          : (Number(summaryData.pendapatan) > 0 ? ' 100%' : ' 0%')}
+                        <span className="text-white/60 font-medium">vs bulan lalu</span>
+                      </div>}
                     </div>
                  </div>
                  <div className="flex justify-between items-center border-b border-white/10 pb-3">
                     <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
                     <div className="text-right">
                       <span className="text-rose-200 font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pengeluaran} /> : <span>Rp ••••••</span>}</span>
-                      {showBalance && <div className="text-[10px] font-bold text-emerald-300 flex items-center justify-end gap-1 mt-0.5">↓ 5% <span className="text-white/60 font-medium">vs bulan lalu</span></div>}
+                      {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pengeluaran) <= Number(summaryData.pengeluaranBulanLalu || 0) ? 'text-emerald-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
+                        {Number(summaryData.pengeluaran) >= Number(summaryData.pengeluaranBulanLalu || 0) ? '↑' : '↓'}
+                        {Number(summaryData.pengeluaranBulanLalu) > 0 
+                          ? ` ${Math.abs(Math.round((Number(summaryData.pengeluaran) - Number(summaryData.pengeluaranBulanLalu)) / Number(summaryData.pengeluaranBulanLalu) * 100))}%` 
+                          : (Number(summaryData.pengeluaran) > 0 ? ' 100%' : ' 0%')}
+                        <span className="text-white/60 font-medium">vs bulan lalu</span>
+                      </div>}
                     </div>
                  </div>
                  <div className="flex justify-between items-center">
@@ -343,10 +363,13 @@ export default function AdminDashboard() {
                       <p className="text-[10px] text-gray-500 font-medium mb-1">Pemasukan Hari Ini</p>
                       <p className="text-xl xl:text-2xl font-black text-teal-700 tracking-tighter">{showBalance ? <AnimatedNumber value={summaryData.pendapatanHarian} /> : <span className="tracking-wider">Rp ••••••</span>}</p>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="flex items-center text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">
-                          🟢 ↑ +8%
+                        <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ${Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin || 0) ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                          {Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin || 0) ? '🟢 ↑' : '🔴 ↓'} 
+                          {Number(summaryData.pendapatanKemarin) > 0 
+                            ? ` ${(Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin) ? '+' : '')}${Math.round((Number(summaryData.pendapatanHarian) - Number(summaryData.pendapatanKemarin)) / Number(summaryData.pendapatanKemarin) * 100)}%` 
+                            : (Number(summaryData.pendapatanHarian) > 0 ? ' +100%' : ' 0%')}
                         </span>
-                        <span className="text-[9px] text-teal-600/70 font-medium">vs kemarin</span>
+                        <span className="text-[9px] text-gray-500 font-medium">vs kemarin</span>
                       </div>
                     </div>
                   </div>
@@ -366,10 +389,11 @@ export default function AdminDashboard() {
                         <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">Orang</span>
                       </div>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="flex items-center text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
-                          🟢 ↑ +2
+                        <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ${Number(summaryData.pasienHarian) >= Number(summaryData.pasienKemarin || 0) ? 'text-indigo-600 bg-indigo-50 border-indigo-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                          {Number(summaryData.pasienHarian) >= Number(summaryData.pasienKemarin || 0) ? '🟢 ↑' : '🔴 ↓'} 
+                          {Number(summaryData.pasienHarian) - Number(summaryData.pasienKemarin || 0) > 0 ? ` +${Number(summaryData.pasienHarian) - Number(summaryData.pasienKemarin || 0)}` : ` ${Number(summaryData.pasienHarian) - Number(summaryData.pasienKemarin || 0)}`}
                         </span>
-                        <span className="text-[9px] text-indigo-600/70 font-medium">vs kemarin</span>
+                        <span className="text-[9px] text-gray-500 font-medium">vs kemarin</span>
                       </div>
                     </div>
                   </div>
@@ -464,10 +488,12 @@ export default function AdminDashboard() {
                       <Inbox className="w-7 h-7 xl:w-8 xl:h-8 text-purple-500 group-hover:text-white transition-colors" />
                     </div>
                     {/* Badge Status */}
-                    <div className="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-rose-100 shadow-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
-                      <span className="text-[10px] font-bold tracking-wide">4 Baru</span>
-                    </div>
+                    {summaryData.reservationsBaru > 0 && (
+                      <div className="bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-rose-100 shadow-sm">
+                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></div>
+                        <span className="text-[10px] font-bold tracking-wide">{summaryData.reservationsBaru} Baru</span>
+                      </div>
+                    )}
                   </div>
                   <div className="relative z-10 mt-auto">
                     <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-purple-600 transition-colors">Reservasi Online</h4>
@@ -499,7 +525,7 @@ export default function AdminDashboard() {
                     {/* Badge Status */}
                     <div className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-emerald-100 shadow-sm">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
-                      <span className="text-[10px] font-bold tracking-wide">Hari ini 25 trx</span>
+                      <span className="text-[10px] font-bold tracking-wide">Hari ini {summaryData.transaksiHarian || 0} trx</span>
                     </div>
                   </div>
                   <div className="relative z-10 mt-auto">

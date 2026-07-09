@@ -60,28 +60,28 @@ export default function AttendancePage() {
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
               <div className="relative w-full sm:w-auto">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" />
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input 
                   type="text" 
                   placeholder="Cari terapis..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white placeholder-white/60 rounded-xl focus:ring-2 focus:ring-white/50 text-sm backdrop-blur-md outline-none w-full transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 placeholder-gray-400 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full shadow-sm transition-all"
                 />
               </div>
               <div className="relative w-full sm:w-auto">
-                <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/60 pointer-events-none" />
+                <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   id="attendance-date-picker"
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl focus:ring-2 focus:ring-white/50 text-sm backdrop-blur-md outline-none [color-scheme:dark] w-full cursor-pointer transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all"
                 />
               </div>
               <button
                 onClick={() => router.push("/admin/attendance/kiosk")}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 transition-all whitespace-nowrap"
+                className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 transition-all whitespace-nowrap active:scale-95"
               >
                 <Play className="w-4 h-4" /> Buka Kiosk Absensi
               </button>
