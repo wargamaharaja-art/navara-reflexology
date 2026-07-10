@@ -2394,15 +2394,14 @@ export default function AdminVisitsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button
-                            onClick={() => {
-                              const msg = encodeURIComponent(`Halo Kak ${rp.patient.name},\nApa kabar? Semoga selalu sehat ya.\n\nKami dari Navara Reflexology menyadari sudah ${rp.daysSinceLastVisit} hari sejak kunjungan terakhir Kakak. Yuk jaga kesehatan dengan rutinitas terapi bersama kami lagi. Ada promo khusus menanti Kakak!\n\nSilakan balas pesan ini untuk reservasi.`);
-                              window.open(`https://wa.me/${rp.patient.phone.replace(/^0/, '62')}?text=${msg}`, "_blank");
-                            }}
+                          <a
+                            href={`https://wa.me/${rp.patient.phone.replace(/^0/, '62').replace(/^\+62/, '62')}?text=${encodeURIComponent(`Halo Kak ${rp.patient.name},\nApa kabar? Semoga selalu sehat ya.\n\nKami dari Navara Reflexology menyadari sudah ${rp.daysSinceLastVisit} hari sejak kunjungan terakhir Kakak. Yuk jaga kesehatan dengan rutinitas terapi bersama kami lagi. Ada promo khusus menanti Kakak!\n\nSilakan balas pesan ini untuk reservasi.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                           >
                             <MessageCircle className="w-4 h-4" /> Kirim Pengingat
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     ))
