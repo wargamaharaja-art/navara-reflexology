@@ -110,6 +110,7 @@ export async function POST(request: Request) {
       notes,
       // If linking to an existing visit
       visitId,
+      visitIds,
     } = body;
 
     if (!patientPhone || !patientName || !branchId || !items || items.length === 0) {
@@ -351,11 +352,12 @@ export async function POST(request: Request) {
         }
       }
   
-      // 11. If existing visit was provided, mark as PAID
-      if (visitId) {
+      // 11. If existing visits were provided, mark them as PAID
+      const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
+      for (const vId of visitsToMark) {
         await tx.update(patientVisits)
           .set({ paymentStatus: "PAID", updatedAt: now })
-          .where(eq(patientVisits.id, visitId));
+          .where(eq(patientVisits.id, vId));
       }
   
         return {

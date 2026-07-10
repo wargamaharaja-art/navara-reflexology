@@ -103,6 +103,7 @@ export default function AdminVisitsPage() {
 
   // POS Visit Integration
   const [posVisitId, setPosVisitId] = useState<string | null>(null);
+  const [posVisitIds, setPosVisitIds] = useState<string[]>([]);
   const [posModalOpen, setPosModalOpen] = useState(false);
 
   const getFormattedTime = () => {
@@ -466,6 +467,7 @@ export default function AdminVisitsPage() {
           amountPaid: totalPaid,
           notes: posNotes || null,
           visitId: posVisitId,
+          visitIds: posVisitIds,
           transactionDate: posVisitDate,
         }),
       });
@@ -503,6 +505,7 @@ export default function AdminVisitsPage() {
     setPosCreatedInvoice(null);
     setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
     setPosVisitId(null);
+    setPosVisitIds([]);
     setPosModalOpen(false);
   };
 
@@ -569,17 +572,13 @@ export default function AdminVisitsPage() {
 
     setSaving(true);
     try {
-      const primaryServiceId = selectedServices[0];
-      const extraServiceNames = selectedServices.slice(1).map(id => services.find(s => s.id === id)?.name).join(", ");
-      const finalNotes = extraServiceNames ? `${formData.notes ? formData.notes + '\n\n' : ''}Layanan Tambahan: ${extraServiceNames}` : formData.notes;
-
       const res = await fetch("/api/patient-visits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          serviceId: primaryServiceId,
-          notes: finalNotes,
+          serviceIds: selectedServices,
+          notes: formData.notes,
           checkInTime: formData.checkInTime || null,
           checkOutTime: formData.checkOutTime || null,
         }),
@@ -634,28 +633,45 @@ export default function AdminVisitsPage() {
     setPosBranchId(branchId);
     setPosTherapistId(therapistId || "");
     
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      setPosItems([{
-        serviceId: service.id,
-        name: service.name,
-        qty: 1,
-        price: service.price || 0,
-        subtotal: service.price || 0,
-      }]);
-    } else {
-      setPosItems([]);
-    }
-    
     // Set date based on visit if available, else today
     const visit = visits.find(v => v.id === visitId);
-    if (visit && visit.visitDate) {
-      setPosVisitDate(visit.visitDate);
-    } else {
-      setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
-    }
+    const visitDateToUse = visit?.visitDate || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+    setPosVisitDate(visitDateToUse);
+
+    // Bundle ALL unpaid visits for this patient today
+    const unpaidVisits = visits.filter(v => 
+      v.patientId === patientId && 
+      v.visitDate === visitDateToUse && 
+      v.paymentStatus === "UNPAID"
+    );
+
+    const relevantVisits = unpaidVisits.length > 0 ? unpaidVisits : (visit ? [visit] : []);
+    const ids = relevantVisits.map(v => v.id);
     
-    setPosVisitId(visitId);
+    setPosVisitIds(ids);
+    setPosVisitId(ids[0] || null);
+
+    const newItems: InvoiceItem[] = [];
+    for (const v of relevantVisits) {
+      const svc = services.find(s => s.id === v.serviceId);
+      if (svc) {
+        const existing = newItems.find(i => i.serviceId === svc.id);
+        if (existing) {
+          existing.qty += 1;
+          existing.subtotal = existing.qty * (svc.price || 0);
+        } else {
+          newItems.push({
+            serviceId: svc.id,
+            name: svc.name,
+            qty: 1,
+            price: svc.price || 0,
+            subtotal: svc.price || 0,
+          });
+        }
+      }
+    }
+    setPosItems(newItems);
+    
     setPosModalOpen(true);
   };
 

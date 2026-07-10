@@ -39,12 +39,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { 
       phone, name, address, gender, // Patient info
-      serviceId, branchId, therapistId, visitDate, visitTime, 
+      serviceId, serviceIds, branchId, therapistId, visitDate, visitTime, 
       checkInTime, checkOutTime, // Jam masuk & keluar
       bloodPressure, notes, status // Visit info
     } = body;
 
-    if (!phone || !name || !serviceId || !branchId || !visitDate || !visitTime) {
+    const finalServiceIds = serviceIds && serviceIds.length > 0 ? serviceIds : (serviceId ? [serviceId] : []);
+
+    if (!phone || !name || finalServiceIds.length === 0 || !branchId || !visitDate || !visitTime) {
       return Response.json({ error: "Data kunjungan atau pasien tidak lengkap" }, { status: 400 });
     }
 
@@ -138,51 +140,56 @@ export async function POST(request: Request) {
     }
 
     // 3. ISS-011: Cek duplikasi kunjungan (pasien + layanan + tanggal sama)
-    // Diperlonggar: hanya blokir jika masih in_progress dan dengan terapis yang sama (mencegah double-click),
-    // sehingga akun pasien generic/walk-in tetap bisa digunakan bersamaan untuk terapis berbeda.
-    const duplicateConditions: any[] = [
-      eq(patientVisits.patientId, patientId),
-      eq(patientVisits.serviceId, serviceId),
-      like(patientVisits.visitDate, visitDate),
-      eq(patientVisits.status, "in_progress")
-    ];
-    if (therapistId) {
-      duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
-    }
+    for (const sId of finalServiceIds) {
+      const duplicateConditions: any[] = [
+        eq(patientVisits.patientId, patientId),
+        eq(patientVisits.serviceId, sId),
+        like(patientVisits.visitDate, visitDate),
+        eq(patientVisits.status, "in_progress")
+      ];
+      if (therapistId) {
+        duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
+      }
 
-    const duplicateCheck = await db
-      .select({ id: patientVisits.id })
-      .from(patientVisits)
-      .where(and(...duplicateConditions))
-      .limit(1);
+      const duplicateCheck = await db
+        .select({ id: patientVisits.id })
+        .from(patientVisits)
+        .where(and(...duplicateConditions))
+        .limit(1);
 
-    if (duplicateCheck.length > 0) {
-      return Response.json(
-        { error: "Kunjungan duplikat: pasien ini sudah tercatat untuk layanan yang sama pada tanggal tersebut.", duplicateVisitId: duplicateCheck[0].id },
-        { status: 409 }
-      );
+      if (duplicateCheck.length > 0) {
+        return Response.json(
+          { error: "Kunjungan duplikat: pasien ini sudah tercatat untuk layanan yang sama pada tanggal tersebut.", duplicateVisitId: duplicateCheck[0].id },
+          { status: 409 }
+        );
+      }
     }
 
     // Tentukan status kunjungan: jika ada checkInTime + terapis, berarti sedang berlangsung
     const visitStatus = (checkInTime && therapistId) ? "in_progress" : (status || "completed");
 
     // 4. Buat record kunjungan
-    const newVisitId = `V-${Date.now()}`;
-    const result = await db.insert(patientVisits).values({
-      id: newVisitId,
-      patientId,
-      serviceId,
-      branchId: finalBranchId,
-      therapistId: therapistId || null,
-      visitDate,
-      visitTime,
-      checkInTime: checkInTime || null,
-      checkOutTime: checkOutTime || null,
-      therapistStatusSnapshot: therapistId ? "BUSY" : null,
-      bloodPressure: bloodPressure || null,
-      notes: notes || null,
-      status: visitStatus,
-    }).returning();
+    const insertedVisits = [];
+    for (const sId of finalServiceIds) {
+      // Use random string to ensure unique ID in tight loop
+      const newVisitId = `V-${Date.now()}-${Math.floor(Math.random()*10000)}`;
+      const result = await db.insert(patientVisits).values({
+        id: newVisitId,
+        patientId,
+        serviceId: sId,
+        branchId: finalBranchId,
+        therapistId: therapistId || null,
+        visitDate,
+        visitTime,
+        checkInTime: checkInTime || null,
+        checkOutTime: checkOutTime || null,
+        therapistStatusSnapshot: therapistId ? "BUSY" : null,
+        bloodPressure: bloodPressure || null,
+        notes: notes || null,
+        status: visitStatus,
+      }).returning();
+      insertedVisits.push(result[0]);
+    }
 
     // === AUTO-LOCK TERAPIS: Set status BUSY setelah kunjungan tersimpan ===
     if (therapistId && checkInTime) {
@@ -197,7 +204,7 @@ export async function POST(request: Request) {
         );
     }
 
-    return Response.json({ data: result[0], patientId });
+    return Response.json({ data: insertedVisits[0], patientId });
   } catch (error) {
     console.error("POST /api/patient-visits error:", error);
     return Response.json({ error: "Gagal mencatat kunjungan" }, { status: 500 });
