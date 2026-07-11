@@ -40,6 +40,7 @@ interface Invoice {
   patientPhone: string;
   therapistName: string | null;
   branchName: string;
+  branchId: string;
   items: InvoiceItem[];
   subtotal: number;
   discount: number;

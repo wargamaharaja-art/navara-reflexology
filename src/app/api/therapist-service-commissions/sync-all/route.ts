@@ -16,17 +16,16 @@ export async function GET(request: Request) {
     let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
-    // Ambil semua terapis aktif
-    let activeTherapistsQuery = db
-      .select()
-      .from(therapists)
-      .where(eq(therapists.isActive, true));
-
+    const activeTherapistsConditions = [eq(therapists.isActive, true)];
     if (branchFilter) {
-      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
+      activeTherapistsConditions.push(eq(therapists.branchId, branchFilter));
     }
 
-    const activeTherapists = await activeTherapistsQuery;
+    // Ambil semua terapis aktif
+    const activeTherapists = await db
+      .select()
+      .from(therapists)
+      .where(and(...activeTherapistsConditions));
 
     // Ambil semua komisi khusus
     const allCommissions = await db.select().from(therapistServiceCommissions);
@@ -92,17 +91,16 @@ export async function POST(request: Request) {
     let branchFilter = branchId || await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
-    // Ambil semua terapis yang aktif
-    let activeTherapistsQuery = db
-      .select()
-      .from(therapists)
-      .where(eq(therapists.isActive, true));
-
+    const activeTherapistsConditions2 = [eq(therapists.isActive, true)];
     if (branchFilter) {
-      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
+      activeTherapistsConditions2.push(eq(therapists.branchId, branchFilter));
     }
 
-    const activeTherapists = await activeTherapistsQuery;
+    // Ambil semua terapis yang aktif
+    const activeTherapists = await db
+      .select()
+      .from(therapists)
+      .where(and(...activeTherapistsConditions2));
 
     if (activeTherapists.length === 0) {
       return NextResponse.json({ error: "Tidak ada terapis aktif untuk disinkronisasi" }, { status: 400 });
