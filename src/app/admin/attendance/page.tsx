@@ -26,14 +26,29 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const fetchAttendance = useCallback(async (targetDate: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/attendance?date=${targetDate}`);
+      const [res, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/attendance?date=${targetDate}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
+      ]);
       if (res.ok) {
         const json = await res.json();
         setRecords(json.data || []);
+      }
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
       }
     } catch (err) {
       console.error(err);
@@ -46,7 +61,11 @@ export default function AttendancePage() {
     fetchAttendance(date);
   }, [date, fetchAttendance]);
 
-  const filteredRecords = records.filter(r => r.therapistName.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredRecords = records.filter(r => {
+    const matchName = r.therapistName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchBranch = filterBranch === "ALL" || r.branchId === filterBranch;
+    return matchName && matchBranch;
+  });
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
@@ -59,6 +78,23 @@ export default function AttendancePage() {
           icon={Users}
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
+              {/* Branch Filter Dropdown - Only show if Super Admin */}
+              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={filterBranch}
+                    onChange={(e) => setFilterBranch(e.target.value)}
+                    className="pl-4 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all appearance-none"
+                  >
+                    <option value="ALL">Semua Cabang</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+                </div>
+              )}
+              
               <div className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input 

@@ -31,22 +31,42 @@ export default function AdminServicesPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [openCategory, setOpenCategory] = useState<string | null>(CATEGORIES[0]);
 
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     price: "",
     durationMinutes: "",
     category: "Paket Treatment",
+    branchId: "ALL",
     isActive: true,
   });
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/services?all=true");
+      const [res, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/services?all=true&branchId=${filterBranch}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
+      ]);
+      
       const json = await res.json();
       if (json.data) {
         setServices(json.data);
+      }
+
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
       }
     } catch (err) {
       console.error(err);
@@ -57,7 +77,7 @@ export default function AdminServicesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [filterBranch]);
 
   const resetForm = () => {
     setFormData({
@@ -66,6 +86,7 @@ export default function AdminServicesPage() {
       price: "",
       durationMinutes: "",
       category: "Paket Treatment",
+      branchId: filterBranch !== "ALL" ? filterBranch : (branches.length > 0 ? branches[0].id : "ALL"),
       isActive: true,
     });
     setEditingId(null);
@@ -77,13 +98,14 @@ export default function AdminServicesPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (s: Service) => {
+  const openEditModal = (s: any) => {
     setFormData({
       name: s.name,
       description: s.description,
       price: s.price.toString(),
       durationMinutes: s.durationMinutes.toString(),
       category: s.category || "Paket Treatment",
+      branchId: s.branchId || "ALL",
       isActive: s.isActive,
     });
     setEditingId(s.id);
@@ -108,6 +130,7 @@ export default function AdminServicesPage() {
           price: Number(formData.price),
           durationMinutes: Number(formData.durationMinutes),
           category: formData.category,
+          branchId: formData.branchId === "ALL" ? null : formData.branchId,
           isActive: formData.isActive,
         }),
       });

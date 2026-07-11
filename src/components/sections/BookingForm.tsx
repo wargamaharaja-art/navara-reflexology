@@ -60,7 +60,7 @@ export function BookingForm({
 
   const displayServiceName = selectedServices.length > 0 
     ? selectedServices.map(id => services.find(s => s.id === id)?.name).join(", ")
-    : "Pilih Layanan (Maks 3)";
+    : "Pilih Layanan";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -290,7 +290,7 @@ Mohon konfirmasi ketersediaan jadwalnya. Terima kasih!`;
                 >
                   <div className="flex items-center text-slate-700 w-full overflow-hidden">
                     <Stethoscope className={`absolute left-4 h-5 w-5 transition-colors ${isServiceDropdownOpen || selectedServices.length > 0 ? 'text-primary' : 'text-gray-400'}`} />
-                    <span className={selectedServices.length === 0 ? "text-gray-400 font-normal" : "text-gray-800 font-medium truncate pr-4"}>
+                    <span className={selectedServices.length === 0 ? "text-gray-400 font-normal" : "text-gray-800 font-medium pr-4"}>
                       {displayServiceName}
                     </span>
                   </div>
@@ -332,10 +332,6 @@ Mohon konfirmasi ketersediaan jadwalnya. Terima kasih!`;
                                     if (isSelected) {
                                       setSelectedServices(selectedServices.filter(id => id !== s.id));
                                     } else {
-                                      if (selectedServices.length >= 3) {
-                                        alert("Maksimal memilih 3 layanan terapi");
-                                        return;
-                                      }
                                       setSelectedServices([...selectedServices, s.id]);
                                     }
                                   }}

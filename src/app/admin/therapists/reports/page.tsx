@@ -53,6 +53,9 @@ export default function TherapistReportsPage() {
   const [saving, setSaving] = useState(false);
   const [bulking, setBulking] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
   
   // Modal Edit state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,12 +72,24 @@ export default function TherapistReportsPage() {
         ? `/api/therapist-reports?month=${targetMonth}`
         : `/api/therapist-reports?startDate=${start}&endDate=${end}`;
         
-      const res = await fetch(url);
+      const [res, branchRes, sessionRes] = await Promise.all([
+        fetch(url),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
+      ]);
       if (res.ok) {
         const json = await res.json();
         setReports(json.data || []);
       } else {
         setMessage({ type: "error", text: "Gagal memuat data rapor terapis" });
+      }
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
       }
     } catch (err) {
       console.error(err);
@@ -148,8 +163,10 @@ export default function TherapistReportsPage() {
     }
   };
 
+  const filteredReports = reports.filter(r => filterBranch === "ALL" || r.branchId === filterBranch);
+
   const handleBulkSave = async () => {
-    const unsaved = reports.filter(r => !r.isSaved);
+    const unsaved = filteredReports.filter(r => !r.isSaved);
     if (unsaved.length === 0) return alert("Semua laporan terapis untuk bulan ini sudah tersimpan.");
     if (!confirm(`Simpan masal ${unsaved.length} draft laporan terapis sekaligus?`)) return;
 
@@ -220,9 +237,9 @@ export default function TherapistReportsPage() {
   };
 
   const handleExportExcel = async () => {
-    if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
+    if (filteredReports.length === 0) return alert("Tidak ada data untuk diekspor");
     
-    const formattedData = reports.map(r => ({
+    const formattedData = filteredReports.map(r => ({
       "Nama Terapis": r.therapistName,
       "Total Pasien": r.totalTreatments,
       "Kehadiran (H/T/A)": `${r.attendancePresent}/${r.attendanceLate}/${r.attendanceAbsent}`,
@@ -310,7 +327,26 @@ export default function TherapistReportsPage() {
           description="Kelola slip gaji digital, metrik performa, dan link evaluasi privat terapis."
           icon={Award}
           rightContent={
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 md:mt-0">
+            <div className="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0 w-full md:w-auto">
+              
+              {/* Branch Filter Dropdown - Only show if Super Admin */}
+              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={filterBranch}
+                    onChange={(e) => setFilterBranch(e.target.value)}
+                    className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10"
+                  >
+                    <option value="ALL">Semua Cabang</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+                </div>
+              )}
+
+              {/* Mode Filter Selector */}
               <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-1">
                 <button
                   onClick={() => setFilterMode("month")}
@@ -379,11 +415,11 @@ export default function TherapistReportsPage() {
               <button
                 id="bulk-save-btn"
                 onClick={handleBulkSave}
-                disabled={loading || bulking || reports.filter(r => !r.isSaved).length === 0}
+                disabled={loading || bulking || filteredReports.filter(r => !r.isSaved).length === 0}
                 className="bg-white text-indigo-900 hover:bg-gray-50 disabled:bg-gray-200 disabled:text-gray-500 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-black/10 transition-all cursor-pointer text-sm"
               >
                 {bulking ? <div className="w-4 h-4 border-2 border-indigo-900/30 border-t-indigo-900 rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                Simpan Semua Draft ({reports.filter(r => !r.isSaved).length})
+                Simpan Semua Draft ({filteredReports.filter(r => !r.isSaved).length})
               </button>
             </div>
           }
@@ -405,7 +441,7 @@ export default function TherapistReportsPage() {
             </div>
             <div>
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Total Terapis</p>
-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.length} Pegawai</h4>
+              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.length} Pegawai</h4>
             </div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -414,7 +450,7 @@ export default function TherapistReportsPage() {
             </div>
             <div>
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Rapor Tersimpan</p>
-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.filter(r => r.isSaved).length} Terbit</h4>
+              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.filter(r => r.isSaved).length} Terbit</h4>
             </div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -423,7 +459,7 @@ export default function TherapistReportsPage() {
             </div>
             <div>
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Draft / Belum Disimpan</p>
-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.filter(r => !r.isSaved).length} Draft</h4>
+              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.filter(r => !r.isSaved).length} Draft</h4>
             </div>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
@@ -432,7 +468,7 @@ export default function TherapistReportsPage() {
             </div>
             <div>
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Estimasi Total Payroll</p>
-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{formatRupiah(reports.reduce((sum, r) => sum + r.takeHomePay, 0))}</h4>
+              <h4 className="text-lg font-black text-gray-900 mt-0.5">{formatRupiah(filteredReports.reduce((sum, r) => sum + r.takeHomePay, 0))}</h4>
             </div>
           </div>
         </div>
@@ -463,14 +499,14 @@ export default function TherapistReportsPage() {
                       </div>
                     </td>
                   </tr>
-                ) : reports.length === 0 ? (
+                ) : filteredReports.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-16 text-center text-gray-500">
                       Tidak ada terapis aktif untuk periode ini.
                     </td>
                   </tr>
                 ) : (
-                  reports.map((r) => (
+                  filteredReports.map((r) => (
                     <tr key={r.therapistId} className="hover:bg-blue-50/10 transition-colors">
                       <td className="px-6 py-4 font-bold text-gray-900">
                         <div>{r.therapistName}</div>

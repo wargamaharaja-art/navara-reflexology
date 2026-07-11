@@ -8,14 +8,22 @@ export default function ReservationsClient({
   activeTherapists,
   pendingCount,
   visits,
+  session,
+  branches,
 }: {
   data: any[];
   activeTherapists: any[];
   pendingCount: number;
   visits: any[];
+  session?: any;
+  branches?: any[];
 }) {
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+  const [filterBranch, setFilterBranch] = useState("ALL");
   const [currentWeek, setCurrentWeek] = useState(new Date());
+
+  const filteredData = data.filter(d => filterBranch === "ALL" || d.res.branchId === filterBranch);
+  const filteredVisits = visits.filter(v => filterBranch === "ALL" || v.branchId === filterBranch);
 
   const startOfWeek = new Date(currentWeek);
   startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1); // Monday
@@ -79,28 +87,47 @@ export default function ReservationsClient({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
-        <button
-          onClick={() => setActiveTab("list")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
-        >
-          <List className="w-4 h-4" />
-          Daftar Reservasi
-        </button>
-        <button
-          onClick={() => setActiveTab("calendar")}
-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "calendar" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
-        >
-          <CalendarIcon className="w-4 h-4" />
-          Kalender Jadwal
-        </button>
+      {/* Tabs & Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-8">
+        <div className="flex border-b border-gray-200 bg-white p-1 rounded-xl shadow-sm w-max">
+          <button
+            onClick={() => setActiveTab("list")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
+          >
+            <List className="w-4 h-4" />
+            Daftar Reservasi
+          </button>
+          <button
+            onClick={() => setActiveTab("calendar")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "calendar" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
+          >
+            <CalendarIcon className="w-4 h-4" />
+            Kalender Jadwal
+          </button>
+        </div>
+
+        {/* Branch Filter Dropdown - Only show if Super Admin */}
+        {session?.role === "SUPER_ADMIN" && branches && branches.length > 0 && (
+          <div className="relative w-full sm:w-64">
+            <select
+              value={filterBranch}
+              onChange={(e) => setFilterBranch(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
+            >
+              <option value="ALL">Semua Cabang</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+          </div>
+        )}
       </div>
 
       {activeTab === "list" && (
         <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6 relative">
           <div className="overflow-x-auto">
-            {data.length === 0 ? (
+            {filteredData.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                   <CalendarHeart className="w-12 h-12 text-gray-300" />
@@ -121,7 +148,7 @@ export default function ReservationsClient({
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map(({ res, branchName, serviceName }) => (
+                  {filteredData.map(({ res, branchName, serviceName }) => (
                     <tr key={res.id} className="bg-white hover:bg-slate-50 transition-colors shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-gray-100 rounded-2xl group">
                       <td className="px-4 py-4 rounded-l-2xl">
                         <div className="flex items-center gap-3">
@@ -267,8 +294,8 @@ export default function ReservationsClient({
                       const dateStr = day.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
                       
                       // Find items for this slot
-                      const dayReservations = data.filter(d => d.res.date === dateStr && d.res.time.startsWith(time.split(":")[0]));
-                      const dayVisits = visits.filter(v => v.visitDate === dateStr && v.visitTime.startsWith(time.split(":")[0]));
+                      const dayReservations = filteredData.filter(d => d.res.date === dateStr && d.res.time.startsWith(time.split(":")[0]));
+                      const dayVisits = filteredVisits.filter(v => v.visitDate === dateStr && v.visitTime.startsWith(time.split(":")[0]));
                       
                       return (
                         <div key={`${dateStr}-${time}`} className={`p-2 min-h-[80px] bg-white transition-colors hover:bg-gray-50/80`}>

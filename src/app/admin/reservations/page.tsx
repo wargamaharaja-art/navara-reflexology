@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 import { reservations, branches, services, therapists, patientVisits, patients } from "@/lib/db/schema";
 import { desc, eq, and, gte, lte } from "drizzle-orm";
-import { getActiveBranchFilter } from "@/lib/auth";
+import { getActiveBranchFilter, getSession } from "@/lib/auth";
 import ReservationsClient from "./ReservationsClient";
 
 export const metadata = {
@@ -44,6 +44,7 @@ export default async function AdminReservationsPage() {
       visitDate: patientVisits.visitDate,
       visitTime: patientVisits.visitTime,
       status: patientVisits.status,
+      branchId: patientVisits.branchId,
       patientName: patients.name,
       serviceName: services.name,
       therapistName: therapists.name,
@@ -59,12 +60,17 @@ export default async function AdminReservationsPage() {
 
   const visitsData = await visitsQuery;
 
+  const session = await getSession();
+  const allBranches = await db.select().from(branches);
+
   return (
     <ReservationsClient 
       data={data} 
       activeTherapists={activeTherapists} 
       pendingCount={pendingCount} 
       visits={visitsData} 
+      session={session}
+      branches={allBranches}
     />
   );
 }

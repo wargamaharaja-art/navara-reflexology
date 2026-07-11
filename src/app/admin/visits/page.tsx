@@ -1434,9 +1434,9 @@ export default function AdminVisitsPage() {
                           >
                             <div className="flex items-center text-gray-700 w-full overflow-hidden">
                               <Activity className="absolute left-3 h-4 w-4 text-gray-400" />
-                              <span className={selectedServices.length === 0 ? "text-gray-500 text-sm" : "text-gray-700 text-sm font-medium truncate pr-4"}>
+                              <span className={selectedServices.length === 0 ? "text-gray-500 text-sm" : "text-gray-700 text-sm font-medium pr-4"}>
                                 {selectedServices.length === 0 
-                                  ? "Pilih Layanan (Maks 3)" 
+                                  ? "Pilih Layanan" 
                                   : selectedServices.map(id => services.find(s => s.id === id)?.name).join(", ")}
                               </span>
                             </div>
@@ -1480,10 +1480,6 @@ export default function AdminVisitsPage() {
                                               if (isSelected) {
                                                 setSelectedServices(selectedServices.filter(id => id !== s.id));
                                               } else {
-                                                if (selectedServices.length >= 3) {
-                                                  alert("Maksimal memilih 3 layanan");
-                                                  return;
-                                                }
                                                 setSelectedServices([...selectedServices, s.id]);
                                               }
                                             }}

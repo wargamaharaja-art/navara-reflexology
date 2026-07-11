@@ -25,8 +25,11 @@ export const services = pgTable("services", {
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
+  branchId: text("branch_id").references(() => branches.id),
   isActive: boolean("is_active").notNull().default(true),
-});
+}, (table) => ({
+  branchIdx: index("service_branch_idx").on(table.branchId),
+}));
 
 // ============================================
 // THERAPISTS (Data Pegawai Terapis)

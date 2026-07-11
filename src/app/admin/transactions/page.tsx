@@ -471,12 +471,18 @@ export default function TransaksiPelangganPage() {
   const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const url = `/api/invoices?date=${date}`;
-      const res = await fetch(url);
+      const [res, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/invoices?date=${date}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
+      ]);
       const json = await res.json();
       if (res.ok) {
         const data = (json.data || []).map((inv: Invoice) => ({
@@ -485,6 +491,14 @@ export default function TransaksiPelangganPage() {
           splitPayments: typeof inv.splitPayments === "string" ? JSON.parse(inv.splitPayments) : inv.splitPayments,
         }));
         setInvoices(data);
+      }
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
       }
     } finally {
       setLoading(false);
@@ -525,13 +539,14 @@ export default function TransaksiPelangganPage() {
   const filtered = invoices.filter(inv => {
     const isSplitMatch = inv.paymentMethod === "SPLIT" && inv.splitPayments?.some(sp => sp.method === activeMethod);
     const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod || isSplitMatch;
+    const matchBranch = filterBranch === "ALL" || inv.branchId === filterBranch;
     const q = search.toLowerCase();
     const matchSearch = !q ||
       inv.patientName.toLowerCase().includes(q) ||
       inv.patientPhone.includes(q) ||
       inv.invoiceNumber.toLowerCase().includes(q) ||
       (inv.therapistName || "").toLowerCase().includes(q);
-    return matchMethod && matchSearch;
+    return matchMethod && matchSearch && matchBranch;
   });
 
   // Summary per method
@@ -539,14 +554,19 @@ export default function TransaksiPelangganPage() {
     let total = 0;
     let count = 0;
     
-    invoices.forEach(inv => {
+    filtered.forEach(inv => {
       if (inv.paymentMethod === m.key) {
         total += inv.grandTotal;
         count += 1;
       } else if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
         const split = inv.splitPayments.find(sp => sp.method === m.key);
         if (split) {
-          total += split.amount;
+          // Jika ada kembalian pada split payment, asumsikan kembalian diberikan dari uang Cash
+          let amt = split.amount;
+          if (m.key === "CASH" && inv.changeAmount > 0) {
+            amt -= inv.changeAmount;
+          }
+          total += Math.max(0, amt);
           count += 1;
         }
       }
@@ -598,6 +618,23 @@ export default function TransaksiPelangganPage() {
             className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition cursor-pointer"
           />
         </div>
+
+        {/* Branch Filter Dropdown - Only show if Super Admin */}
+        {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+          <div className="relative w-full sm:w-64">
+            <select
+              value={filterBranch}
+              onChange={(e) => setFilterBranch(e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
+            >
+              <option value="ALL">Semua Cabang</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+        )}
 
         {/* Search */}
         <div className="relative flex-1 min-w-0">
@@ -670,7 +707,7 @@ export default function TransaksiPelangganPage() {
               {m.label}
               {m.key !== "ALL" && (
                 <span className={`ml-1 text-xs rounded-full px-1.5 py-0.5 font-bold ${active ? "bg-white/20" : "bg-black/5"}`}>
-                  {invoices.filter(inv => inv.paymentMethod === m.key).length}
+                  {summary.find(s => s.key === m.key)?.count || 0}
                 </span>
               )}
             </button>

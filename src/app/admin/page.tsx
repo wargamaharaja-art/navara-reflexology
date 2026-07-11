@@ -37,13 +37,13 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
 };
 
 // Therapist Status Dashboard Widget
-function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
+function TherapistStatusWidget({ showBalance, filterBranch }: { showBalance: boolean, filterBranch: string }) {
   const [counts, setCounts] = useState({ AVAILABLE: 0, BUSY: 0, BREAK: 0, OFF: 0, total: 0 });
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/therapists/availability");
+        const res = await fetch(`/api/therapists/availability?branchId=${filterBranch}`);
         if (res.ok) {
           const data = await res.json();
           const list = data.data || [];
@@ -60,7 +60,7 @@ function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [filterBranch]);
 
   return (
     <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
@@ -101,6 +101,10 @@ export default function AdminDashboard() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
@@ -133,7 +137,7 @@ export default function AdminDashboard() {
     setAiResult(null);
     setAiError(null);
     try {
-      const res = await fetch(`/api/ai-analysis?month=${month}`);
+      const res = await fetch(`/api/ai-analysis?month=${month}&branchId=${filterBranch}`);
       const json = await res.json();
       if (json.success) {
         setAiResult(json.data);
@@ -150,9 +154,11 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [kpiRes, summaryRes] = await Promise.all([
-        fetch(`/api/dashboard/kpi-chart?month=${month}`),
-        fetch(`/api/dashboard/summary?month=${month}`)
+      const [kpiRes, summaryRes, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/dashboard/kpi-chart?month=${month}&branchId=${filterBranch}`),
+        fetch(`/api/dashboard/summary?month=${month}&branchId=${filterBranch}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
       ]);
 
       if (kpiRes.ok) {
@@ -170,6 +176,16 @@ export default function AdminDashboard() {
           setSummaryData(json.data);
         }
       }
+      
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -179,7 +195,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [month]);
+  }, [month, filterBranch]);
 
   const handleSaveTarget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,9 +258,27 @@ export default function AdminDashboard() {
             description={`Selamat datang kembali 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
             icon={LayoutDashboard}
             rightContent={
-              <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                {/* Branch Filter Dropdown - Only show if Super Admin */}
+                {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+                  <div className="relative w-full sm:w-auto">
+                    <select
+                      value={filterBranch}
+                      onChange={(e) => setFilterBranch(e.target.value)}
+                      className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10 shadow-sm font-medium"
+                    >
+                      <option value="ALL">Semua Cabang</option>
+                      {branches.map(b => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+                  </div>
+                )}
+                <div className="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
+                </div>
               </div>
             }
           />
@@ -399,7 +433,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Terapis Hari Ini — Live Status */}
-                  <TherapistStatusWidget showBalance={showBalance} />
+                  <TherapistStatusWidget showBalance={showBalance} filterBranch={filterBranch} />
 
                   {/* Total Persediaan */}
                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">

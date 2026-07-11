@@ -14,7 +14,8 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const branchId = searchParams.get("branchId");
-    const branchFilter = branchId || (await getActiveBranchFilter());
+    let branchFilter = branchId || (await getActiveBranchFilter());
+    if (branchFilter === "ALL") branchFilter = null;
 
     const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
     // Ambil waktu sekarang di zona waktu Jakarta

@@ -12,7 +12,8 @@ export async function GET(request: Request) {
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     })();
 
-    const branchFilter = await getActiveBranchFilter();
+    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    if (branchFilter === "ALL") branchFilter = null;
 
     // 1. Kas & Bank (All time)
     let allFinanceQuery = db

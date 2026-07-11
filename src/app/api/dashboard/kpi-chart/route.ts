@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
     const startDate = `${monthStr}-01`;
     const endDate = `${monthStr}-${String(numDays).padStart(2, '0')}`;
 
-    const branchFilter = await getActiveBranchFilter();
+    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    if (branchFilter === "ALL") branchFilter = null;
 
     // 1. Fetch Target
     let targetIncome = 0;

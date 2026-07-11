@@ -29,6 +29,10 @@ function TherapistCommissionsContent() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [totalActiveTherapists, setTotalActiveTherapists] = useState<number>(0);
+  
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -42,21 +46,34 @@ function TherapistCommissionsContent() {
     setLoading(true);
     setMessage(null);
     try {
-      // Fetch all services
-      const resServices = await fetch(`/api/services?t=${Date.now()}`);
+      const [resServices, resSync, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/services?all=true`),
+        fetch(`/api/therapist-service-commissions/sync-all?branchId=${filterBranch}&t=${Date.now()}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
+      ]);
+
       let servicesData: Service[] = [];
       if (resServices.ok) {
         const json = await resServices.json();
         servicesData = json.data || [];
       }
 
-      // Fetch global sync status
-      const resSync = await fetch(`/api/therapist-service-commissions/sync-all?t=${Date.now()}`);
       let syncData: any = {};
       if (resSync.ok) {
         const json = await resSync.json();
         syncData = json.globalCommissions || {};
         setTotalActiveTherapists(json.totalActiveTherapists || 0);
+      }
+      
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
       }
 
       const combinedRows: GlobalCommissionRow[] = servicesData.map(s => {
@@ -84,7 +101,7 @@ function TherapistCommissionsContent() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [filterBranch]);
 
   const handleAmountChange = (serviceId: string, val: string) => {
     setRows(prev =>
@@ -105,7 +122,8 @@ function TherapistCommissionsContent() {
       const payload = {
         syncItems: [
           { serviceId: row.serviceId, commissionAmount: row.commissionAmount }
-        ]
+        ],
+        branchId: filterBranch === "ALL" ? null : filterBranch
       };
 
       const res = await fetch("/api/therapist-service-commissions/sync-all", {
@@ -135,7 +153,8 @@ function TherapistCommissionsContent() {
       const payload = {
         syncItems: [
           { serviceId: row.serviceId, commissionAmount: null } // null akan mereset ke komisi 0
-        ]
+        ],
+        branchId: filterBranch === "ALL" ? null : filterBranch
       };
 
       const res = await fetch("/api/therapist-service-commissions/sync-all", {
@@ -175,7 +194,10 @@ function TherapistCommissionsContent() {
       const res = await fetch("/api/therapist-service-commissions/sync-all", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ syncItems: itemsToSync }),
+        body: JSON.stringify({ 
+          syncItems: itemsToSync,
+          branchId: filterBranch === "ALL" ? null : filterBranch
+        }),
       });
 
       if (res.ok) {
@@ -202,6 +224,23 @@ function TherapistCommissionsContent() {
           title="Sinkronisasi Komisi Layanan"
           description="Atur satu nominal komisi khusus pada layanan dan terapkan langsung ke seluruh terapis aktif di klinik."
           icon={Settings2}
+          rightContent={
+            session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+              <div className="relative w-full sm:w-auto">
+                <select
+                  value={filterBranch}
+                  onChange={(e) => setFilterBranch(e.target.value)}
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
+                >
+                  <option value="ALL">Semua Cabang (Global)</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>Khusus {b.name}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+              </div>
+            )
+          }
         />
 
         <div className="bg-teal-50 border border-teal-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">

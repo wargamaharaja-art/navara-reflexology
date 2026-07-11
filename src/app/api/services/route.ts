@@ -1,16 +1,29 @@
 import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull, and } from "drizzle-orm";
+
+import { getActiveBranchFilter, getSession } from "@/lib/auth";
 
 // GET /api/services — List all active services (or all if ?all=true)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const all = searchParams.get("all") === "true";
+    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    if (branchFilter === "ALL") branchFilter = null;
 
     let query = db.select().from(services);
+    
+    const conditions = [];
     if (!all) {
-      query = query.where(eq(services.isActive, true)) as any;
+      conditions.push(eq(services.isActive, true));
+    }
+    if (branchFilter) {
+      conditions.push(or(eq(services.branchId, branchFilter), isNull(services.branchId)));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
 
     const result = await query;
@@ -26,10 +39,18 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, price, durationMinutes, category, isActive } = body;
+    const { name, description, price, durationMinutes, category, isActive, branchId } = body;
 
     if (!name || !description || price === undefined || !durationMinutes) {
       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
+    }
+    
+    let targetBranch = branchId;
+    if (!targetBranch) {
+      const session = await getSession();
+      if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
+        targetBranch = session.branchId;
+      }
     }
 
     const newId = `SRV-${Date.now()}`;
@@ -40,6 +61,7 @@ export async function POST(request: Request) {
       price: Number(price),
       durationMinutes: Number(durationMinutes),
       category: category || "Paket Treatment",
+      branchId: targetBranch || null,
       isActive: isActive !== undefined ? isActive : true,
     }).returning();
 

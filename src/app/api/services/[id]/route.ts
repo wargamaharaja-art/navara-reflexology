@@ -10,7 +10,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { name, description, price, durationMinutes, category, isActive } = body;
+    const { name, description, price, durationMinutes, category, isActive, branchId } = body;
 
     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
     if (existing.length === 0) {
@@ -24,6 +24,7 @@ export async function PUT(
       price: price !== undefined ? Number(price) : undefined,
       durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
       category: category !== undefined ? category : undefined,
+      branchId: branchId !== undefined ? branchId : undefined,
       isActive: isActive !== undefined ? isActive : undefined,
     }).where(eq(services.id, id)).returning();
 

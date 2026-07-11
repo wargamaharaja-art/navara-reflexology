@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { therapistServiceCommissions, therapists } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
+import { eq, and, inArray } from "drizzle-orm";
+import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET(request: Request) {
   try {
@@ -12,11 +12,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    if (branchFilter === "ALL") branchFilter = null;
+
     // Ambil semua terapis aktif
-    const activeTherapists = await db
+    let activeTherapistsQuery = db
       .select()
       .from(therapists)
       .where(eq(therapists.isActive, true));
+
+    if (branchFilter) {
+      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
+    }
+
+    const activeTherapists = await activeTherapistsQuery;
 
     // Ambil semua komisi khusus
     const allCommissions = await db.select().from(therapistServiceCommissions);
@@ -73,17 +83,26 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { syncItems } = body; 
+    const { syncItems, branchId } = body; 
 
     if (!Array.isArray(syncItems)) {
       return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
     }
 
+    let branchFilter = branchId || await getActiveBranchFilter();
+    if (branchFilter === "ALL") branchFilter = null;
+
     // Ambil semua terapis yang aktif
-    const activeTherapists = await db
+    let activeTherapistsQuery = db
       .select()
       .from(therapists)
       .where(eq(therapists.isActive, true));
+
+    if (branchFilter) {
+      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
+    }
+
+    const activeTherapists = await activeTherapistsQuery;
 
     if (activeTherapists.length === 0) {
       return NextResponse.json({ error: "Tidak ada terapis aktif untuk disinkronisasi" }, { status: 400 });
@@ -94,10 +113,19 @@ export async function POST(request: Request) {
       
       if (!serviceId) continue;
 
-      // 1. Hapus semua override komisi khusus untuk layanan ini (reset global)
-      await db
-        .delete(therapistServiceCommissions)
-        .where(eq(therapistServiceCommissions.serviceId, serviceId));
+      // 1. Hapus semua override komisi khusus untuk layanan ini, khusus untuk terapis di cabang yang dipilih
+      const activeTherapistIds = activeTherapists.map(t => t.id);
+      if (activeTherapistIds.length > 0) {
+        // Drizzle ORM does not support `inArray` with empty array, so we check first
+        await db
+          .delete(therapistServiceCommissions)
+          .where(
+            and(
+              eq(therapistServiceCommissions.serviceId, serviceId),
+              inArray(therapistServiceCommissions.therapistId, activeTherapistIds)
+            )
+          );
+      }
 
       // 2. Jika commissionAmount diberikan (bukan null), buat override untuk SEMUA terapis aktif
       if (commissionAmount !== null && commissionAmount !== undefined) {
