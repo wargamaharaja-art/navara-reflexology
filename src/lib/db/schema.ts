@@ -483,3 +483,27 @@ export const systemLogs = pgTable("system_logs", {
 
 export type SystemLog = typeof systemLogs.$inferSelect;
 export type NewSystemLog = typeof systemLogs.$inferInsert;
+
+// ============================================
+// PROMO BOOKINGS (Pemesanan Promo Grand Opening)
+// ============================================
+export const promoBookings = pgTable("promo_bookings", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone").notNull(),
+  gender: text("gender", { enum: ["L", "P"] }).notNull(),
+  bookingDate: text("booking_date").notNull(),
+  bookingTime: text("booking_time").notNull(),
+  status: text("status", { enum: ["LOCKED", "CONFIRMED", "CANCELLED"] }).notNull().default("LOCKED"),
+  lockedUntil: text("locked_until"), // ISO string
+  ticketCode: text("ticket_code"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => ({
+  dateIdx: index("promo_date_idx").on(table.bookingDate),
+  phoneIdx: index("promo_phone_idx").on(table.phone),
+  ticketIdx: index("promo_ticket_idx").on(table.ticketCode),
+}));
+
+export type PromoBooking = typeof promoBookings.$inferSelect;
+export type NewPromoBooking = typeof promoBookings.$inferInsert;
