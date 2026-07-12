@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Users, UploadCloud, X, Search, User, Phone, Briefcase, Percent, MapPin, Image as ImageIcon, AlertTriangle, Calendar, MessageCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Users, UploadCloud, X, Search, User, Phone, Briefcase, Percent, MapPin, Image as ImageIcon, AlertTriangle, Calendar, MessageCircle, FileText } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 
@@ -787,7 +787,13 @@ export default function AdminTherapistsPage() {
             </div>
 
             {/* Sticky Footer Actions */}
-            <div className="p-4 border-t border-gray-100 bg-white shrink-0">
+            <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex flex-col gap-2">
+              <Link 
+                href={`/admin/therapists/${selectedTherapist.id}/history`}
+                className="w-full bg-blue-50 text-blue-700 hover:bg-blue-100 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors border border-blue-200 text-sm shadow-sm"
+              >
+                <FileText className="h-4 w-4" /> Riwayat Penanganan Pasien
+              </Link>
               <div className="flex gap-2">
                 <button onClick={() => { setSelectedTherapist(null); handleEdit(selectedTherapist); }} className="flex-1 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors border border-gray-200 text-sm">
                   <Edit className="h-4 w-4" /> Edit
