@@ -1,0 +1,80 @@
+From fa63ab3afc27fef6d4318eaefec800c695c9357f Mon Sep 17 00:00:00 2001
+From: radjabekammarketing-a11y <rizaldmoch30@gmail.com>
+Date: Sat, 11 Jul 2026 20:38:48 +0700
+Subject: [PATCH 3/3] fix: resolve typescript type errors during build for
+ branch filtering
+
+---
+ src/app/admin/transactions/page.tsx           |  1 +
+ .../sync-all/route.ts                         | 30 +++++++++----------
+ 2 files changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/src/app/admin/transactions/page.tsx b/src/app/admin/transactions/page.tsx
+index ad75d74..4213d03 100644
+--- a/src/app/admin/transactions/page.tsx
++++ b/src/app/admin/transactions/page.tsx
+@@ -40,6 +40,7 @@ interface Invoice {
+   patientPhone: string;
+   therapistName: string | null;
+   branchName: string;
++  branchId: string;
+   items: InvoiceItem[];
+   subtotal: number;
+   discount: number;
+diff --git a/src/app/api/therapist-service-commissions/sync-all/route.ts b/src/app/api/therapist-service-commissions/sync-all/route.ts
+index 861f82f..fecfaa0 100644
+--- a/src/app/api/therapist-service-commissions/sync-all/route.ts
++++ b/src/app/api/therapist-service-commissions/sync-all/route.ts
+@@ -16,17 +16,16 @@ export async function GET(request: Request) {
+     let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+     if (branchFilter === "ALL") branchFilter = null;
+ 
+-    // Ambil semua terapis aktif
+-    let activeTherapistsQuery = db
+-      .select()
+-      .from(therapists)
+-      .where(eq(therapists.isActive, true));
+-
++    const activeTherapistsConditions = [eq(therapists.isActive, true)];
+     if (branchFilter) {
+-      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
++      activeTherapistsConditions.push(eq(therapists.branchId, branchFilter));
+     }
+ 
+-    const activeTherapists = await activeTherapistsQuery;
++    // Ambil semua terapis aktif
++    const activeTherapists = await db
++      .select()
++      .from(therapists)
++      .where(and(...activeTherapistsConditions));
+ 
+     // Ambil semua komisi khusus
+     const allCommissions = await db.select().from(therapistServiceCommissions);
+@@ -92,17 +91,16 @@ export async function POST(request: Request) {
+     let branchFilter = branchId || await getActiveBranchFilter();
+     if (branchFilter === "ALL") branchFilter = null;
+ 
+-    // Ambil semua terapis yang aktif
+-    let activeTherapistsQuery = db
+-      .select()
+-      .from(therapists)
+-      .where(eq(therapists.isActive, true));
+-
++    const activeTherapistsConditions2 = [eq(therapists.isActive, true)];
+     if (branchFilter) {
+-      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
++      activeTherapistsConditions2.push(eq(therapists.branchId, branchFilter));
+     }
+ 
+-    const activeTherapists = await activeTherapistsQuery;
++    // Ambil semua terapis yang aktif
++    const activeTherapists = await db
++      .select()
++      .from(therapists)
++      .where(and(...activeTherapistsConditions2));
+ 
+     if (activeTherapists.length === 0) {
+       return NextResponse.json({ error: "Tidak ada terapis aktif untuk disinkronisasi" }, { status: 400 });
+-- 
+2.54.0.windows.1
+

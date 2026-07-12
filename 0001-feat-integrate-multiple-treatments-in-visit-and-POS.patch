@@ -1,0 +1,292 @@
+From 54a164f6c9dc26c39a006d6b01d14d648d89324f Mon Sep 17 00:00:00 2001
+From: radjabekammarketing-a11y <rizaldmoch30@gmail.com>
+Date: Fri, 10 Jul 2026 15:06:31 +0700
+Subject: [PATCH 1/4] feat: integrate multiple treatments in visit and POS
+
+---
+ next-env.d.ts                       |  2 +-
+ src/app/admin/visits/page.tsx       | 64 +++++++++++++--------
+ src/app/api/invoices/route.ts       |  8 ++-
+ src/app/api/patient-visits/route.ts | 89 ++++++++++++++++-------------
+ 4 files changed, 94 insertions(+), 69 deletions(-)
+
+diff --git a/next-env.d.ts b/next-env.d.ts
+index c4b7818..9edff1c 100644
+--- a/next-env.d.ts
++++ b/next-env.d.ts
+@@ -1,6 +1,6 @@
+ /// <reference types="next" />
+ /// <reference types="next/image-types/global" />
+-import "./.next/dev/types/routes.d.ts";
++import "./.next/types/routes.d.ts";
+ 
+ // NOTE: This file should not be edited
+ // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+diff --git a/src/app/admin/visits/page.tsx b/src/app/admin/visits/page.tsx
+index 95ac482..861fa59 100644
+--- a/src/app/admin/visits/page.tsx
++++ b/src/app/admin/visits/page.tsx
+@@ -103,6 +103,7 @@ export default function AdminVisitsPage() {
+ 
+   // POS Visit Integration
+   const [posVisitId, setPosVisitId] = useState<string | null>(null);
++  const [posVisitIds, setPosVisitIds] = useState<string[]>([]);
+   const [posModalOpen, setPosModalOpen] = useState(false);
+ 
+   const getFormattedTime = () => {
+@@ -466,6 +467,7 @@ export default function AdminVisitsPage() {
+           amountPaid: totalPaid,
+           notes: posNotes || null,
+           visitId: posVisitId,
++          visitIds: posVisitIds,
+           transactionDate: posVisitDate,
+         }),
+       });
+@@ -503,6 +505,7 @@ export default function AdminVisitsPage() {
+     setPosCreatedInvoice(null);
+     setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+     setPosVisitId(null);
++    setPosVisitIds([]);
+     setPosModalOpen(false);
+   };
+ 
+@@ -569,17 +572,13 @@ export default function AdminVisitsPage() {
+ 
+     setSaving(true);
+     try {
+-      const primaryServiceId = selectedServices[0];
+-      const extraServiceNames = selectedServices.slice(1).map(id => services.find(s => s.id === id)?.name).join(", ");
+-      const finalNotes = extraServiceNames ? `${formData.notes ? formData.notes + '\n\n' : ''}Layanan Tambahan: ${extraServiceNames}` : formData.notes;
+-
+       const res = await fetch("/api/patient-visits", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           ...formData,
+-          serviceId: primaryServiceId,
+-          notes: finalNotes,
++          serviceIds: selectedServices,
++          notes: formData.notes,
+           checkInTime: formData.checkInTime || null,
+           checkOutTime: formData.checkOutTime || null,
+         }),
+@@ -634,28 +633,45 @@ export default function AdminVisitsPage() {
+     setPosBranchId(branchId);
+     setPosTherapistId(therapistId || "");
+     
+-    const service = services.find(s => s.id === serviceId);
+-    if (service) {
+-      setPosItems([{
+-        serviceId: service.id,
+-        name: service.name,
+-        qty: 1,
+-        price: service.price || 0,
+-        subtotal: service.price || 0,
+-      }]);
+-    } else {
+-      setPosItems([]);
+-    }
+-    
+     // Set date based on visit if available, else today
+     const visit = visits.find(v => v.id === visitId);
+-    if (visit && visit.visitDate) {
+-      setPosVisitDate(visit.visitDate);
+-    } else {
+-      setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
++    const visitDateToUse = visit?.visitDate || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
++    setPosVisitDate(visitDateToUse);
++
++    // Bundle ALL unpaid visits for this patient today
++    const unpaidVisits = visits.filter(v => 
++      v.patientId === patientId && 
++      v.visitDate === visitDateToUse && 
++      v.paymentStatus === "UNPAID"
++    );
++
++    const relevantVisits = unpaidVisits.length > 0 ? unpaidVisits : (visit ? [visit] : []);
++    const ids = relevantVisits.map(v => v.id);
++    
++    setPosVisitIds(ids);
++    setPosVisitId(ids[0] || null);
++
++    const newItems: InvoiceItem[] = [];
++    for (const v of relevantVisits) {
++      const svc = services.find(s => s.id === v.serviceId);
++      if (svc) {
++        const existing = newItems.find(i => i.serviceId === svc.id);
++        if (existing) {
++          existing.qty += 1;
++          existing.subtotal = existing.qty * (svc.price || 0);
++        } else {
++          newItems.push({
++            serviceId: svc.id,
++            name: svc.name,
++            qty: 1,
++            price: svc.price || 0,
++            subtotal: svc.price || 0,
++          });
++        }
++      }
+     }
++    setPosItems(newItems);
+     
+-    setPosVisitId(visitId);
+     setPosModalOpen(true);
+   };
+ 
+diff --git a/src/app/api/invoices/route.ts b/src/app/api/invoices/route.ts
+index cdc49a7..56869ca 100644
+--- a/src/app/api/invoices/route.ts
++++ b/src/app/api/invoices/route.ts
+@@ -110,6 +110,7 @@ export async function POST(request: Request) {
+       notes,
+       // If linking to an existing visit
+       visitId,
++      visitIds,
+     } = body;
+ 
+     if (!patientPhone || !patientName || !branchId || !items || items.length === 0) {
+@@ -351,11 +352,12 @@ export async function POST(request: Request) {
+         }
+       }
+   
+-      // 11. If existing visit was provided, mark as PAID
+-      if (visitId) {
++      // 11. If existing visits were provided, mark them as PAID
++      const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
++      for (const vId of visitsToMark) {
+         await tx.update(patientVisits)
+           .set({ paymentStatus: "PAID", updatedAt: now })
+-          .where(eq(patientVisits.id, visitId));
++          .where(eq(patientVisits.id, vId));
+       }
+   
+         return {
+diff --git a/src/app/api/patient-visits/route.ts b/src/app/api/patient-visits/route.ts
+index e959ce6..22a7dd7 100644
+--- a/src/app/api/patient-visits/route.ts
++++ b/src/app/api/patient-visits/route.ts
+@@ -39,12 +39,14 @@ export async function POST(request: Request) {
+     const body = await request.json();
+     const { 
+       phone, name, address, gender, // Patient info
+-      serviceId, branchId, therapistId, visitDate, visitTime, 
++      serviceId, serviceIds, branchId, therapistId, visitDate, visitTime, 
+       checkInTime, checkOutTime, // Jam masuk & keluar
+       bloodPressure, notes, status // Visit info
+     } = body;
+ 
+-    if (!phone || !name || !serviceId || !branchId || !visitDate || !visitTime) {
++    const finalServiceIds = serviceIds && serviceIds.length > 0 ? serviceIds : (serviceId ? [serviceId] : []);
++
++    if (!phone || !name || finalServiceIds.length === 0 || !branchId || !visitDate || !visitTime) {
+       return Response.json({ error: "Data kunjungan atau pasien tidak lengkap" }, { status: 400 });
+     }
+ 
+@@ -138,51 +140,56 @@ export async function POST(request: Request) {
+     }
+ 
+     // 3. ISS-011: Cek duplikasi kunjungan (pasien + layanan + tanggal sama)
+-    // Diperlonggar: hanya blokir jika masih in_progress dan dengan terapis yang sama (mencegah double-click),
+-    // sehingga akun pasien generic/walk-in tetap bisa digunakan bersamaan untuk terapis berbeda.
+-    const duplicateConditions: any[] = [
+-      eq(patientVisits.patientId, patientId),
+-      eq(patientVisits.serviceId, serviceId),
+-      like(patientVisits.visitDate, visitDate),
+-      eq(patientVisits.status, "in_progress")
+-    ];
+-    if (therapistId) {
+-      duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
+-    }
++    for (const sId of finalServiceIds) {
++      const duplicateConditions: any[] = [
++        eq(patientVisits.patientId, patientId),
++        eq(patientVisits.serviceId, sId),
++        like(patientVisits.visitDate, visitDate),
++        eq(patientVisits.status, "in_progress")
++      ];
++      if (therapistId) {
++        duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
++      }
+ 
+-    const duplicateCheck = await db
+-      .select({ id: patientVisits.id })
+-      .from(patientVisits)
+-      .where(and(...duplicateConditions))
+-      .limit(1);
+-
+-    if (duplicateCheck.length > 0) {
+-      return Response.json(
+-        { error: "Kunjungan duplikat: pasien ini sudah tercatat untuk layanan yang sama pada tanggal tersebut.", duplicateVisitId: duplicateCheck[0].id },
+-        { status: 409 }
+-      );
++      const duplicateCheck = await db
++        .select({ id: patientVisits.id })
++        .from(patientVisits)
++        .where(and(...duplicateConditions))
++        .limit(1);
++
++      if (duplicateCheck.length > 0) {
++        return Response.json(
++          { error: "Kunjungan duplikat: pasien ini sudah tercatat untuk layanan yang sama pada tanggal tersebut.", duplicateVisitId: duplicateCheck[0].id },
++          { status: 409 }
++        );
++      }
+     }
+ 
+     // Tentukan status kunjungan: jika ada checkInTime + terapis, berarti sedang berlangsung
+     const visitStatus = (checkInTime && therapistId) ? "in_progress" : (status || "completed");
+ 
+     // 4. Buat record kunjungan
+-    const newVisitId = `V-${Date.now()}`;
+-    const result = await db.insert(patientVisits).values({
+-      id: newVisitId,
+-      patientId,
+-      serviceId,
+-      branchId: finalBranchId,
+-      therapistId: therapistId || null,
+-      visitDate,
+-      visitTime,
+-      checkInTime: checkInTime || null,
+-      checkOutTime: checkOutTime || null,
+-      therapistStatusSnapshot: therapistId ? "BUSY" : null,
+-      bloodPressure: bloodPressure || null,
+-      notes: notes || null,
+-      status: visitStatus,
+-    }).returning();
++    const insertedVisits = [];
++    for (const sId of finalServiceIds) {
++      // Use random string to ensure unique ID in tight loop
++      const newVisitId = `V-${Date.now()}-${Math.floor(Math.random()*10000)}`;
++      const result = await db.insert(patientVisits).values({
++        id: newVisitId,
++        patientId,
++        serviceId: sId,
++        branchId: finalBranchId,
++        therapistId: therapistId || null,
++        visitDate,
++        visitTime,
++        checkInTime: checkInTime || null,
++        checkOutTime: checkOutTime || null,
++        therapistStatusSnapshot: therapistId ? "BUSY" : null,
++        bloodPressure: bloodPressure || null,
++        notes: notes || null,
++        status: visitStatus,
++      }).returning();
++      insertedVisits.push(result[0]);
++    }
+ 
+     // === AUTO-LOCK TERAPIS: Set status BUSY setelah kunjungan tersimpan ===
+     if (therapistId && checkInTime) {
+@@ -197,7 +204,7 @@ export async function POST(request: Request) {
+         );
+     }
+ 
+-    return Response.json({ data: result[0], patientId });
++    return Response.json({ data: insertedVisits[0], patientId });
+   } catch (error) {
+     console.error("POST /api/patient-visits error:", error);
+     return Response.json({ error: "Gagal mencatat kunjungan" }, { status: 500 });
+-- 
+2.54.0.windows.1
+

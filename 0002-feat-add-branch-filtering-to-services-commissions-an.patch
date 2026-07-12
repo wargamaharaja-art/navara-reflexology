@@ -1,0 +1,1263 @@
+From 0a5ed665f83824c73e3b3605b230e2b95b3e53c0 Mon Sep 17 00:00:00 2001
+From: radjabekammarketing-a11y <rizaldmoch30@gmail.com>
+Date: Sat, 11 Jul 2026 19:43:36 +0700
+Subject: [PATCH 2/3] feat: add branch filtering to services, commissions, and
+ dashboard APIs
+
+---
+ src/app/admin/attendance/page.tsx             | 40 ++++++++++-
+ src/app/admin/page.tsx                        | 58 ++++++++++++----
+ .../admin/reservations/ReservationsClient.tsx | 67 +++++++++++++------
+ src/app/admin/reservations/page.tsx           |  8 ++-
+ src/app/admin/services/page.tsx               | 29 +++++++-
+ src/app/admin/settings/commissions/page.tsx   | 55 ++++++++++++---
+ src/app/admin/staff/payroll/page.tsx          | 40 +++++++++--
+ src/app/admin/therapists/reports/page.tsx     | 62 +++++++++++++----
+ src/app/admin/transactions/page.tsx           | 49 ++++++++++++--
+ src/app/admin/visits/page.tsx                 |  8 +--
+ src/app/api/ai-analysis/route.ts              |  3 +-
+ src/app/api/dashboard/kpi-chart/route.ts      |  3 +-
+ src/app/api/dashboard/summary/route.ts        |  3 +-
+ src/app/api/services/[id]/route.ts            |  3 +-
+ src/app/api/services/route.ts                 | 28 +++++++-
+ .../sync-all/route.ts                         | 46 ++++++++++---
+ src/app/api/therapists/availability/route.ts  |  3 +-
+ src/components/sections/BookingForm.tsx       |  8 +--
+ src/lib/db/schema.ts                          |  5 +-
+ 19 files changed, 418 insertions(+), 100 deletions(-)
+
+diff --git a/src/app/admin/attendance/page.tsx b/src/app/admin/attendance/page.tsx
+index 083e9b1..6d7a346 100644
+--- a/src/app/admin/attendance/page.tsx
++++ b/src/app/admin/attendance/page.tsx
+@@ -26,15 +26,30 @@ export default function AttendancePage() {
+   const [loading, setLoading] = useState(true);
+   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+   const [searchQuery, setSearchQuery] = useState("");
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+ 
+   const fetchAttendance = useCallback(async (targetDate: string) => {
+     setLoading(true);
+     try {
+-      const res = await fetch(`/api/attendance?date=${targetDate}`);
++      const [res, branchRes, sessionRes] = await Promise.all([
++        fetch(`/api/attendance?date=${targetDate}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
++      ]);
+       if (res.ok) {
+         const json = await res.json();
+         setRecords(json.data || []);
+       }
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } catch (err) {
+       console.error(err);
+     } finally {
+@@ -46,7 +61,11 @@ export default function AttendancePage() {
+     fetchAttendance(date);
+   }, [date, fetchAttendance]);
+ 
+-  const filteredRecords = records.filter(r => r.therapistName.toLowerCase().includes(searchQuery.toLowerCase()));
++  const filteredRecords = records.filter(r => {
++    const matchName = r.therapistName.toLowerCase().includes(searchQuery.toLowerCase());
++    const matchBranch = filterBranch === "ALL" || r.branchId === filterBranch;
++    return matchName && matchBranch;
++  });
+ 
+   return (
+     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
+@@ -59,6 +78,23 @@ export default function AttendancePage() {
+           icon={Users}
+           rightContent={
+             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
++              {/* Branch Filter Dropdown - Only show if Super Admin */}
++              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++                <div className="relative w-full sm:w-auto">
++                  <select
++                    value={filterBranch}
++                    onChange={(e) => setFilterBranch(e.target.value)}
++                    className="pl-4 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all appearance-none"
++                  >
++                    <option value="ALL">Semua Cabang</option>
++                    {branches.map(b => (
++                      <option key={b.id} value={b.id}>{b.name}</option>
++                    ))}
++                  </select>
++                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++                </div>
++              )}
++              
+               <div className="relative w-full sm:w-auto">
+                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                 <input 
+diff --git a/src/app/admin/page.tsx b/src/app/admin/page.tsx
+index 2fc3274..ef14601 100644
+--- a/src/app/admin/page.tsx
++++ b/src/app/admin/page.tsx
+@@ -37,13 +37,13 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
+ };
+ 
+ // Therapist Status Dashboard Widget
+-function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
++function TherapistStatusWidget({ showBalance, filterBranch }: { showBalance: boolean, filterBranch: string }) {
+   const [counts, setCounts] = useState({ AVAILABLE: 0, BUSY: 0, BREAK: 0, OFF: 0, total: 0 });
+ 
+   useEffect(() => {
+     const fetchStatus = async () => {
+       try {
+-        const res = await fetch("/api/therapists/availability");
++        const res = await fetch(`/api/therapists/availability?branchId=${filterBranch}`);
+         if (res.ok) {
+           const data = await res.json();
+           const list = data.data || [];
+@@ -60,7 +60,7 @@ function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
+     fetchStatus();
+     const interval = setInterval(fetchStatus, 10000);
+     return () => clearInterval(interval);
+-  }, []);
++  }, [filterBranch]);
+ 
+   return (
+     <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
+@@ -101,6 +101,10 @@ export default function AdminDashboard() {
+     const now = new Date();
+     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+   });
++  
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+ 
+   const [targetIncome, setTargetIncome] = useState(0);
+   const [targetVisits, setTargetVisits] = useState(0);
+@@ -133,7 +137,7 @@ export default function AdminDashboard() {
+     setAiResult(null);
+     setAiError(null);
+     try {
+-      const res = await fetch(`/api/ai-analysis?month=${month}`);
++      const res = await fetch(`/api/ai-analysis?month=${month}&branchId=${filterBranch}`);
+       const json = await res.json();
+       if (json.success) {
+         setAiResult(json.data);
+@@ -150,9 +154,11 @@ export default function AdminDashboard() {
+   const fetchData = async () => {
+     setLoading(true);
+     try {
+-      const [kpiRes, summaryRes] = await Promise.all([
+-        fetch(`/api/dashboard/kpi-chart?month=${month}`),
+-        fetch(`/api/dashboard/summary?month=${month}`)
++      const [kpiRes, summaryRes, branchRes, sessionRes] = await Promise.all([
++        fetch(`/api/dashboard/kpi-chart?month=${month}&branchId=${filterBranch}`),
++        fetch(`/api/dashboard/summary?month=${month}&branchId=${filterBranch}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
+       ]);
+ 
+       if (kpiRes.ok) {
+@@ -170,6 +176,16 @@ export default function AdminDashboard() {
+           setSummaryData(json.data);
+         }
+       }
++      
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } catch (e) {
+       console.error(e);
+     } finally {
+@@ -179,7 +195,7 @@ export default function AdminDashboard() {
+ 
+   useEffect(() => {
+     fetchData();
+-  }, [month]);
++  }, [month, filterBranch]);
+ 
+   const handleSaveTarget = async (e: React.FormEvent) => {
+     e.preventDefault();
+@@ -242,9 +258,27 @@ export default function AdminDashboard() {
+             description={`Selamat datang kembali 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
+             icon={LayoutDashboard}
+             rightContent={
+-              <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
+-                <Clock className="w-4 h-4 text-emerald-600" />
+-                <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
++              <div className="flex flex-col sm:flex-row items-center gap-3">
++                {/* Branch Filter Dropdown - Only show if Super Admin */}
++                {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++                  <div className="relative w-full sm:w-auto">
++                    <select
++                      value={filterBranch}
++                      onChange={(e) => setFilterBranch(e.target.value)}
++                      className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10 shadow-sm font-medium"
++                    >
++                      <option value="ALL">Semua Cabang</option>
++                      {branches.map(b => (
++                        <option key={b.id} value={b.id}>{b.name}</option>
++                      ))}
++                    </select>
++                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++                  </div>
++                )}
++                <div className="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
++                  <Clock className="w-4 h-4 text-emerald-600" />
++                  <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
++                </div>
+               </div>
+             }
+           />
+@@ -399,7 +433,7 @@ export default function AdminDashboard() {
+                   </div>
+ 
+                   {/* Terapis Hari Ini — Live Status */}
+-                  <TherapistStatusWidget showBalance={showBalance} />
++                  <TherapistStatusWidget showBalance={showBalance} filterBranch={filterBranch} />
+ 
+                   {/* Total Persediaan */}
+                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">
+diff --git a/src/app/admin/reservations/ReservationsClient.tsx b/src/app/admin/reservations/ReservationsClient.tsx
+index 760ab2f..c700352 100644
+--- a/src/app/admin/reservations/ReservationsClient.tsx
++++ b/src/app/admin/reservations/ReservationsClient.tsx
+@@ -8,15 +8,23 @@ export default function ReservationsClient({
+   activeTherapists,
+   pendingCount,
+   visits,
++  session,
++  branches,
+ }: {
+   data: any[];
+   activeTherapists: any[];
+   pendingCount: number;
+   visits: any[];
++  session?: any;
++  branches?: any[];
+ }) {
+   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
++  const [filterBranch, setFilterBranch] = useState("ALL");
+   const [currentWeek, setCurrentWeek] = useState(new Date());
+ 
++  const filteredData = data.filter(d => filterBranch === "ALL" || d.res.branchId === filterBranch);
++  const filteredVisits = visits.filter(v => filterBranch === "ALL" || v.branchId === filterBranch);
++
+   const startOfWeek = new Date(currentWeek);
+   startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1); // Monday
+   const weekDays = Array.from({ length: 7 }).map((_, i) => {
+@@ -79,28 +87,47 @@ export default function ReservationsClient({
+         </div>
+       </div>
+ 
+-      {/* Tabs */}
+-      <div className="flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
+-        <button
+-          onClick={() => setActiveTab("list")}
+-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
+-        >
+-          <List className="w-4 h-4" />
+-          Daftar Reservasi
+-        </button>
+-        <button
+-          onClick={() => setActiveTab("calendar")}
+-          className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "calendar" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
+-        >
+-          <CalendarIcon className="w-4 h-4" />
+-          Kalender Jadwal
+-        </button>
++      {/* Tabs & Filters */}
++      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-8">
++        <div className="flex border-b border-gray-200 bg-white p-1 rounded-xl shadow-sm w-max">
++          <button
++            onClick={() => setActiveTab("list")}
++            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
++          >
++            <List className="w-4 h-4" />
++            Daftar Reservasi
++          </button>
++          <button
++            onClick={() => setActiveTab("calendar")}
++            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "calendar" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
++          >
++            <CalendarIcon className="w-4 h-4" />
++            Kalender Jadwal
++          </button>
++        </div>
++
++        {/* Branch Filter Dropdown - Only show if Super Admin */}
++        {session?.role === "SUPER_ADMIN" && branches && branches.length > 0 && (
++          <div className="relative w-full sm:w-64">
++            <select
++              value={filterBranch}
++              onChange={(e) => setFilterBranch(e.target.value)}
++              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
++            >
++              <option value="ALL">Semua Cabang</option>
++              {branches.map(b => (
++                <option key={b.id} value={b.id}>{b.name}</option>
++              ))}
++            </select>
++            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++          </div>
++        )}
+       </div>
+ 
+       {activeTab === "list" && (
+         <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-6 relative">
+           <div className="overflow-x-auto">
+-            {data.length === 0 ? (
++            {filteredData.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-16 text-center">
+                 <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                   <CalendarHeart className="w-12 h-12 text-gray-300" />
+@@ -121,7 +148,7 @@ export default function ReservationsClient({
+                   </tr>
+                 </thead>
+                 <tbody>
+-                  {data.map(({ res, branchName, serviceName }) => (
++                  {filteredData.map(({ res, branchName, serviceName }) => (
+                     <tr key={res.id} className="bg-white hover:bg-slate-50 transition-colors shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-gray-100 rounded-2xl group">
+                       <td className="px-4 py-4 rounded-l-2xl">
+                         <div className="flex items-center gap-3">
+@@ -267,8 +294,8 @@ export default function ReservationsClient({
+                       const dateStr = day.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+                       
+                       // Find items for this slot
+-                      const dayReservations = data.filter(d => d.res.date === dateStr && d.res.time.startsWith(time.split(":")[0]));
+-                      const dayVisits = visits.filter(v => v.visitDate === dateStr && v.visitTime.startsWith(time.split(":")[0]));
++                      const dayReservations = filteredData.filter(d => d.res.date === dateStr && d.res.time.startsWith(time.split(":")[0]));
++                      const dayVisits = filteredVisits.filter(v => v.visitDate === dateStr && v.visitTime.startsWith(time.split(":")[0]));
+                       
+                       return (
+                         <div key={`${dateStr}-${time}`} className={`p-2 min-h-[80px] bg-white transition-colors hover:bg-gray-50/80`}>
+diff --git a/src/app/admin/reservations/page.tsx b/src/app/admin/reservations/page.tsx
+index 85116d4..9a858eb 100644
+--- a/src/app/admin/reservations/page.tsx
++++ b/src/app/admin/reservations/page.tsx
+@@ -1,7 +1,7 @@
+ import { db } from "@/lib/db";
+ import { reservations, branches, services, therapists, patientVisits, patients } from "@/lib/db/schema";
+ import { desc, eq, and, gte, lte } from "drizzle-orm";
+-import { getActiveBranchFilter } from "@/lib/auth";
++import { getActiveBranchFilter, getSession } from "@/lib/auth";
+ import ReservationsClient from "./ReservationsClient";
+ 
+ export const metadata = {
+@@ -44,6 +44,7 @@ export default async function AdminReservationsPage() {
+       visitDate: patientVisits.visitDate,
+       visitTime: patientVisits.visitTime,
+       status: patientVisits.status,
++      branchId: patientVisits.branchId,
+       patientName: patients.name,
+       serviceName: services.name,
+       therapistName: therapists.name,
+@@ -59,12 +60,17 @@ export default async function AdminReservationsPage() {
+ 
+   const visitsData = await visitsQuery;
+ 
++  const session = await getSession();
++  const allBranches = await db.select().from(branches);
++
+   return (
+     <ReservationsClient 
+       data={data} 
+       activeTherapists={activeTherapists} 
+       pendingCount={pendingCount} 
+       visits={visitsData} 
++      session={session}
++      branches={allBranches}
+     />
+   );
+ }
+diff --git a/src/app/admin/services/page.tsx b/src/app/admin/services/page.tsx
+index 7f3efc8..93da1fb 100644
+--- a/src/app/admin/services/page.tsx
++++ b/src/app/admin/services/page.tsx
+@@ -31,23 +31,43 @@ export default function AdminServicesPage() {
+   const [errorMsg, setErrorMsg] = useState("");
+   const [openCategory, setOpenCategory] = useState<string | null>(CATEGORIES[0]);
+ 
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
++
+   const [formData, setFormData] = useState({
+     name: "",
+     description: "",
+     price: "",
+     durationMinutes: "",
+     category: "Paket Treatment",
++    branchId: "ALL",
+     isActive: true,
+   });
+ 
+   const fetchData = async () => {
+     setLoading(true);
+     try {
+-      const res = await fetch("/api/services?all=true");
++      const [res, branchRes, sessionRes] = await Promise.all([
++        fetch(`/api/services?all=true&branchId=${filterBranch}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
++      ]);
++      
+       const json = await res.json();
+       if (json.data) {
+         setServices(json.data);
+       }
++
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } catch (err) {
+       console.error(err);
+     } finally {
+@@ -57,7 +77,7 @@ export default function AdminServicesPage() {
+ 
+   useEffect(() => {
+     fetchData();
+-  }, []);
++  }, [filterBranch]);
+ 
+   const resetForm = () => {
+     setFormData({
+@@ -66,6 +86,7 @@ export default function AdminServicesPage() {
+       price: "",
+       durationMinutes: "",
+       category: "Paket Treatment",
++      branchId: filterBranch !== "ALL" ? filterBranch : (branches.length > 0 ? branches[0].id : "ALL"),
+       isActive: true,
+     });
+     setEditingId(null);
+@@ -77,13 +98,14 @@ export default function AdminServicesPage() {
+     setIsModalOpen(true);
+   };
+ 
+-  const openEditModal = (s: Service) => {
++  const openEditModal = (s: any) => {
+     setFormData({
+       name: s.name,
+       description: s.description,
+       price: s.price.toString(),
+       durationMinutes: s.durationMinutes.toString(),
+       category: s.category || "Paket Treatment",
++      branchId: s.branchId || "ALL",
+       isActive: s.isActive,
+     });
+     setEditingId(s.id);
+@@ -108,6 +130,7 @@ export default function AdminServicesPage() {
+           price: Number(formData.price),
+           durationMinutes: Number(formData.durationMinutes),
+           category: formData.category,
++          branchId: formData.branchId === "ALL" ? null : formData.branchId,
+           isActive: formData.isActive,
+         }),
+       });
+diff --git a/src/app/admin/settings/commissions/page.tsx b/src/app/admin/settings/commissions/page.tsx
+index 2558c42..bbe7cab 100644
+--- a/src/app/admin/settings/commissions/page.tsx
++++ b/src/app/admin/settings/commissions/page.tsx
+@@ -29,6 +29,10 @@ function TherapistCommissionsContent() {
+   const [saving, setSaving] = useState(false);
+   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+   const [totalActiveTherapists, setTotalActiveTherapists] = useState<number>(0);
++  
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+ 
+   const formatRupiah = (amount: number) => {
+     return new Intl.NumberFormat("id-ID", {
+@@ -42,22 +46,35 @@ function TherapistCommissionsContent() {
+     setLoading(true);
+     setMessage(null);
+     try {
+-      // Fetch all services
+-      const resServices = await fetch(`/api/services?t=${Date.now()}`);
++      const [resServices, resSync, branchRes, sessionRes] = await Promise.all([
++        fetch(`/api/services?all=true`),
++        fetch(`/api/therapist-service-commissions/sync-all?branchId=${filterBranch}&t=${Date.now()}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
++      ]);
++
+       let servicesData: Service[] = [];
+       if (resServices.ok) {
+         const json = await resServices.json();
+         servicesData = json.data || [];
+       }
+ 
+-      // Fetch global sync status
+-      const resSync = await fetch(`/api/therapist-service-commissions/sync-all?t=${Date.now()}`);
+       let syncData: any = {};
+       if (resSync.ok) {
+         const json = await resSync.json();
+         syncData = json.globalCommissions || {};
+         setTotalActiveTherapists(json.totalActiveTherapists || 0);
+       }
++      
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+ 
+       const combinedRows: GlobalCommissionRow[] = servicesData.map(s => {
+         const syncStatus = syncData[s.id] || { amount: null, isUniform: false, activeCount: 0 };
+@@ -84,7 +101,7 @@ function TherapistCommissionsContent() {
+ 
+   useEffect(() => {
+     fetchData();
+-  }, [fetchData]);
++  }, [filterBranch]);
+ 
+   const handleAmountChange = (serviceId: string, val: string) => {
+     setRows(prev =>
+@@ -105,7 +122,8 @@ function TherapistCommissionsContent() {
+       const payload = {
+         syncItems: [
+           { serviceId: row.serviceId, commissionAmount: row.commissionAmount }
+-        ]
++        ],
++        branchId: filterBranch === "ALL" ? null : filterBranch
+       };
+ 
+       const res = await fetch("/api/therapist-service-commissions/sync-all", {
+@@ -135,7 +153,8 @@ function TherapistCommissionsContent() {
+       const payload = {
+         syncItems: [
+           { serviceId: row.serviceId, commissionAmount: null } // null akan mereset ke komisi 0
+-        ]
++        ],
++        branchId: filterBranch === "ALL" ? null : filterBranch
+       };
+ 
+       const res = await fetch("/api/therapist-service-commissions/sync-all", {
+@@ -175,7 +194,10 @@ function TherapistCommissionsContent() {
+       const res = await fetch("/api/therapist-service-commissions/sync-all", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ syncItems: itemsToSync }),
++        body: JSON.stringify({ 
++          syncItems: itemsToSync,
++          branchId: filterBranch === "ALL" ? null : filterBranch
++        }),
+       });
+ 
+       if (res.ok) {
+@@ -202,6 +224,23 @@ function TherapistCommissionsContent() {
+           title="Sinkronisasi Komisi Layanan"
+           description="Atur satu nominal komisi khusus pada layanan dan terapkan langsung ke seluruh terapis aktif di klinik."
+           icon={Settings2}
++          rightContent={
++            session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++              <div className="relative w-full sm:w-auto">
++                <select
++                  value={filterBranch}
++                  onChange={(e) => setFilterBranch(e.target.value)}
++                  className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
++                >
++                  <option value="ALL">Semua Cabang (Global)</option>
++                  {branches.map(b => (
++                    <option key={b.id} value={b.id}>Khusus {b.name}</option>
++                  ))}
++                </select>
++                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++              </div>
++            )
++          }
+         />
+ 
+         <div className="bg-teal-50 border border-teal-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">
+diff --git a/src/app/admin/staff/payroll/page.tsx b/src/app/admin/staff/payroll/page.tsx
+index 10ec01e..98451d6 100644
+--- a/src/app/admin/staff/payroll/page.tsx
++++ b/src/app/admin/staff/payroll/page.tsx
+@@ -17,6 +17,9 @@ export default function AdminStaffPayrollPage() {
+   const [isGenerating, setIsGenerating] = useState(false);
+   const [generateModalOpen, setGenerateModalOpen] = useState(false);
+   const [selectedStaffForPayroll, setSelectedStaffForPayroll] = useState<any>(null);
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+   
+   const [payrollForm, setPayrollForm] = useState({
+     attendancePresent: 20,
+@@ -32,9 +35,11 @@ export default function AdminStaffPayrollPage() {
+   const fetchData = async () => {
+     setLoading(true);
+     try {
+-      const [resStaff, resPayrolls] = await Promise.all([
++      const [resStaff, resPayrolls, branchRes, sessionRes] = await Promise.all([
+         fetch("/api/staff"),
+-        fetch(`/api/staff-payroll?month=${selectedMonth}`)
++        fetch(`/api/staff-payroll?month=${selectedMonth}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
+       ]);
+       if (resStaff.ok) {
+         const staffData = await resStaff.json();
+@@ -44,6 +49,14 @@ export default function AdminStaffPayrollPage() {
+         const payrollData = await resPayrolls.json();
+         setPayrolls(payrollData.data || []);
+       }
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } catch (err) {
+       console.error(err);
+     } finally {
+@@ -165,12 +178,29 @@ export default function AdminStaffPayrollPage() {
+           description="Kelola dan cetak slip gaji untuk Staff Non-Terapis / Manajemen."
+           icon={Receipt}
+           rightContent={
+-            <div className="flex items-center gap-3">
++            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
++              {/* Branch Filter Dropdown - Only show if Super Admin */}
++              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++                <div className="relative w-full sm:w-auto">
++                  <select
++                    value={filterBranch}
++                    onChange={(e) => setFilterBranch(e.target.value)}
++                    className="pl-4 pr-8 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md transition-all appearance-none cursor-pointer w-full"
++                  >
++                    <option value="ALL" className="text-gray-900">Semua Cabang</option>
++                    {branches.map(b => (
++                      <option key={b.id} value={b.id} className="text-gray-900">{b.name}</option>
++                    ))}
++                  </select>
++                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50 font-bold text-[10px]">▼</div>
++                </div>
++              )}
++
+               <input 
+                 type="month" 
+                 value={selectedMonth}
+                 onChange={(e) => setSelectedMonth(e.target.value)}
+-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md transition-all"
++                className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md transition-all w-full sm:w-auto"
+               />
+             </div>
+           }
+@@ -191,7 +221,7 @@ export default function AdminStaffPayrollPage() {
+                   </tr>
+                 </thead>
+                 <tbody className="divide-y divide-gray-100">
+-                  {staffList.filter(s => s.isActive).map(staff => {
++                  {staffList.filter(s => s.isActive && (filterBranch === "ALL" || s.branchId === filterBranch)).map(staff => {
+                     const reportData = getStaffPayrollReport(staff.id);
+                     
+                     return (
+diff --git a/src/app/admin/therapists/reports/page.tsx b/src/app/admin/therapists/reports/page.tsx
+index a13f86d..aa34f95 100644
+--- a/src/app/admin/therapists/reports/page.tsx
++++ b/src/app/admin/therapists/reports/page.tsx
+@@ -53,6 +53,9 @@ export default function TherapistReportsPage() {
+   const [saving, setSaving] = useState(false);
+   const [bulking, setBulking] = useState(false);
+   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+   
+   // Modal Edit state
+   const [isModalOpen, setIsModalOpen] = useState(false);
+@@ -69,13 +72,25 @@ export default function TherapistReportsPage() {
+         ? `/api/therapist-reports?month=${targetMonth}`
+         : `/api/therapist-reports?startDate=${start}&endDate=${end}`;
+         
+-      const res = await fetch(url);
++      const [res, branchRes, sessionRes] = await Promise.all([
++        fetch(url),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
++      ]);
+       if (res.ok) {
+         const json = await res.json();
+         setReports(json.data || []);
+       } else {
+         setMessage({ type: "error", text: "Gagal memuat data rapor terapis" });
+       }
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } catch (err) {
+       console.error(err);
+       setMessage({ type: "error", text: "Terjadi kesalahan koneksi" });
+@@ -148,8 +163,10 @@ export default function TherapistReportsPage() {
+     }
+   };
+ 
++  const filteredReports = reports.filter(r => filterBranch === "ALL" || r.branchId === filterBranch);
++
+   const handleBulkSave = async () => {
+-    const unsaved = reports.filter(r => !r.isSaved);
++    const unsaved = filteredReports.filter(r => !r.isSaved);
+     if (unsaved.length === 0) return alert("Semua laporan terapis untuk bulan ini sudah tersimpan.");
+     if (!confirm(`Simpan masal ${unsaved.length} draft laporan terapis sekaligus?`)) return;
+ 
+@@ -220,9 +237,9 @@ export default function TherapistReportsPage() {
+   };
+ 
+   const handleExportExcel = async () => {
+-    if (reports.length === 0) return alert("Tidak ada data untuk diekspor");
++    if (filteredReports.length === 0) return alert("Tidak ada data untuk diekspor");
+     
+-    const formattedData = reports.map(r => ({
++    const formattedData = filteredReports.map(r => ({
+       "Nama Terapis": r.therapistName,
+       "Total Pasien": r.totalTreatments,
+       "Kehadiran (H/T/A)": `${r.attendancePresent}/${r.attendanceLate}/${r.attendanceAbsent}`,
+@@ -310,7 +327,26 @@ export default function TherapistReportsPage() {
+           description="Kelola slip gaji digital, metrik performa, dan link evaluasi privat terapis."
+           icon={Award}
+           rightContent={
+-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-4 md:mt-0">
++            <div className="flex flex-col md:flex-row items-center gap-3 mt-4 md:mt-0 w-full md:w-auto">
++              
++              {/* Branch Filter Dropdown - Only show if Super Admin */}
++              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++                <div className="relative w-full sm:w-auto">
++                  <select
++                    value={filterBranch}
++                    onChange={(e) => setFilterBranch(e.target.value)}
++                    className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10"
++                  >
++                    <option value="ALL">Semua Cabang</option>
++                    {branches.map(b => (
++                      <option key={b.id} value={b.id}>{b.name}</option>
++                    ))}
++                  </select>
++                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++                </div>
++              )}
++
++              {/* Mode Filter Selector */}
+               <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-1">
+                 <button
+                   onClick={() => setFilterMode("month")}
+@@ -379,11 +415,11 @@ export default function TherapistReportsPage() {
+               <button
+                 id="bulk-save-btn"
+                 onClick={handleBulkSave}
+-                disabled={loading || bulking || reports.filter(r => !r.isSaved).length === 0}
++                disabled={loading || bulking || filteredReports.filter(r => !r.isSaved).length === 0}
+                 className="bg-white text-indigo-900 hover:bg-gray-50 disabled:bg-gray-200 disabled:text-gray-500 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-black/10 transition-all cursor-pointer text-sm"
+               >
+                 {bulking ? <div className="w-4 h-4 border-2 border-indigo-900/30 border-t-indigo-900 rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+-                Simpan Semua Draft ({reports.filter(r => !r.isSaved).length})
++                Simpan Semua Draft ({filteredReports.filter(r => !r.isSaved).length})
+               </button>
+             </div>
+           }
+@@ -405,7 +441,7 @@ export default function TherapistReportsPage() {
+             </div>
+             <div>
+               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Total Terapis</p>
+-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.length} Pegawai</h4>
++              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.length} Pegawai</h4>
+             </div>
+           </div>
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+@@ -414,7 +450,7 @@ export default function TherapistReportsPage() {
+             </div>
+             <div>
+               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Rapor Tersimpan</p>
+-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.filter(r => r.isSaved).length} Terbit</h4>
++              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.filter(r => r.isSaved).length} Terbit</h4>
+             </div>
+           </div>
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+@@ -423,7 +459,7 @@ export default function TherapistReportsPage() {
+             </div>
+             <div>
+               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Draft / Belum Disimpan</p>
+-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{reports.filter(r => !r.isSaved).length} Draft</h4>
++              <h4 className="text-lg font-black text-gray-900 mt-0.5">{filteredReports.filter(r => !r.isSaved).length} Draft</h4>
+             </div>
+           </div>
+           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+@@ -432,7 +468,7 @@ export default function TherapistReportsPage() {
+             </div>
+             <div>
+               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Estimasi Total Payroll</p>
+-              <h4 className="text-lg font-black text-gray-900 mt-0.5">{formatRupiah(reports.reduce((sum, r) => sum + r.takeHomePay, 0))}</h4>
++              <h4 className="text-lg font-black text-gray-900 mt-0.5">{formatRupiah(filteredReports.reduce((sum, r) => sum + r.takeHomePay, 0))}</h4>
+             </div>
+           </div>
+         </div>
+@@ -463,14 +499,14 @@ export default function TherapistReportsPage() {
+                       </div>
+                     </td>
+                   </tr>
+-                ) : reports.length === 0 ? (
++                ) : filteredReports.length === 0 ? (
+                   <tr>
+                     <td colSpan={8} className="px-6 py-16 text-center text-gray-500">
+                       Tidak ada terapis aktif untuk periode ini.
+                     </td>
+                   </tr>
+                 ) : (
+-                  reports.map((r) => (
++                  filteredReports.map((r) => (
+                     <tr key={r.therapistId} className="hover:bg-blue-50/10 transition-colors">
+                       <td className="px-6 py-4 font-bold text-gray-900">
+                         <div>{r.therapistName}</div>
+diff --git a/src/app/admin/transactions/page.tsx b/src/app/admin/transactions/page.tsx
+index bf59148..ad75d74 100644
+--- a/src/app/admin/transactions/page.tsx
++++ b/src/app/admin/transactions/page.tsx
+@@ -471,12 +471,18 @@ export default function TransaksiPelangganPage() {
+   const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null);
+   const [deleting, setDeleting] = useState(false);
+   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
++  const [session, setSession] = useState<any>(null);
++  const [branches, setBranches] = useState<any[]>([]);
++  const [filterBranch, setFilterBranch] = useState("ALL");
+ 
+   const fetchData = useCallback(async () => {
+     setLoading(true);
+     try {
+-      const url = `/api/invoices?date=${date}`;
+-      const res = await fetch(url);
++      const [res, branchRes, sessionRes] = await Promise.all([
++        fetch(`/api/invoices?date=${date}`),
++        fetch("/api/branches"),
++        fetch("/api/auth/session")
++      ]);
+       const json = await res.json();
+       if (res.ok) {
+         const data = (json.data || []).map((inv: Invoice) => ({
+@@ -486,6 +492,14 @@ export default function TransaksiPelangganPage() {
+         }));
+         setInvoices(data);
+       }
++      if (branchRes.ok) {
++        const bJson = await branchRes.json();
++        setBranches(bJson.data || []);
++      }
++      if (sessionRes.ok) {
++        const sJson = await sessionRes.json();
++        setSession(sJson.session);
++      }
+     } finally {
+       setLoading(false);
+     }
+@@ -525,13 +539,14 @@ export default function TransaksiPelangganPage() {
+   const filtered = invoices.filter(inv => {
+     const isSplitMatch = inv.paymentMethod === "SPLIT" && inv.splitPayments?.some(sp => sp.method === activeMethod);
+     const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod || isSplitMatch;
++    const matchBranch = filterBranch === "ALL" || inv.branchId === filterBranch;
+     const q = search.toLowerCase();
+     const matchSearch = !q ||
+       inv.patientName.toLowerCase().includes(q) ||
+       inv.patientPhone.includes(q) ||
+       inv.invoiceNumber.toLowerCase().includes(q) ||
+       (inv.therapistName || "").toLowerCase().includes(q);
+-    return matchMethod && matchSearch;
++    return matchMethod && matchSearch && matchBranch;
+   });
+ 
+   // Summary per method
+@@ -539,14 +554,19 @@ export default function TransaksiPelangganPage() {
+     let total = 0;
+     let count = 0;
+     
+-    invoices.forEach(inv => {
++    filtered.forEach(inv => {
+       if (inv.paymentMethod === m.key) {
+         total += inv.grandTotal;
+         count += 1;
+       } else if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+         const split = inv.splitPayments.find(sp => sp.method === m.key);
+         if (split) {
+-          total += split.amount;
++          // Jika ada kembalian pada split payment, asumsikan kembalian diberikan dari uang Cash
++          let amt = split.amount;
++          if (m.key === "CASH" && inv.changeAmount > 0) {
++            amt -= inv.changeAmount;
++          }
++          total += Math.max(0, amt);
+           count += 1;
+         }
+       }
+@@ -599,6 +619,23 @@ export default function TransaksiPelangganPage() {
+           />
+         </div>
+ 
++        {/* Branch Filter Dropdown - Only show if Super Admin */}
++        {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++          <div className="relative w-full sm:w-64">
++            <select
++              value={filterBranch}
++              onChange={(e) => setFilterBranch(e.target.value)}
++              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
++            >
++              <option value="ALL">Semua Cabang</option>
++              {branches.map(b => (
++                <option key={b.id} value={b.id}>{b.name}</option>
++              ))}
++            </select>
++            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
++          </div>
++        )}
++
+         {/* Search */}
+         <div className="relative flex-1 min-w-0">
+           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+@@ -670,7 +707,7 @@ export default function TransaksiPelangganPage() {
+               {m.label}
+               {m.key !== "ALL" && (
+                 <span className={`ml-1 text-xs rounded-full px-1.5 py-0.5 font-bold ${active ? "bg-white/20" : "bg-black/5"}`}>
+-                  {invoices.filter(inv => inv.paymentMethod === m.key).length}
++                  {summary.find(s => s.key === m.key)?.count || 0}
+                 </span>
+               )}
+             </button>
+diff --git a/src/app/admin/visits/page.tsx b/src/app/admin/visits/page.tsx
+index a9bce86..611b6a1 100644
+--- a/src/app/admin/visits/page.tsx
++++ b/src/app/admin/visits/page.tsx
+@@ -1434,9 +1434,9 @@ export default function AdminVisitsPage() {
+                           >
+                             <div className="flex items-center text-gray-700 w-full overflow-hidden">
+                               <Activity className="absolute left-3 h-4 w-4 text-gray-400" />
+-                              <span className={selectedServices.length === 0 ? "text-gray-500 text-sm" : "text-gray-700 text-sm font-medium truncate pr-4"}>
++                              <span className={selectedServices.length === 0 ? "text-gray-500 text-sm" : "text-gray-700 text-sm font-medium pr-4"}>
+                                 {selectedServices.length === 0 
+-                                  ? "Pilih Layanan (Maks 3)" 
++                                  ? "Pilih Layanan" 
+                                   : selectedServices.map(id => services.find(s => s.id === id)?.name).join(", ")}
+                               </span>
+                             </div>
+@@ -1480,10 +1480,6 @@ export default function AdminVisitsPage() {
+                                               if (isSelected) {
+                                                 setSelectedServices(selectedServices.filter(id => id !== s.id));
+                                               } else {
+-                                                if (selectedServices.length >= 3) {
+-                                                  alert("Maksimal memilih 3 layanan");
+-                                                  return;
+-                                                }
+                                                 setSelectedServices([...selectedServices, s.id]);
+                                               }
+                                             }}
+diff --git a/src/app/api/ai-analysis/route.ts b/src/app/api/ai-analysis/route.ts
+index d93832b..719ab4f 100644
+--- a/src/app/api/ai-analysis/route.ts
++++ b/src/app/api/ai-analysis/route.ts
+@@ -21,7 +21,8 @@ export async function GET(request: Request) {
+       );
+     }
+ 
+-    const branchFilter = await getActiveBranchFilter();
++    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
+ 
+     // 1. Ambil Data Finansial Bulan Ini
+     let monthFinanceQuery = db
+diff --git a/src/app/api/dashboard/kpi-chart/route.ts b/src/app/api/dashboard/kpi-chart/route.ts
+index efab66b..df07670 100644
+--- a/src/app/api/dashboard/kpi-chart/route.ts
++++ b/src/app/api/dashboard/kpi-chart/route.ts
+@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
+     const startDate = `${monthStr}-01`;
+     const endDate = `${monthStr}-${String(numDays).padStart(2, '0')}`;
+ 
+-    const branchFilter = await getActiveBranchFilter();
++    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
+ 
+     // 1. Fetch Target
+     let targetIncome = 0;
+diff --git a/src/app/api/dashboard/summary/route.ts b/src/app/api/dashboard/summary/route.ts
+index 4753354..1d0725e 100644
+--- a/src/app/api/dashboard/summary/route.ts
++++ b/src/app/api/dashboard/summary/route.ts
+@@ -12,7 +12,8 @@ export async function GET(request: Request) {
+       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+     })();
+ 
+-    const branchFilter = await getActiveBranchFilter();
++    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
+ 
+     // 1. Kas & Bank (All time)
+     let allFinanceQuery = db
+diff --git a/src/app/api/services/[id]/route.ts b/src/app/api/services/[id]/route.ts
+index 2c6a825..f0e2469 100644
+--- a/src/app/api/services/[id]/route.ts
++++ b/src/app/api/services/[id]/route.ts
+@@ -10,7 +10,7 @@ export async function PUT(
+   try {
+     const { id } = await params;
+     const body = await request.json();
+-    const { name, description, price, durationMinutes, category, isActive } = body;
++    const { name, description, price, durationMinutes, category, isActive, branchId } = body;
+ 
+     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
+     if (existing.length === 0) {
+@@ -24,6 +24,7 @@ export async function PUT(
+       price: price !== undefined ? Number(price) : undefined,
+       durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
+       category: category !== undefined ? category : undefined,
++      branchId: branchId !== undefined ? branchId : undefined,
+       isActive: isActive !== undefined ? isActive : undefined,
+     }).where(eq(services.id, id)).returning();
+ 
+diff --git a/src/app/api/services/route.ts b/src/app/api/services/route.ts
+index 826c34b..388e510 100644
+--- a/src/app/api/services/route.ts
++++ b/src/app/api/services/route.ts
+@@ -1,16 +1,29 @@
+ import { db } from "@/lib/db";
+ import { services } from "@/lib/db/schema";
+-import { eq } from "drizzle-orm";
++import { eq, or, isNull, and } from "drizzle-orm";
++
++import { getActiveBranchFilter, getSession } from "@/lib/auth";
+ 
+ // GET /api/services — List all active services (or all if ?all=true)
+ export async function GET(request: Request) {
+   try {
+     const { searchParams } = new URL(request.url);
+     const all = searchParams.get("all") === "true";
++    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
+ 
+     let query = db.select().from(services);
++    
++    const conditions = [];
+     if (!all) {
+-      query = query.where(eq(services.isActive, true)) as any;
++      conditions.push(eq(services.isActive, true));
++    }
++    if (branchFilter) {
++      conditions.push(or(eq(services.branchId, branchFilter), isNull(services.branchId)));
++    }
++
++    if (conditions.length > 0) {
++      query = query.where(and(...conditions)) as any;
+     }
+ 
+     const result = await query;
+@@ -26,11 +39,19 @@ export async function GET(request: Request) {
+ export async function POST(request: Request) {
+   try {
+     const body = await request.json();
+-    const { name, description, price, durationMinutes, category, isActive } = body;
++    const { name, description, price, durationMinutes, category, isActive, branchId } = body;
+ 
+     if (!name || !description || price === undefined || !durationMinutes) {
+       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
+     }
++    
++    let targetBranch = branchId;
++    if (!targetBranch) {
++      const session = await getSession();
++      if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
++        targetBranch = session.branchId;
++      }
++    }
+ 
+     const newId = `SRV-${Date.now()}`;
+     const result = await db.insert(services).values({
+@@ -40,6 +61,7 @@ export async function POST(request: Request) {
+       price: Number(price),
+       durationMinutes: Number(durationMinutes),
+       category: category || "Paket Treatment",
++      branchId: targetBranch || null,
+       isActive: isActive !== undefined ? isActive : true,
+     }).returning();
+ 
+diff --git a/src/app/api/therapist-service-commissions/sync-all/route.ts b/src/app/api/therapist-service-commissions/sync-all/route.ts
+index ec61f80..861f82f 100644
+--- a/src/app/api/therapist-service-commissions/sync-all/route.ts
++++ b/src/app/api/therapist-service-commissions/sync-all/route.ts
+@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
+ export const dynamic = "force-dynamic";
+ import { db } from "@/lib/db";
+ import { therapistServiceCommissions, therapists } from "@/lib/db/schema";
+-import { eq } from "drizzle-orm";
+-import { getSession } from "@/lib/auth";
++import { eq, and, inArray } from "drizzle-orm";
++import { getSession, getActiveBranchFilter } from "@/lib/auth";
+ 
+ export async function GET(request: Request) {
+   try {
+@@ -12,12 +12,22 @@ export async function GET(request: Request) {
+       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+     }
+ 
++    const { searchParams } = new URL(request.url);
++    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
++
+     // Ambil semua terapis aktif
+-    const activeTherapists = await db
++    let activeTherapistsQuery = db
+       .select()
+       .from(therapists)
+       .where(eq(therapists.isActive, true));
+ 
++    if (branchFilter) {
++      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
++    }
++
++    const activeTherapists = await activeTherapistsQuery;
++
+     // Ambil semua komisi khusus
+     const allCommissions = await db.select().from(therapistServiceCommissions);
+ 
+@@ -73,18 +83,27 @@ export async function POST(request: Request) {
+     }
+ 
+     const body = await request.json();
+-    const { syncItems } = body; 
++    const { syncItems, branchId } = body; 
+ 
+     if (!Array.isArray(syncItems)) {
+       return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+     }
+ 
++    let branchFilter = branchId || await getActiveBranchFilter();
++    if (branchFilter === "ALL") branchFilter = null;
++
+     // Ambil semua terapis yang aktif
+-    const activeTherapists = await db
++    let activeTherapistsQuery = db
+       .select()
+       .from(therapists)
+       .where(eq(therapists.isActive, true));
+ 
++    if (branchFilter) {
++      activeTherapistsQuery = activeTherapistsQuery.where(eq(therapists.branchId, branchFilter)) as any;
++    }
++
++    const activeTherapists = await activeTherapistsQuery;
++
+     if (activeTherapists.length === 0) {
+       return NextResponse.json({ error: "Tidak ada terapis aktif untuk disinkronisasi" }, { status: 400 });
+     }
+@@ -94,10 +113,19 @@ export async function POST(request: Request) {
+       
+       if (!serviceId) continue;
+ 
+-      // 1. Hapus semua override komisi khusus untuk layanan ini (reset global)
+-      await db
+-        .delete(therapistServiceCommissions)
+-        .where(eq(therapistServiceCommissions.serviceId, serviceId));
++      // 1. Hapus semua override komisi khusus untuk layanan ini, khusus untuk terapis di cabang yang dipilih
++      const activeTherapistIds = activeTherapists.map(t => t.id);
++      if (activeTherapistIds.length > 0) {
++        // Drizzle ORM does not support `inArray` with empty array, so we check first
++        await db
++          .delete(therapistServiceCommissions)
++          .where(
++            and(
++              eq(therapistServiceCommissions.serviceId, serviceId),
++              inArray(therapistServiceCommissions.therapistId, activeTherapistIds)
++            )
++          );
++      }
+ 
+       // 2. Jika commissionAmount diberikan (bukan null), buat override untuk SEMUA terapis aktif
+       if (commissionAmount !== null && commissionAmount !== undefined) {
+diff --git a/src/app/api/therapists/availability/route.ts b/src/app/api/therapists/availability/route.ts
+index f568acb..0432bb2 100644
+--- a/src/app/api/therapists/availability/route.ts
++++ b/src/app/api/therapists/availability/route.ts
+@@ -14,7 +14,8 @@ export async function GET(request: Request) {
+ 
+     const { searchParams } = new URL(request.url);
+     const branchId = searchParams.get("branchId");
+-    const branchFilter = branchId || (await getActiveBranchFilter());
++    let branchFilter = branchId || (await getActiveBranchFilter());
++    if (branchFilter === "ALL") branchFilter = null;
+ 
+     const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+     // Ambil waktu sekarang di zona waktu Jakarta
+diff --git a/src/components/sections/BookingForm.tsx b/src/components/sections/BookingForm.tsx
+index 66e87c0..8450519 100644
+--- a/src/components/sections/BookingForm.tsx
++++ b/src/components/sections/BookingForm.tsx
+@@ -60,7 +60,7 @@ export function BookingForm({
+ 
+   const displayServiceName = selectedServices.length > 0 
+     ? selectedServices.map(id => services.find(s => s.id === id)?.name).join(", ")
+-    : "Pilih Layanan (Maks 3)";
++    : "Pilih Layanan";
+ 
+   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+     setFormData({ ...formData, [e.target.name]: e.target.value });
+@@ -290,7 +290,7 @@ Mohon konfirmasi ketersediaan jadwalnya. Terima kasih!`;
+                 >
+                   <div className="flex items-center text-slate-700 w-full overflow-hidden">
+                     <Stethoscope className={`absolute left-4 h-5 w-5 transition-colors ${isServiceDropdownOpen || selectedServices.length > 0 ? 'text-primary' : 'text-gray-400'}`} />
+-                    <span className={selectedServices.length === 0 ? "text-gray-400 font-normal" : "text-gray-800 font-medium truncate pr-4"}>
++                    <span className={selectedServices.length === 0 ? "text-gray-400 font-normal" : "text-gray-800 font-medium pr-4"}>
+                       {displayServiceName}
+                     </span>
+                   </div>
+@@ -332,10 +332,6 @@ Mohon konfirmasi ketersediaan jadwalnya. Terima kasih!`;
+                                     if (isSelected) {
+                                       setSelectedServices(selectedServices.filter(id => id !== s.id));
+                                     } else {
+-                                      if (selectedServices.length >= 3) {
+-                                        alert("Maksimal memilih 3 layanan terapi");
+-                                        return;
+-                                      }
+                                       setSelectedServices([...selectedServices, s.id]);
+                                     }
+                                   }}
+diff --git a/src/lib/db/schema.ts b/src/lib/db/schema.ts
+index ddcfcae..da0fa23 100644
+--- a/src/lib/db/schema.ts
++++ b/src/lib/db/schema.ts
+@@ -25,8 +25,11 @@ export const services = pgTable("services", {
+   price: integer("price").notNull(),
+   durationMinutes: integer("duration_minutes").notNull(),
+   category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
++  branchId: text("branch_id").references(() => branches.id),
+   isActive: boolean("is_active").notNull().default(true),
+-});
++}, (table) => ({
++  branchIdx: index("service_branch_idx").on(table.branchId),
++}));
+ 
+ // ============================================
+ // THERAPISTS (Data Pegawai Terapis)
+-- 
+2.54.0.windows.1
+
