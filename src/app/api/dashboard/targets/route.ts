@@ -62,15 +62,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { month, targetIncome, targetVisits } = body;
+    const { month, targetIncome, targetVisits, branchId: bodyBranchId } = body;
 
     if (!month) {
       return NextResponse.json({ error: "Month is required" }, { status: 400 });
     }
 
-    const branchId = await getActiveBranchFilter();
-    if (!branchId) {
-      return NextResponse.json({ error: "Silakan pilih cabang aktif di sidebar terlebih dahulu untuk mengubah target." }, { status: 400 });
+    const branchId = bodyBranchId && bodyBranchId !== "ALL" ? bodyBranchId : await getActiveBranchFilter();
+    if (!branchId || branchId === "ALL") {
+      return NextResponse.json({ error: "Silakan pilih cabang spesifik terlebih dahulu untuk mengubah target." }, { status: 400 });
     }
 
     const tIncome = parseInt(targetIncome) || 0;

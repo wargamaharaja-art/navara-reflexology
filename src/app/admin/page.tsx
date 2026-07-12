@@ -199,20 +199,31 @@ export default function AdminDashboard() {
 
   const handleSaveTarget = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (filterBranch === "ALL") {
+      alert("Silakan pilih cabang spesifik terlebih dahulu untuk mengatur target.");
+      return;
+    }
     try {
-      await fetch('/api/dashboard/targets', {
+      const res = await fetch('/api/dashboard/targets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           month,
           targetIncome: parseInt(editIncome) || 0,
-          targetVisits: parseInt(editVisits) || 0
+          targetVisits: parseInt(editVisits) || 0,
+          branchId: filterBranch
         })
       });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Gagal menyimpan target");
+        return;
+      }
       setIsEditing(false);
       fetchData();
     } catch (e) {
       console.error(e);
+      alert("Terjadi kesalahan sistem saat menyimpan target");
     }
   };
 
