@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { therapists, patientVisits, patients, services, therapistCommissions } from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { getSession, checkBranchAccess } from "@/lib/auth";
+import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET(
   request: Request,
@@ -49,6 +49,18 @@ export async function GET(
       }
     }
 
+    const branchFilter = await getActiveBranchFilter();
+    
+    const visitConditions: any[] = [
+      eq(patientVisits.therapistId, id),
+      gte(patientVisits.visitDate, filterStartDate),
+      lte(patientVisits.visitDate, filterEndDate)
+    ];
+
+    if (branchFilter) {
+      visitConditions.push(eq(patientVisits.branchId, branchFilter));
+    }
+
     // Fetch visits for this therapist in the specified month
     const visits = await db
       .select({
@@ -66,13 +78,7 @@ export async function GET(
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
-      .where(
-        and(
-          eq(patientVisits.therapistId, id),
-          gte(patientVisits.visitDate, filterStartDate),
-          lte(patientVisits.visitDate, filterEndDate)
-        )
-      );
+      .where(and(...visitConditions));
 
     // Sort descending by date and time
     visits.sort((a, b) => {

@@ -41,6 +41,13 @@ export async function GET() {
       .from(patientVisits)
       .where(and(...visitsConditions));
 
+    const commissionsConditions: any[] = [
+      like(patientVisits.visitDate, `${currentMonth}%`)
+    ];
+    if (branchFilter) {
+      commissionsConditions.push(eq(patientVisits.branchId, branchFilter));
+    }
+
     // Ambil semua komisi bulan ini dari tabel therapistCommissions (join ke patientVisits untuk filter tanggal)
     const thisMonthCommissions = await db
       .select({
@@ -50,7 +57,7 @@ export async function GET() {
       })
       .from(therapistCommissions)
       .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-      .where(like(patientVisits.visitDate, `${currentMonth}%`));
+      .where(and(...commissionsConditions));
 
     const enriched = allTherapists.map(t => {
       // Pasien ditangani bulan ini

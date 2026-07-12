@@ -130,6 +130,7 @@ export async function checkBranchAccess(recordBranchId: string | null): Promise<
   const session = await getSession();
   if (!session) return false;
   if (session.role === "SUPER_ADMIN" || session.role === "INVESTOR") return true;
+  if (recordBranchId === null) return true; // Membolehkan akses ke data Global (Pusat)
   return session.branchId === recordBranchId;
 }
 
