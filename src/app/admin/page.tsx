@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star, MapPin } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -270,22 +270,6 @@ export default function AdminDashboard() {
             icon={LayoutDashboard}
             rightContent={
               <div className="flex flex-col sm:flex-row items-center gap-3">
-                {/* Branch Filter Dropdown - Only show if Super Admin */}
-                {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-                  <div className="relative w-full sm:w-auto">
-                    <select
-                      value={filterBranch}
-                      onChange={(e) => setFilterBranch(e.target.value)}
-                      className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10 shadow-sm font-medium"
-                    >
-                      <option value="ALL">Semua Cabang</option>
-                      {branches.map(b => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
-                  </div>
-                )}
                 <div className="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
                   <Clock className="w-4 h-4 text-emerald-600" />
                   <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
@@ -294,7 +278,46 @@ export default function AdminDashboard() {
             }
           />
         </div>
-        <div className="mt-2 md:mt-8 space-y-4 md:space-y-8">
+        <div className="mt-2 md:mt-6 space-y-4 md:space-y-6">
+
+          {/* Beautiful Custom Branch Filter for Super Admin */}
+          {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+            <div className="hidden md:flex flex-col mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                 <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                 </div>
+                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Filter Cabang</h3>
+              </div>
+              <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                <button
+                  onClick={() => setFilterBranch("ALL")}
+                  className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap shadow-sm border ${
+                    filterBranch === "ALL" 
+                      ? "bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.3)] transform scale-[1.02]" 
+                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                  }`}
+                >
+                  <LayoutDashboard className={`w-4 h-4 ${filterBranch === "ALL" ? "text-blue-200" : "text-gray-400"}`} />
+                  Semua Cabang
+                </button>
+                {branches.map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => setFilterBranch(b.id)}
+                    className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap shadow-sm border ${
+                      filterBranch === b.id 
+                        ? "bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.3)] transform scale-[1.02]" 
+                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                  >
+                    <MapPin className={`w-4 h-4 ${filterBranch === b.id ? "text-blue-200" : "text-gray-400"}`} />
+                    {b.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Desktop KPI Cards (Mockup Style) */}
           <div className="hidden md:flex flex-col mb-8">
