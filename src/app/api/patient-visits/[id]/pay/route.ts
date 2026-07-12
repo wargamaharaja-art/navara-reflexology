@@ -101,7 +101,7 @@ export async function POST(
             )
             .limit(1);
 
-          let commissionAmount = 0;
+          let commissionAmount = therapist.commissionRate || 0;
           if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
             commissionAmount = customOverride[0].commissionAmount;
           }
