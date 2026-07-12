@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star, MapPin } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star, MapPin, Store } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -105,6 +105,14 @@ export default function AdminDashboard() {
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [filterBranch, setFilterBranch] = useState("ALL");
+
+  useEffect(() => {
+    // Read from layout's active branch cookie so dashboard filter starts in sync
+    const match = document.cookie.match(new RegExp('(^| )navara-selected-branch=([^;]+)'));
+    if (match && match[2]) {
+      setFilterBranch(match[2]);
+    }
+  }, []);
 
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
@@ -282,39 +290,65 @@ export default function AdminDashboard() {
 
           {/* Beautiful Custom Branch Filter for Super Admin */}
           {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-            <div className="hidden md:flex flex-col mb-4">
-              <div className="flex items-center gap-2 mb-3">
-                 <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                 </div>
-                 <h3 className="text-sm font-black text-gray-800 uppercase tracking-widest">Filter Cabang</h3>
-              </div>
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                <button
-                  onClick={() => setFilterBranch("ALL")}
-                  className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap shadow-sm border ${
-                    filterBranch === "ALL" 
-                      ? "bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.3)] transform scale-[1.02]" 
-                      : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                  }`}
-                >
-                  <LayoutDashboard className={`w-4 h-4 ${filterBranch === "ALL" ? "text-blue-200" : "text-gray-400"}`} />
-                  Semua Cabang
-                </button>
-                {branches.map(b => (
+            <div className="hidden md:block mb-6 relative z-20">
+              <div className="bg-white/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-10 w-40 h-40 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl -mb-10 pointer-events-none"></div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 text-white transform hover:scale-105 transition-transform">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-[14px] font-black text-gray-800 uppercase tracking-widest leading-tight">Dashboard Wilayah</h3>
+                      <p className="text-[11px] text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-blue-400" /> Filter data analitik berdasarkan cabang
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="relative z-10 flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide pt-1">
                   <button
-                    key={b.id}
-                    onClick={() => setFilterBranch(b.id)}
-                    className={`px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 flex items-center gap-2 whitespace-nowrap shadow-sm border ${
-                      filterBranch === b.id 
-                        ? "bg-blue-600 text-white border-blue-600 shadow-[0_4px_12px_rgba(37,99,235,0.3)] transform scale-[1.02]" 
-                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:bg-blue-50"
+                    onClick={() => setFilterBranch("ALL")}
+                    className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                      filterBranch === "ALL" 
+                        ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
                     }`}
                   >
-                    <MapPin className={`w-4 h-4 ${filterBranch === b.id ? "text-blue-200" : "text-gray-400"}`} />
-                    {b.name}
+                    {filterBranch === "ALL" && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
+                    )}
+                    <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
+                    <span className="relative z-10">Semua Cabang (Pusat)</span>
+                    {filterBranch === "ALL" && (
+                      <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+                    )}
                   </button>
-                ))}
+                  
+                  {branches.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => setFilterBranch(b.id)}
+                      className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                        filterBranch === b.id 
+                          ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
+                          : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
+                      }`}
+                    >
+                      {filterBranch === b.id && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
+                      )}
+                      <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
+                      <span className="relative z-10">{b.name}</span>
+                      {filterBranch === b.id && (
+                        <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
