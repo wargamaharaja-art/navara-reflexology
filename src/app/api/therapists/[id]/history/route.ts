@@ -52,7 +52,6 @@ export async function GET(
     const branchFilter = await getActiveBranchFilter();
     
     const visitConditions: any[] = [
-      eq(patientVisits.therapistId, id),
       gte(patientVisits.visitDate, filterStartDate),
       lte(patientVisits.visitDate, filterEndDate)
     ];
@@ -61,8 +60,11 @@ export async function GET(
       visitConditions.push(eq(patientVisits.branchId, branchFilter));
     }
 
+    const { or } = await import("drizzle-orm");
+
     // Fetch visits for this therapist in the specified month
-    const visits = await db
+    // We fetch visits where the therapist is either the main therapist OR they received a commission
+    const visitsRaw = await db
       .select({
         id: patientVisits.id,
         visitDate: patientVisits.visitDate,
@@ -71,14 +73,60 @@ export async function GET(
         patientName: patients.name,
         serviceName: services.name,
         servicePrice: services.price,
+        patientVisitTherapistId: patientVisits.therapistId,
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
+        commissionTherapistId: therapistCommissions.therapistId,
       })
       .from(patientVisits)
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
-      .where(and(...visitConditions));
+      .where(
+        and(
+          ...visitConditions,
+          or(
+            eq(patientVisits.therapistId, id),
+            eq(therapistCommissions.therapistId, id)
+          )
+        )
+      );
+
+    // Group by visitId to avoid duplicates from multiple commissions per visit
+    const visitsMap = new Map<string, any>();
+
+    for (const row of visitsRaw) {
+      // Only include visits where this therapist was either the main therapist OR received a commission
+      if (row.patientVisitTherapistId !== id && row.commissionTherapistId !== id) {
+        continue;
+      }
+
+      if (!visitsMap.has(row.id)) {
+        visitsMap.set(row.id, {
+          id: row.id,
+          visitDate: row.visitDate,
+          visitTime: row.visitTime,
+          status: row.status,
+          patientName: row.patientName,
+          serviceName: row.serviceName,
+          servicePrice: row.servicePrice,
+          commissionAmount: 0,
+          commissionStatus: null,
+        });
+      }
+
+      const visit = visitsMap.get(row.id);
+
+      // Add commission ONLY if it belongs to THIS therapist
+      if (row.commissionTherapistId === id) {
+        visit.commissionAmount += (row.commissionAmount || 0);
+        if (row.commissionStatus) {
+          visit.commissionStatus = row.commissionStatus;
+        }
+      }
+    }
+
+    const visits = Array.from(visitsMap.values());
 
     // Sort descending by date and time
     visits.sort((a, b) => {

@@ -51,6 +51,7 @@ export async function GET() {
     // Ambil semua komisi bulan ini dari tabel therapistCommissions (join ke patientVisits untuk filter tanggal)
     const thisMonthCommissions = await db
       .select({
+        visitId: therapistCommissions.visitId,
         therapistId: therapistCommissions.therapistId,
         amount: therapistCommissions.amount,
         visitDate: patientVisits.visitDate,
@@ -60,8 +61,10 @@ export async function GET() {
       .where(and(...commissionsConditions));
 
     const enriched = allTherapists.map(t => {
-      // Pasien ditangani bulan ini
-      const patientsHandled = thisMonthVisits.filter(v => v.therapistId === t.id).length;
+      // Pasien ditangani bulan ini: visit ditangani terapis ATAU terapis dapat komisi dari visit tersebut
+      const patientsHandled = thisMonthVisits.filter(v => 
+        v.therapistId === t.id || thisMonthCommissions.some(c => c.visitId === v.id && c.therapistId === t.id)
+      ).length;
       // Total komisi bulan ini
       const totalCommission = thisMonthCommissions
         .filter(c => c.therapistId === t.id)

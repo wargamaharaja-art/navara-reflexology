@@ -5,7 +5,7 @@ import { eq, and, like, desc } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
-import { financeTransactions, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
+import { financeTransactions, therapistCommissions, therapistServiceCommissions, therapistMonthlyReports } from "@/lib/db/schema";
 import crypto from "crypto";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
@@ -317,12 +317,45 @@ export async function POST(request: Request) {
             }
   
             if (commissionAmount > 0) {
+              const visitMonth = now.substring(0, 7); // YYYY-MM
+              let savedReport: (typeof therapistMonthlyReports.$inferSelect)[] = [];
+              let prevTotalCommissions = 0;
+              try {
+                savedReport = await tx
+                  .select()
+                  .from(therapistMonthlyReports)
+                  .where(
+                    and(
+                      eq(therapistMonthlyReports.therapistId, therapistId),
+                      eq(therapistMonthlyReports.month, visitMonth)
+                    )
+                  )
+                  .limit(1);
+
+                if (savedReport.length > 0) {
+                  const existingCommissions = await tx
+                    .select({ amount: therapistCommissions.amount })
+                    .from(therapistCommissions)
+                    .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+                    .where(
+                      and(
+                        eq(therapistCommissions.therapistId, therapistId),
+                        like(patientVisits.visitDate, `${visitMonth}%`)
+                      )
+                    );
+                  prevTotalCommissions = existingCommissions.reduce((s, c) => s + c.amount, 0);
+                }
+              } catch (syncErr) {
+                console.error("Pre-fetch therapist monthly report error (non-fatal):", syncErr);
+              }
+
               await tx.insert(therapistCommissions).values({
                 id: crypto.randomUUID(),
                 therapistId,
                 visitId: finalVisitId,
                 amount: commissionAmount,
-                status: "PENDING",
+                status: "PAID",
+                paidAt: now,
               });
   
               // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
@@ -347,6 +380,25 @@ export async function POST(request: Request) {
                 debitAccountId: COA.BEBAN_KOMISI,
                 creditAccountId: COA.KAS,
                 amount: commissionAmount, tx});
+
+              if (savedReport.length > 0) {
+                try {
+                  const report = savedReport[0];
+                  const newTotalCommissions = prevTotalCommissions + commissionAmount;
+                  const newTakeHomePay = report.baseSalary + newTotalCommissions + report.allowances + report.bonuses - report.deductions;
+  
+                  await tx
+                    .update(therapistMonthlyReports)
+                    .set({
+                      commissions: newTotalCommissions,
+                      takeHomePay: newTakeHomePay,
+                      updatedAt: now,
+                    })
+                    .where(eq(therapistMonthlyReports.id, report.id));
+                } catch (syncErr) {
+                  console.error("Sync therapist monthly report error (non-fatal):", syncErr);
+                }
+              }
             }
           }
         }
@@ -356,7 +408,11 @@ export async function POST(request: Request) {
       const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
       for (const vId of visitsToMark) {
         await tx.update(patientVisits)
-          .set({ paymentStatus: "PAID", updatedAt: now })
+          .set({ 
+            paymentStatus: "PAID", 
+            updatedAt: now,
+            ...(therapistId && { therapistId })
+          })
           .where(eq(patientVisits.id, vId));
       }
   
