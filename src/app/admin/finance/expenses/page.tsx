@@ -61,6 +61,12 @@ export default function AdminExpensesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const getCurrentDateTimeLocal = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+
   const [formData, setFormData] = useState({
     type: "EXPENSE" as "INCOME" | "EXPENSE",
     category: "",
@@ -69,6 +75,7 @@ export default function AdminExpensesPage() {
     branchId: "",
     paymentMethod: "CASH",
     attachmentUrl: "",
+    date: getCurrentDateTimeLocal(),
   });
 
   const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
@@ -194,7 +201,7 @@ export default function AdminExpensesPage() {
         body: JSON.stringify(formData),
       });
       setIsFormOpen(false);
-      setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: "", paymentMethod: "CASH", attachmentUrl: "" });
+      setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: "", paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
       fetchTransactions();
     } catch (err) {
       console.error(err);
@@ -311,7 +318,7 @@ export default function AdminExpensesPage() {
 
               <button 
                 onClick={() => {
-                  setFormData({ type: "EXPENSE", category: expenseCategories[0], amount: 0, description: "", branchId: filterBranch, paymentMethod: "CASH", attachmentUrl: "" });
+                  setFormData({ type: "EXPENSE", category: expenseCategories[0], amount: 0, description: "", branchId: filterBranch, paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
                   setIsFormOpen(true);
                 }}
                 className="bg-white text-emerald-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-black/10 transition-all active:scale-95"
@@ -339,6 +346,19 @@ export default function AdminExpensesPage() {
             
               <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700">Tanggal Transaksi</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 font-medium"><Calendar className="w-4 h-4" /></div>
+                    <input 
+                      type="datetime-local" 
+                      value={formData.date} 
+                      onChange={e => setFormData({...formData, date: e.target.value})} 
+                      required 
+                      className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">Jenis Transaksi</label>
                   <div className="w-full px-4 py-2.5 bg-red-50 text-red-700 font-semibold border border-red-200 rounded-lg flex items-center gap-2">

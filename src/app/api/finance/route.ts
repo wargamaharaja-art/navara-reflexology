@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { type, category, amount, description, referenceId, branchId, paymentMethod, attachmentUrl } = body;
+    const { type, category, amount, description, referenceId, branchId, paymentMethod, attachmentUrl, date } = body;
 
     if (!type || !category || !amount || !description) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       branchId: finalBranchId,
       paymentMethod: paymentMethod || "CASH",
       attachmentUrl: attachmentUrl || null,
-      date: new Date().toISOString(),
+      date: date ? new Date(date).toISOString() : new Date().toISOString(),
     };
 
     await db.insert(financeTransactions).values(newTransaction);
