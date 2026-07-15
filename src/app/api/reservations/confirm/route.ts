@@ -46,19 +46,35 @@ export async function POST(request: Request) {
     }
 
     // 3. Insert into patient_visits so it shows up in calendar and POS
-    const newVisitId = `V-${Date.now()}`;
-    await db.insert(patientVisits).values({
-      id: newVisitId,
-      patientId,
-      serviceId: reservation.serviceId,
-      branchId: reservation.branchId,
-      therapistId: therapistId || null,
-      visitDate: reservation.date,
-      visitTime: reservation.time,
-      notes: `Reservasi Web: ${reservation.notes || "-"}`,
-      status: "completed", 
-      paymentStatus: "UNPAID",
-    });
+    let allServiceIds = [reservation.serviceId];
+    if (reservation.serviceIds) {
+      try {
+        const parsed = JSON.parse(reservation.serviceIds);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          allServiceIds = parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse reservation.serviceIds", e);
+      }
+    }
+
+    const insertedVisits = [];
+    for (const sId of allServiceIds) {
+      const newVisitId = `V-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+      const result = await db.insert(patientVisits).values({
+        id: newVisitId,
+        patientId,
+        serviceId: sId,
+        branchId: reservation.branchId,
+        therapistId: therapistId || null,
+        visitDate: reservation.date,
+        visitTime: reservation.time,
+        notes: `Reservasi Web: ${reservation.notes || "-"}`,
+        status: "completed", 
+        paymentStatus: "UNPAID",
+      }).returning();
+      insertedVisits.push(result[0]);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

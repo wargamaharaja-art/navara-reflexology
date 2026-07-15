@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       customerPhone: data.phone,
       branchId: data.branch,
       serviceId: data.service,
+      serviceIds: data.serviceIds ? JSON.stringify(data.serviceIds) : null,
       date: data.date,
       time: data.time,
       notes: data.notes || "",

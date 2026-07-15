@@ -160,6 +160,7 @@ export const reservations = pgTable("reservations", {
   customerPhone: text("customer_phone").notNull(),
   branchId: text("branch_id").notNull().references(() => branches.id),
   serviceId: text("service_id").notNull().references(() => services.id),
+  serviceIds: text("service_ids"), // JSON array of all selected service IDs
   date: text("date").notNull(),
   time: text("time").notNull(),
   notes: text("notes"),

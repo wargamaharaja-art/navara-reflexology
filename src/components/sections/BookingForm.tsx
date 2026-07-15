@@ -100,6 +100,7 @@ export function BookingForm({
     const dbPayload = {
       ...formData,
       service: primaryServiceId,
+      serviceIds: selectedServices,
       notes: formData.notes + extraServicesText
     };
 
