@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, patients, services, therapistCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, patients, services, therapistCommissions, invoices } from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 
@@ -77,11 +77,14 @@ export async function GET(
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
         commissionTherapistId: therapistCommissions.therapistId,
+        invoiceItems: invoices.items,
+        invoiceTotal: invoices.grandTotal,
       })
       .from(patientVisits)
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
+      .leftJoin(invoices, eq(patientVisits.id, invoices.visitId))
       .where(
         and(
           ...visitConditions,
@@ -102,14 +105,30 @@ export async function GET(
       }
 
       if (!visitsMap.has(row.id)) {
+        let finalServiceName = row.serviceName;
+        let finalServicePrice = row.servicePrice;
+
+        if (row.invoiceItems) {
+          try {
+            const items = JSON.parse(row.invoiceItems);
+            if (Array.isArray(items) && items.length > 0) {
+              finalServiceName = items.map((i: any) => {
+                if (i.qty && i.qty > 1) return `${i.name} (x${i.qty})`;
+                return i.name;
+              }).join(" + ");
+              finalServicePrice = row.invoiceTotal || items.reduce((sum: number, i: any) => sum + (i.subtotal || (i.price * (i.qty || 1))), 0);
+            }
+          } catch (e) {}
+        }
+
         visitsMap.set(row.id, {
           id: row.id,
           visitDate: row.visitDate,
           visitTime: row.visitTime,
           status: row.status,
           patientName: row.patientName,
-          serviceName: row.serviceName,
-          servicePrice: row.servicePrice,
+          serviceName: finalServiceName,
+          servicePrice: finalServicePrice,
           commissionAmount: 0,
           commissionStatus: null,
         });
