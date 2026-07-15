@@ -720,6 +720,23 @@ export default function AdminVisitsPage() {
   const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const handleCompleteVisit = async (visitId: string) => {
+    try {
+      const res = await fetch(`/api/patient-visits/${visitId}/complete`, {
+        method: "PATCH",
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menyelesaikan kunjungan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan jaringan");
+    }
+  };
+
   const handleDeleteVisit = (visitId: string) => {
     setVisitToDelete(visitId);
     setDeleteModalOpen(true);
@@ -1855,9 +1872,16 @@ export default function AdminVisitsPage() {
                                 <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
                               </button>
                             ) : (
-                              <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
-                                <Wallet className="w-5 h-5" />
-                              </button>
+                              <>
+                                <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform" title="Ke Kasir">
+                                  <Wallet className="w-5 h-5" />
+                                </button>
+                                {v.status === "in_progress" && (
+                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
+                                    <CheckCircle2 className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -2007,13 +2031,21 @@ export default function AdminVisitsPage() {
                               ) : (
                                 <div className="flex flex-col items-start gap-1">
                                   <button 
-                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
+                                    onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }}
                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                                   >
                                     Ke Kasir
                                   </button>
+                                  {v.status === "in_progress" && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }}
+                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" /> Selesai
+                                    </button>
+                                  )}
                                   <button
-                                    onClick={() => handleDeleteVisit(v.id)}
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit(v.id); }}
                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
                                     title="Hapus Data Kunjungan"
                                   >

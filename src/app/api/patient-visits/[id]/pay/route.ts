@@ -107,40 +107,8 @@ export async function POST(
           }
 
           if (commissionAmount > 0) {
-            // C. Sinkronisasi ke Laporan Bulanan Terapis — ambil data SEBELUM INSERT
-            // agar query DB tidak menyertakan komisi yang baru saja di-INSERT (cegah double-count)
-            const visitMonth = visit.visitDate.substring(0, 7); // YYYY-MM
-            let savedReport: (typeof therapistMonthlyReports.$inferSelect)[] = [];
-            let prevTotalCommissions = 0;
-            try {
-              savedReport = await db
-                .select()
-                .from(therapistMonthlyReports)
-                .where(
-                  and(
-                    eq(therapistMonthlyReports.therapistId, visit.therapistId!),
-                    eq(therapistMonthlyReports.month, visitMonth)
-                  )
-                )
-                .limit(1);
-
-              if (savedReport.length > 0) {
-                // Query existing commissions BEFORE inserting the new one
-                const existingCommissions = await db
-                  .select({ amount: therapistCommissions.amount })
-                  .from(therapistCommissions)
-                  .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-                  .where(
-                    and(
-                      eq(therapistCommissions.therapistId, visit.therapistId!),
-                      like(patientVisits.visitDate, `${visitMonth}%`)
-                    )
-                  );
-                prevTotalCommissions = existingCommissions.reduce((s, c) => s + c.amount, 0);
-              }
-            } catch (syncErr) {
-              console.error("Pre-fetch therapist monthly report error (non-fatal):", syncErr);
-            }
+            // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
+            // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
 
             // Komisi langsung berstatus PAID (sudah disisihkan otomatis)
             await db.insert(therapistCommissions).values({
@@ -172,31 +140,11 @@ export async function POST(
               description: `[Auto] Bagi Hasil Terapis: ${therapist.name} - ${serviceName}`,
               referenceId: commTrxId,
               debitAccountId: COA.BEBAN_KOMISI,
-              creditAccountId: COA.KAS,
+              creditAccountId: COA.HUTANG_KOMISI,
               amount: commissionAmount
             });
 
-            // Update laporan bulanan dengan total yang dihitung sebelum INSERT + commissionAmount
-            if (savedReport.length > 0) {
-              try {
-                const report = savedReport[0];
-                // ISS-003: prevTotalCommissions diambil sebelum INSERT, tambahkan commissionAmount
-                // secara eksplisit — tidak ada double-count
-                const newTotalCommissions = prevTotalCommissions + commissionAmount;
-                const newTakeHomePay = report.baseSalary + newTotalCommissions + report.allowances + report.bonuses - report.deductions;
 
-                await db
-                  .update(therapistMonthlyReports)
-                  .set({
-                    commissions: newTotalCommissions,
-                    takeHomePay: newTakeHomePay,
-                    updatedAt: trxDate,
-                  })
-                  .where(eq(therapistMonthlyReports.id, report.id));
-              } catch (syncErr) {
-                console.error("Sync therapist monthly report error (non-fatal):", syncErr);
-              }
-            }
           }
         }
       }

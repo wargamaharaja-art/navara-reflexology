@@ -120,38 +120,8 @@ export async function PATCH(
           }
 
           if (commissionAmount > 0) {
-            const visitMonth = visit.visitDate.substring(0, 7); // YYYY-MM
-            let savedReport: any[] = [];
-            let prevTotalCommissions = 0;
-            
-            try {
-              savedReport = await tx
-                .select()
-                .from(therapistMonthlyReports)
-                .where(
-                  and(
-                    eq(therapistMonthlyReports.therapistId, therapistId),
-                    eq(therapistMonthlyReports.month, visitMonth)
-                  )
-                )
-                .limit(1);
-
-              if (savedReport.length > 0) {
-                const existingCommissions = await tx
-                  .select({ amount: therapistCommissions.amount })
-                  .from(therapistCommissions)
-                  .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-                  .where(
-                    and(
-                      eq(therapistCommissions.therapistId, therapistId),
-                      like(patientVisits.visitDate, `${visitMonth}%`)
-                    )
-                  );
-                prevTotalCommissions = existingCommissions.reduce((s, c) => s + c.amount, 0);
-              }
-            } catch (err) {
-              console.error("Fetch report error:", err);
-            }
+            // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
+            // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
 
             // Insert Commission
             await tx.insert(therapistCommissions).values({
@@ -183,30 +153,12 @@ export async function PATCH(
               description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${item.name || serviceId} (Edit Kasir)`,
               referenceId: commTrxId,
               debitAccountId: COA.BEBAN_KOMISI,
-              creditAccountId: COA.KAS,
+              creditAccountId: COA.HUTANG_KOMISI,
               amount: commissionAmount, 
               tx
             });
 
-            // Update Report
-            if (savedReport.length > 0) {
-              try {
-                const report = savedReport[0];
-                const newTotalCommissions = prevTotalCommissions + commissionAmount;
-                const newTakeHomePay = report.baseSalary + newTotalCommissions + report.allowances + report.bonuses - report.deductions;
 
-                await tx
-                  .update(therapistMonthlyReports)
-                  .set({
-                    commissions: newTotalCommissions,
-                    takeHomePay: newTakeHomePay,
-                    updatedAt: now,
-                  })
-                  .where(eq(therapistMonthlyReports.id, report.id));
-              } catch (err) {
-                console.error("Update report error:", err);
-              }
-            }
           }
         }
       }

@@ -11,6 +11,7 @@ export async function GET(request: Request) {
       { id: "acc_102", code: "102", name: "Persediaan", type: "ASSET", isActive: true },
       { id: "acc_103", code: "103", name: "Aset Tetap", type: "ASSET", isActive: true },
       { id: "acc_201", code: "201", name: "Hutang Usaha", type: "LIABILITY", isActive: true },
+      { id: "acc_202", code: "202", name: "Hutang Komisi Terapis", type: "LIABILITY", isActive: true },
       { id: "acc_301", code: "301", name: "Modal Pemilik", type: "EQUITY", isActive: true },
       { id: "acc_302", code: "302", name: "Laba Ditahan", type: "EQUITY", isActive: true },
       { id: "acc_401", code: "401", name: "Pendapatan Layanan", type: "REVENUE", isActive: true },

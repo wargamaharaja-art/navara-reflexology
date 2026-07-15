@@ -60,6 +60,7 @@ export const COA = {
   KAS: "acc_101",
   PERSEDIAAN: "acc_102",
   HUTANG: "acc_201",
+  HUTANG_KOMISI: "acc_202",
   MODAL: "acc_301",
   PENDAPATAN_LAYANAN: "acc_401",
   PENDAPATAN_LAIN: "acc_402",

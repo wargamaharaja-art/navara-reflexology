@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { patientVisits, patients, services, branches, therapists, invoices } from "@/lib/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { patientVisits, patients, services, branches, therapists, invoices, financeTransactions } from "@/lib/db/schema";
+import { eq, and, desc, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -93,10 +93,6 @@ export async function GET(request: NextRequest) {
       // Payment & Revenue
       if (v.paymentStatus === "PAID") {
         totalPaid++;
-        if (v.status === "completed") {
-          // Use actual invoice grand total if available, fallback to service price
-          totalRevenue += (v.invoiceGrandTotal ?? v.servicePrice);
-        }
       } else {
         totalUnpaid++;
       }
@@ -121,9 +117,6 @@ export async function GET(request: NextRequest) {
         if (v.status === "completed") {
           b.totalCompleted++;
         }
-        if (v.paymentStatus === "PAID" && v.status === "completed") {
-          b.totalRevenue += (v.invoiceGrandTotal ?? v.servicePrice);
-        }
         if (v.paymentStatus === "PAID") {
           b.totalPaid++;
         } else {
@@ -134,6 +127,31 @@ export async function GET(request: NextRequest) {
         } else if (v.patientGender === "P") {
           b.P++;
         }
+      }
+    });
+
+    // 4. Get actual revenue from Finance Transactions
+    const financeConditions = [
+      eq(financeTransactions.type, "INCOME"),
+      like(financeTransactions.date, `${targetDate}%`)
+    ];
+    if (branchFilter) {
+      financeConditions.push(eq(financeTransactions.branchId, branchFilter));
+    }
+    
+    const financeResult = await db
+      .select({
+        branchId: financeTransactions.branchId,
+        amount: financeTransactions.amount,
+      })
+      .from(financeTransactions)
+      .where(and(...financeConditions));
+      
+    totalRevenue = 0;
+    financeResult.forEach(f => {
+      totalRevenue += f.amount;
+      if (f.branchId && branchBreakdown[f.branchId]) {
+        branchBreakdown[f.branchId].totalRevenue += f.amount;
       }
     });
 

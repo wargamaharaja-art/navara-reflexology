@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { patientVisits, services } from "@/lib/db/schema";
-import { eq, and, like, desc } from "drizzle-orm";
+import { patientVisits, services, financeTransactions } from "@/lib/db/schema";
+import { eq, and, like, desc, sql } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -38,6 +38,28 @@ export async function GET(request: NextRequest) {
       .where(and(...visitConditions))
       .orderBy(desc(patientVisits.visitDate));
 
+    // Get actual revenue from Finance Transactions (Source of Truth)
+    const financeConditions = [
+      eq(financeTransactions.type, "INCOME"),
+      like(financeTransactions.date, `${targetMonth}-%`)
+    ];
+    if (branchFilter) {
+      financeConditions.push(eq(financeTransactions.branchId, branchFilter));
+    }
+    const financeResult = await db
+      .select({
+        date: sql<string>`substring(CAST(${financeTransactions.date} AS text) from 1 for 10)`,
+        amount: sql<number>`SUM(${financeTransactions.amount})`
+      })
+      .from(financeTransactions)
+      .where(and(...financeConditions))
+      .groupBy(sql`substring(CAST(${financeTransactions.date} AS text) from 1 for 10)`);
+      
+    const revenueMap: Record<string, number> = {};
+    financeResult.forEach(f => {
+      if (f.date) revenueMap[f.date] = Number(f.amount);
+    });
+
     // Aggregate by date
     const dailyRecaps: Record<string, { date: string; totalVisits: number; totalRevenue: number; totalPaid: number; totalUnpaid: number }> = {};
 
@@ -58,11 +80,26 @@ export async function GET(request: NextRequest) {
       
       if (v.paymentStatus === "PAID") {
         recap.totalPaid++;
-        if (v.status === "completed") {
-          recap.totalRevenue += v.servicePrice;
-        }
       } else {
         recap.totalUnpaid++;
+      }
+    });
+
+    // Inject real revenue into the daily recaps
+    Object.keys(dailyRecaps).forEach(date => {
+      dailyRecaps[date].totalRevenue = revenueMap[date] || 0;
+    });
+
+    // For days that have revenue but no visits, we should also include them
+    Object.keys(revenueMap).forEach(date => {
+      if (!dailyRecaps[date]) {
+        dailyRecaps[date] = {
+          date,
+          totalVisits: 0,
+          totalRevenue: revenueMap[date],
+          totalPaid: 0,
+          totalUnpaid: 0,
+        };
       }
     });
 

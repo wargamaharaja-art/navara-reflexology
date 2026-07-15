@@ -28,38 +28,7 @@ export async function DELETE(
     // 2. Dapatkan data komisi terapis yang terkait
     const commissions = await db.select().from(therapistCommissions).where(eq(therapistCommissions.visitId, id));
 
-    // 3. Update Laporan Bulanan Terapis (kurangi komisi yang dibatalkan)
-    if (commissions.length > 0 && visit.therapistId) {
-      const visitMonth = visit.visitDate.substring(0, 7);
-      
-      const reports = await db
-        .select()
-        .from(therapistMonthlyReports)
-        .where(
-          and(
-            eq(therapistMonthlyReports.therapistId, visit.therapistId),
-            eq(therapistMonthlyReports.month, visitMonth)
-          )
-        )
-        .limit(1);
-
-      if (reports.length > 0) {
-        const report = reports[0];
-        const totalCommissionToRemove = commissions.reduce((sum, c) => sum + c.amount, 0);
-        
-        const newCommissions = report.commissions - totalCommissionToRemove;
-        const newTakeHomePay = report.baseSalary + newCommissions + report.allowances + report.bonuses - report.deductions;
-
-        await db
-          .update(therapistMonthlyReports)
-          .set({
-            commissions: newCommissions > 0 ? newCommissions : 0,
-            takeHomePay: newTakeHomePay > 0 ? newTakeHomePay : 0,
-            updatedAt: new Date().toISOString(),
-          })
-          .where(eq(therapistMonthlyReports.id, report.id));
-      }
-    }
+    // 3. Update Laporan Bulanan Terapis (sinkronisasi manual dihapus, Single Source of Truth)
 
     // 4. Dapatkan invoice terkait untuk menghapus transaksi keuangan dari POS
     const relatedInvoices = await db.select({ id: invoices.id })
