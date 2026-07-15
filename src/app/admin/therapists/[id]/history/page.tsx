@@ -220,12 +220,6 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                             ) : (
                               <div className="font-medium text-gray-400">-</div>
                             )}
-                            {visit.commissionStatus === 'PENDING' && visit.commissionAmount > 0 && (
-                              <div className="text-[10px] text-amber-500 font-bold mt-0.5 uppercase">Pending</div>
-                            )}
-                            {visit.commissionStatus === 'PAID' && visit.commissionAmount > 0 && (
-                              <div className="text-[10px] text-green-500 font-bold mt-0.5 uppercase">Terbayar</div>
-                            )}
                           </td>
                         </tr>
                       ))
