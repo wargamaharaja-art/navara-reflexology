@@ -139,10 +139,19 @@ export default function AdminTherapistsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus terapis ini secara permanen?")) return;
     try {
-      await fetch(`/api/therapists/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/therapists/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        let errorMessage = "Gagal menghapus terapis";
+        try {
+          const data = await res.json();
+          if (data.error) errorMessage = data.error;
+        } catch (e) {}
+        alert(errorMessage);
+      }
       fetchTherapists();
     } catch (err) {
       console.error(err);
+      alert("Terjadi kesalahan jaringan/server saat menghapus terapis.");
     }
   };
 

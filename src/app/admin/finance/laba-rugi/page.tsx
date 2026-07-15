@@ -81,7 +81,7 @@ export default function AdminLabaRugiPage() {
   //
   //   LABA RUGI = TOTAL PENDAPATAN − TOTAL BIAYA USAHA
   //
-  //   Penyusutan Modal Investor  (input manual)
+  //   Penyusutan Sewa Ruko  (input manual)
   //   Infaq (2.5%)               = LABA RUGI × 2.5%
   //   Bagi Hasil Investor (x%)   = LABA RUGI × x%
   //   Bagi Hasil Manajemen (x%)  = LABA RUGI × x%
@@ -169,7 +169,7 @@ export default function AdminLabaRugiPage() {
     [""],
     ["LABA RUGI", reportData.labaRugi],
     [""],
-    ["Penyusutan Modal Investor", reportData.penyusutanModalInvestor],
+    ["Penyusutan Sewa Ruko", reportData.penyusutanModalInvestor],
     [`Infaq (2.5%)`, reportData.infaqShare],
     [`Bagi Hasil Investor (${reportData.investorPercentage}%)`, reportData.investorShare],
     [`Bagi Hasil Manajemen (${reportData.managementPercentage}%)`, reportData.managementShare],
@@ -293,9 +293,9 @@ export default function AdminLabaRugiPage() {
                 <span className="text-teal-600 text-sm font-black">%</span>
               </div>
 
-              {/* Penyusutan Modal Investor */}
+              {/* Penyusutan Sewa Ruko */}
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-teal-200 transition-colors">
-                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Penyusutan Modal:</span>
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Penyusutan Sewa Ruko:</span>
                 <span className="text-gray-400 text-sm font-bold">Rp</span>
                 <input
                   type="number" min="0"
@@ -462,7 +462,7 @@ export default function AdminLabaRugiPage() {
                         <td colSpan={2} className="pt-6">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-gradient-to-br from-amber-50 to-orange-50/50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                               <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Modal</p>
+                               <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Sewa Ruko</p>
                                <p className="text-xl font-black text-amber-900">{formatRupiah(reportData.penyusutanModalInvestor)}</p>
                             </div>
                             <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">

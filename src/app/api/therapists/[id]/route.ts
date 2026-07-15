@@ -106,8 +106,17 @@ export async function DELETE(
 
     await db.delete(therapists).where(eq(therapists.id, id));
     return new NextResponse(null, { status: 204 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to delete therapist:", error);
+    
+    // Check for foreign key constraint violation
+    const errorString = String(error).toLowerCase();
+    if (error.code === '23503' || errorString.includes('foreign key') || errorString.includes('constraint')) {
+      return NextResponse.json({ 
+        error: "Gagal menghapus: Terapis ini memiliki riwayat data pasien atau komisi. Silakan edit dan ubah statusnya menjadi 'Nonaktif' (toggle Status Aktif)." 
+      }, { status: 400 });
+    }
+    
     return NextResponse.json({ error: "Failed to delete therapist" }, { status: 500 });
   }
 }
