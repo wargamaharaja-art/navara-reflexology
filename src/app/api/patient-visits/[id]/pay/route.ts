@@ -89,7 +89,7 @@ export async function POST(
         if (therapistRecords.length > 0) {
           const therapist = therapistRecords[0];
           
-          let commissionAmount = 0;
+          let commissionAmount = therapist.commissionRate;
           
           // Check for service commission override (consistent with POS flow)
           const customOverride = await db

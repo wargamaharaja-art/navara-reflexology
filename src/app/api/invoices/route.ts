@@ -311,11 +311,14 @@ export async function POST(request: Request) {
               )
               .limit(1);
   
-            let commissionAmount = 0;
+            let commissionAmount = therapist.commissionRate;
             if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-              commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
+              commissionAmount = customOverride[0].commissionAmount;
             }
-  
+            
+            // Multiply by item quantity
+            commissionAmount = commissionAmount * (item.qty || 1);
+
             if (commissionAmount > 0) {
               // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
               // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
