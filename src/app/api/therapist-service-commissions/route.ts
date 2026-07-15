@@ -81,7 +81,6 @@ export async function POST(request: Request) {
         .update(therapistServiceCommissions)
         .set({
           commissionAmount: parseInt(commissionAmount),
-          updatedAt: new Date().toISOString(),
         })
         .where(eq(therapistServiceCommissions.id, existing[0].id));
     } else {
