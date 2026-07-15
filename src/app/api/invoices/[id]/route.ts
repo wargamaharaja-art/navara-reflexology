@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoices, financeTransactions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { invoices, financeTransactions, journalEntries, journalLines } from "@/lib/db/schema";
+import { eq, inArray } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 
@@ -92,11 +92,18 @@ export async function PUT(
 
     await db.update(invoices).set(updateData).where(eq(invoices.id, id));
 
-    // Also update the linked finance transaction's paymentMethod if it changed
+    // Update linked finance transactions if paymentMethod or grandTotal changed
+    const finUpdateData: Record<string, unknown> = {};
     if (paymentMethod && paymentMethod !== current.paymentMethod) {
+      finUpdateData.paymentMethod = paymentMethod;
+    }
+    if (newGrandTotal !== current.grandTotal) {
+      finUpdateData.amount = newGrandTotal;
+    }
+    if (Object.keys(finUpdateData).length > 0) {
       await db
         .update(financeTransactions)
-        .set({ paymentMethod })
+        .set(finUpdateData)
         .where(eq(financeTransactions.referenceId, id));
     }
 
@@ -135,8 +142,25 @@ export async function DELETE(
       return NextResponse.json({ error: "Struk tidak ditemukan" }, { status: 404 });
     }
 
-    // Delete the linked finance transaction first (foreign key safety)
-    await db.delete(financeTransactions).where(eq(financeTransactions.referenceId, id));
+    // Delete linked journal entries and lines first
+    const relatedFinTxs = await db.select({ id: financeTransactions.id })
+      .from(financeTransactions)
+      .where(eq(financeTransactions.referenceId, id));
+    const finTxIds = relatedFinTxs.map(tx => tx.id);
+
+    if (finTxIds.length > 0) {
+      const relatedJournals = await db.select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(inArray(journalEntries.referenceId, finTxIds));
+      const journalIds = relatedJournals.map(j => j.id);
+
+      if (journalIds.length > 0) {
+        await db.delete(journalLines).where(inArray(journalLines.entryId, journalIds));
+        await db.delete(journalEntries).where(inArray(journalEntries.id, journalIds));
+      }
+
+      await db.delete(financeTransactions).where(inArray(financeTransactions.id, finTxIds));
+    }
 
     // Delete the invoice
     await db.delete(invoices).where(eq(invoices.id, id));
