@@ -363,6 +363,7 @@ export async function POST(request: Request) {
       for (const vId of visitsToMark) {
         await tx.update(patientVisits)
           .set({ 
+            status: "completed",
             paymentStatus: "PAID", 
             updatedAt: now,
             ...(therapistId && { therapistId })
