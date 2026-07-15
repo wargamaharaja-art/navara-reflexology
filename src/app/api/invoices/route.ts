@@ -300,7 +300,7 @@ export async function POST(request: Request) {
             const serviceId = item.serviceId;
             if (!serviceId) continue;
   
-            const customOverride = await db
+            const customOverride = await tx
               .select()
               .from(therapistServiceCommissions)
               .where(

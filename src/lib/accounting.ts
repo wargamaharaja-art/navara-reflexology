@@ -27,6 +27,39 @@ export async function createJournalEntry({
 
   const dbInstance = tx || db;
 
+  // Ensure accounts exist to prevent foreign key errors
+  const defaultAccounts: Record<string, { name: string, type: string, code: string }> = {
+    [COA.KAS]: { name: "Kas & Bank", type: "ASSET", code: "101" },
+    [COA.PERSEDIAAN]: { name: "Persediaan", type: "ASSET", code: "102" },
+    [COA.HUTANG]: { name: "Hutang Usaha", type: "LIABILITY", code: "201" },
+    [COA.HUTANG_KOMISI]: { name: "Hutang Komisi", type: "LIABILITY", code: "202" },
+    [COA.MODAL]: { name: "Modal", type: "EQUITY", code: "301" },
+    [COA.PENDAPATAN_LAYANAN]: { name: "Pendapatan Layanan", type: "REVENUE", code: "401" },
+    [COA.PENDAPATAN_LAIN]: { name: "Pendapatan Lain", type: "REVENUE", code: "402" },
+    [COA.BEBAN_KOMISI]: { name: "Beban Komisi", type: "EXPENSE", code: "501" },
+    [COA.HPP_BARANG]: { name: "Harga Pokok Penjualan", type: "COGS", code: "502" },
+    [COA.BEBAN_OPERASIONAL]: { name: "Beban Operasional", type: "EXPENSE", code: "601" },
+    [COA.BEBAN_GAJI]: { name: "Beban Gaji", type: "EXPENSE", code: "602" },
+  };
+
+  for (const accId of [debitAccountId, creditAccountId]) {
+    const def = defaultAccounts[accId];
+    if (def) {
+      try {
+        await dbInstance.insert(accounts).values({
+          id: accId,
+          code: def.code,
+          name: def.name,
+          type: def.type as any,
+          isActive: true
+        }).onConflictDoNothing();
+      } catch (e) {
+        // Fallback catch just in case, but onConflictDoNothing should prevent standard unique constraint errors
+        console.warn("Failed to insert account:", e);
+      }
+    }
+  }
+
   await dbInstance.insert(journalEntries).values({
     id: jId,
     date: trxDate,
