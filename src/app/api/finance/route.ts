@@ -27,13 +27,11 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(financeTransactions.branchId, branch));
     }
     if (startDate) {
-      const startObj = new Date(startDate);
-      startObj.setHours(0, 0, 0, 0);
+      const startObj = new Date(`${startDate}T00:00:00+07:00`);
       conditions.push(gte(financeTransactions.date, startObj.toISOString()));
     }
     if (endDate) {
-      const endObj = new Date(endDate);
-      endObj.setHours(23, 59, 59, 999);
+      const endObj = new Date(`${endDate}T23:59:59.999+07:00`);
       conditions.push(lte(financeTransactions.date, endObj.toISOString()));
     }
 

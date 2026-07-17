@@ -64,6 +64,10 @@ export async function GET(request: Request) {
 
     const savedReportsMap = new Map(savedReports.map(r => [r.therapistId, r]));
 
+    // Konversi filterStartDate dan filterEndDate ke format ISO UTC dengan asumsi zona waktu Jakarta (+07:00)
+    const startIso = new Date(`${filterStartDate}T00:00:00+07:00`).toISOString();
+    const endIso = new Date(`${filterEndDate}T23:59:59.999+07:00`).toISOString();
+
     // 3. Pre-fetch semua komisi dan kunjungan bulan ini sekali saja (efisien)
     const allMonthCommissions = await db
       .select({
@@ -74,8 +78,8 @@ export async function GET(request: Request) {
       .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
       .where(
         and(
-          gte(patientVisits.visitDate, filterStartDate as string),
-          lte(patientVisits.visitDate, filterEndDate as string)
+          gte(patientVisits.visitDate, startIso),
+          lte(patientVisits.visitDate, endIso)
         )
       );
 
@@ -85,8 +89,8 @@ export async function GET(request: Request) {
       .where(
         and(
           eq(patientVisits.status, "completed"),
-          gte(patientVisits.visitDate, filterStartDate as string),
-          lte(patientVisits.visitDate, filterEndDate as string)
+          gte(patientVisits.visitDate, startIso),
+          lte(patientVisits.visitDate, endIso)
         )
       );
 

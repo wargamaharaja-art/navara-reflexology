@@ -209,10 +209,15 @@ export default function AdminExpensesPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const payload = {
+        ...formData,
+        // Append +07:00 to specify Jakarta timezone explicitly if not present
+        date: new Date(`${formData.date}:00+07:00`).toISOString(),
+      };
       await fetch("/api/finance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
       setIsFormOpen(false);
       setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: "", paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
