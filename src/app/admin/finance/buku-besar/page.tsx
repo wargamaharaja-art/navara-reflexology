@@ -366,25 +366,44 @@ export default function BukuBesarPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {items.map((t, idx) => (
-                            <tr
-                              key={t.id}
-                              className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
-                            >
-                              <td className="px-4 py-2 border border-gray-200 text-gray-700 whitespace-nowrap font-mono text-xs">
-                                {fmtDate(t.date)}
-                              </td>
-                              <td className="px-4 py-2 border border-gray-200 text-gray-800">
-                                {t.description}
-                              </td>
-                              <td className="px-4 py-2 border border-gray-200 text-right text-gray-900 font-medium">
-                                {fmtNum(t.amount)}
-                              </td>
-                              <td className="px-4 py-2 border border-gray-200 text-right text-gray-500">
-                                0
-                              </td>
-                            </tr>
-                          ))}
+                          {category === "Bagi Hasil Terapis" ? (
+                            (() => {
+                              const therapistTotals = new Map<string, number>();
+                              items.forEach(t => {
+                                const match = t.description.match(/\((.*?)\)/);
+                                const name = match ? match[1] : "Terapis Tidak Diketahui";
+                                therapistTotals.set(name, (therapistTotals.get(name) || 0) + t.amount);
+                              });
+                              return Array.from(therapistTotals.entries()).map(([name, amount], idx) => (
+                                <tr key={name} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
+                                  <td className="px-4 py-2 border border-gray-200 text-gray-700 whitespace-nowrap font-mono text-xs text-center">-</td>
+                                  <td className="px-4 py-2 border border-gray-200 text-gray-800 font-bold">Total Gaji: {name}</td>
+                                  <td className="px-4 py-2 border border-gray-200 text-right text-gray-900 font-medium">{fmtNum(amount)}</td>
+                                  <td className="px-4 py-2 border border-gray-200 text-right text-gray-500">0</td>
+                                </tr>
+                              ));
+                            })()
+                          ) : (
+                            items.map((t, idx) => (
+                              <tr
+                                key={t.id}
+                                className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
+                              >
+                                <td className="px-4 py-2 border border-gray-200 text-gray-700 whitespace-nowrap font-mono text-xs">
+                                  {fmtDate(t.date)}
+                                </td>
+                                <td className="px-4 py-2 border border-gray-200 text-gray-800">
+                                  {t.description}
+                                </td>
+                                <td className="px-4 py-2 border border-gray-200 text-right text-gray-900 font-medium">
+                                  {fmtNum(t.amount)}
+                                </td>
+                                <td className="px-4 py-2 border border-gray-200 text-right text-gray-500">
+                                  0
+                                </td>
+                              </tr>
+                            ))
+                          )}
 
                           {/* Baris kosong sebelum Jumlah (sesuai foto) */}
                           <tr>
