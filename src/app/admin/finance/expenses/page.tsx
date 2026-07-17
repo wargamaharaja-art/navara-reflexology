@@ -63,8 +63,22 @@ export default function AdminExpensesPage() {
 
   const getCurrentDateTimeLocal = () => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    return now.toISOString().slice(0, 16);
+    const options: Intl.DateTimeFormatOptions = { 
+      timeZone: 'Asia/Jakarta', 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false
+    };
+    const parts = new Intl.DateTimeFormat('en-GB', options).formatToParts(now);
+    const d = parts.reduce((acc, part) => {
+      acc[part.type] = part.value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    return `${d.year}-${d.month}-${d.day}T${d.hour}:${d.minute}`;
   };
 
   const [formData, setFormData] = useState({
@@ -468,9 +482,8 @@ export default function AdminExpensesPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t) => {
-                    const dateObj = new Date(t.date);
-                    const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
-                    const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+                    const formattedDate = new Date(t.date).toLocaleDateString('en-GB', { timeZone: 'Asia/Jakarta' });
+                    const formattedTime = new Date(t.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
                     
                     return (
                       <tr key={t.id} className="hover:bg-teal-50/50 transition-colors group">
