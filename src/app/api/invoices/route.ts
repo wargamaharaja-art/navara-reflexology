@@ -269,35 +269,63 @@ export async function POST(request: Request) {
         tx});
       }
   
-      // 9. Create patient visit record if not linked to an existing one (POS standalone)
-      let finalVisitId = visitId || null;
-      if (!finalVisitId && items.length > 0) {
-        // Create a patient visit for the first service item so commissions can be tracked
-        const primaryItem = items[0];
-        finalVisitId = `V-${Date.now()}`;
-        await tx.insert(patientVisits).values({
-          id: finalVisitId,
-          patientId,
-          serviceId: primaryItem.serviceId || primaryItem.name,
-          branchId: finalBranchId,
-          therapistId: therapistId || null,
-          visitDate: now.split("T")[0],
-          visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
-          notes: `POS Struk ${invoiceNumber}`,
-          status: "completed",
-          paymentStatus: "PAID",
-        });
+      // 9. Sync patientVisits with POS items
+      const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
+      const finalVisitIds: string[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (i < visitsToMark.length) {
+          const vId = visitsToMark[i];
+          finalVisitIds.push(vId);
+          await tx.update(patientVisits)
+            .set({ 
+              serviceId: item.serviceId || item.name, 
+              status: "completed",
+              paymentStatus: "PAID", 
+              updatedAt: now,
+              ...(therapistId && { therapistId })
+            })
+            .where(eq(patientVisits.id, vId));
+        } else {
+          // Additional item added in POS that wasn't in original visits, or POS standalone
+          const newVisitId = `V-${Date.now()}-${i}`;
+          finalVisitIds.push(newVisitId);
+          await tx.insert(patientVisits).values({
+            id: newVisitId,
+            patientId,
+            serviceId: item.serviceId || item.name,
+            branchId: finalBranchId,
+            therapistId: therapistId || null,
+            visitDate: now.split("T")[0],
+            visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
+            notes: `POS Struk ${invoiceNumber}`,
+            status: "completed",
+            paymentStatus: "PAID",
+          });
+        }
       }
-  
+
+      // If there were more original visits than items paid for, remove the excess unpaid visits
+      if (visitsToMark.length > items.length) {
+        const excessIds = visitsToMark.slice(items.length);
+        for (const excessId of excessIds) {
+          await tx.delete(patientVisits).where(eq(patientVisits.id, excessId));
+        }
+      }
+
       // 10. Create therapist commission if applicable
-      if (therapistId && finalVisitId) {
+      if (therapistId && finalVisitIds.length > 0) {
         const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
         if (therapistRecords.length > 0) {
           const therapist = therapistRecords[0];
   
           // Calculate commission for each item
-          for (const item of items) {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
             const serviceId = item.serviceId;
+            const correspondingVisitId = finalVisitIds[i];
+
             if (!serviceId) continue;
   
             const customOverride = await tx
@@ -320,13 +348,10 @@ export async function POST(request: Request) {
             commissionAmount = commissionAmount * (item.qty || 1);
 
             if (commissionAmount > 0) {
-              // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
-              // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
-
               await tx.insert(therapistCommissions).values({
                 id: crypto.randomUUID(),
                 therapistId,
-                visitId: finalVisitId,
+                visitId: correspondingVisitId,
                 amount: commissionAmount,
                 status: "PAID",
                 paidAt: now,
@@ -340,7 +365,7 @@ export async function POST(request: Request) {
                 category: "Bagi Hasil Terapis",
                 amount: commissionAmount,
                 description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${item.name || serviceId} pasien ${patientName}`,
-                referenceId: finalVisitId,
+                referenceId: correspondingVisitId,
                 branchId: finalBranchId,
                 paymentMethod: "CASH", // Asumsi disisihkan via kas
                 date: now
@@ -354,25 +379,11 @@ export async function POST(request: Request) {
                 debitAccountId: COA.BEBAN_KOMISI,
                 creditAccountId: COA.HUTANG_KOMISI,
                 amount: commissionAmount, tx});
-
-
             }
           }
         }
       }
-  
-      // 11. If existing visits were provided, mark them as PAID
-      const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
-      for (const vId of visitsToMark) {
-        await tx.update(patientVisits)
-          .set({ 
-            status: "completed",
-            paymentStatus: "PAID", 
-            updatedAt: now,
-            ...(therapistId && { therapistId })
-          })
-          .where(eq(patientVisits.id, vId));
-      }
+
   
         return {
         id: invoiceId,
