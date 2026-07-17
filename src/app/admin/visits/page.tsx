@@ -777,7 +777,12 @@ export default function AdminVisitsPage() {
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
     return matchBranch && matchDate && matchSearch;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }).sort((a, b) => {
+    // Sort by visitDate descending, then visitTime descending
+    const dateA = new Date(`${a.visitDate}T${a.visitTime || '00:00'}:00`);
+    const dateB = new Date(`${b.visitDate}T${b.visitTime || '00:00'}:00`);
+    return dateB.getTime() - dateA.getTime();
+  });
 
   // KPI Calculations (Actual Data)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });

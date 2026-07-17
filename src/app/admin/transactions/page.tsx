@@ -548,7 +548,7 @@ export default function TransaksiPelangganPage() {
       inv.invoiceNumber.toLowerCase().includes(q) ||
       (inv.therapistName || "").toLowerCase().includes(q);
     return matchMethod && matchSearch && matchBranch;
-  });
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Summary per method
   const summary = PAYMENT_METHODS.filter(m => m.key !== "ALL").map(m => {
