@@ -14,7 +14,7 @@ import TherapistPicker from "@/components/ui/TherapistPicker";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 type PatientVisit = {
   id: string;
@@ -448,7 +448,7 @@ export default function AdminVisitsPage() {
       rp.daysSinceLastVisit
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 30,
