@@ -50,23 +50,30 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Instead of hard delete, we do soft delete
     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
     if (existing.length === 0) {
       return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
     }
 
-    const result = await db.update(services).set({
-      isActive: false,
-    }).where(eq(services.id, id)).returning();
+    try {
+      // Attempt hard delete
+      await db.delete(services).where(eq(services.id, id));
+      await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dihapus permanen: ${existing[0].name}`);
+      return Response.json({ success: true, message: "Layanan berhasil dihapus permanen" });
+    } catch (dbError: any) {
+      // Check for foreign key constraint violation (Postgres error code 23503)
+      if (dbError.code === '23503') {
+        // Fallback to soft delete
+        const result = await db.update(services).set({
+          isActive: false,
+        }).where(eq(services.id, id)).returning();
 
-    if (result.length === 0) {
-      return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
+        await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dinonaktifkan: ${existing[0].name}`);
+        return Response.json({ success: true, message: "Layanan dinonaktifkan karena sudah memiliki transaksi" });
+      } else {
+        throw dbError;
+      }
     }
-
-    await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dinonaktifkan: ${existing[0].name}`);
-
-    return Response.json({ success: true, message: "Layanan berhasil dinonaktifkan" });
   } catch (error) {
     console.error("DELETE /api/services/[id] error:", error);
     return Response.json({ error: "Gagal menghapus layanan" }, { status: 500 });

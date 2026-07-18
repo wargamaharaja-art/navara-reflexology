@@ -34,6 +34,7 @@ export default function AdminServicesPage() {
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [filterBranch, setFilterBranch] = useState("ALL");
+  const [showInactive, setShowInactive] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -49,7 +50,7 @@ export default function AdminServicesPage() {
     setLoading(true);
     try {
       const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/services?all=true&branchId=${filterBranch}`),
+        fetch(`/api/services?${showInactive ? 'all=true&' : ''}branchId=${filterBranch}`),
         fetch("/api/branches"),
         fetch("/api/auth/session")
       ]);
@@ -77,7 +78,7 @@ export default function AdminServicesPage() {
 
   useEffect(() => {
     fetchData();
-  }, [filterBranch]);
+  }, [filterBranch, showInactive]);
 
   const resetForm = () => {
     setFormData({
@@ -176,12 +177,23 @@ export default function AdminServicesPage() {
           description="Kelola data layanan terapi yang ditawarkan klinik Anda."
           icon={Activity}
           rightContent={
-            <button
-              onClick={openAddModal}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 active:scale-95"
-            >
-              <Plus className="w-4 h-4" /> Tambah Layanan
-            </button>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 w-4 h-4"
+                />
+                Tampilkan Nonaktif
+              </label>
+              <button
+                onClick={openAddModal}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 active:scale-95"
+              >
+                <Plus className="w-4 h-4" /> Tambah Layanan
+              </button>
+            </div>
           }
         />
 

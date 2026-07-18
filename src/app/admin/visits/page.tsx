@@ -12,7 +12,9 @@ import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 import TherapistPicker from "@/components/ui/TherapistPicker";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 type PatientVisit = {
   id: string;
@@ -417,6 +419,43 @@ export default function AdminVisitsPage() {
     // Sort by days since last visit descending (longest absent first)
     return retentionList.sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit);
   }, [visits, patients]);
+
+  const handleExportExcel = () => {
+    const data = retentionPatients.map((rp, idx) => ({
+      "No": idx + 1,
+      "Nama Pasien": rp.patient.name,
+      "No. Telepon / WA": rp.patient.phone,
+      "Kunjungan Terakhir": rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+      "Lama Absen (Hari)": rp.daysSinceLastVisit
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Follow-up & Retensi");
+    XLSX.writeFile(workbook, `Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Laporan Follow-up & Retensi Pasien", 14, 15);
+    doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 22);
+
+    const tableColumn = ["No", "Nama Pasien", "No. Telepon / WA", "Kunjungan Terakhir", "Lama Absen (Hari)"];
+    const tableRows = retentionPatients.map((rp, idx) => [
+      idx + 1,
+      rp.patient.name,
+      rp.patient.phone,
+      rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+      rp.daysSinceLastVisit
+    ]);
+
+    (doc as any).autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 30,
+    });
+
+    doc.save(`Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   const handlePOSPhoneChange = (val: string) => {
     setPosPhone(val);
@@ -2479,8 +2518,22 @@ export default function AdminVisitsPage() {
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Daftar pasien yang belum berkunjung kembali selama lebih dari 14 hari.</p>
               </div>
-              <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm">
-                Total: {retentionPatients.length} Pasien
+              <div className="flex gap-2">
+                <button
+                  onClick={handleExportExcel}
+                  className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-200 flex items-center gap-2 transition-colors"
+                >
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-red-200 flex items-center gap-2 transition-colors"
+                >
+                  <Download className="w-4 h-4" /> PDF
+                </button>
+                <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm flex items-center">
+                  Total: {retentionPatients.length} Pasien
+                </div>
               </div>
             </div>
             
