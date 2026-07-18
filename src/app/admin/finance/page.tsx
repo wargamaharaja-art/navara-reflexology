@@ -571,7 +571,7 @@ export default function AdminFinancePage() {
                     <ul className="space-y-2">
                       {categories.filter(c => c.type === "EXPENSE").map(c => (
                         <li key={c.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                          <span className="text-sm font-medium">{c.name}</span>
+                          <span className="text-sm font-medium capitalize">{c.name}</span>
                           <button onClick={() => handleDeleteCategory(c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4"/></button>
                         </li>
                       ))}
@@ -635,7 +635,7 @@ export default function AdminFinancePage() {
                             <span className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3"/> {formattedDate} {formattedTime}</span>
                           </div>
                           <div className="md:hidden flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{t.category}</span>
+                            <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded capitalize">{t.category}</span>
                             <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">{t.paymentMethod || "CASH"}</span>
                           </div>
 
@@ -650,7 +650,7 @@ export default function AdminFinancePage() {
                         </td>
                         <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200">{t.category}</span>
+                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200 capitalize">{t.category}</span>
                             <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
                               <CreditCard className="w-3 h-3" /> {t.paymentMethod || "CASH"}
                             </span>

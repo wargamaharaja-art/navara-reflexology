@@ -92,6 +92,23 @@ export default function AdminExpensesPage() {
     date: getCurrentDateTimeLocal(),
   });
 
+  const [personCount, setPersonCount] = useState<number>(1);
+
+  useEffect(() => {
+    if (!formData.category) return;
+    const catLower = formData.category.toLowerCase();
+    if (catLower === "biaya uang makan karyawan" || catLower === "biaya lembur terapis") {
+      const categoryTitle = formData.category
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      setFormData(prev => ({
+        ...prev,
+        description: `${categoryTitle} - ${personCount} Orang`
+      }));
+    }
+  }, [formData.category, personCount]);
+
   const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
   const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
@@ -221,6 +238,7 @@ export default function AdminExpensesPage() {
       });
       setIsFormOpen(false);
       setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: "", paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
+      setPersonCount(1);
       fetchTransactions();
     } catch (err) {
       console.error(err);
@@ -338,6 +356,7 @@ export default function AdminExpensesPage() {
               <button 
                 onClick={() => {
                   setFormData({ type: "EXPENSE", category: expenseCategories[0], amount: 0, description: "", branchId: filterBranch, paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
+                  setPersonCount(1);
                   setIsFormOpen(true);
                 }}
                 className="bg-white text-emerald-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-black/10 transition-all active:scale-95"
@@ -386,19 +405,32 @@ export default function AdminExpensesPage() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">Kategori Pengeluaran</label>
-                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors capitalize">
                     <optgroup label="Operasional">
                       {expenseCategories.filter(cat => !(cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan"))).map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat} className="capitalize">{cat}</option>
                       ))}
                     </optgroup>
                     <optgroup label="Gaji">
                       {expenseCategories.filter(cat => cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan")).map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat} className="capitalize">{cat}</option>
                       ))}
                     </optgroup>
                   </select>
                 </div>
+                {(formData.category.toLowerCase() === "biaya uang makan karyawan" || formData.category.toLowerCase() === "biaya lembur terapis") && (
+                  <div className="space-y-2 animate-in fade-in zoom-in duration-200">
+                    <label className="text-sm font-semibold text-gray-700">Jumlah Orang</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      value={personCount} 
+                      onChange={e => setPersonCount(parseInt(e.target.value) || 1)} 
+                      required 
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors" 
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">Metode Pembayaran</label>
                   <select value={formData.paymentMethod} onChange={e => setFormData({...formData, paymentMethod: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
@@ -509,7 +541,7 @@ export default function AdminExpensesPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200">{t.category}</span>
+                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200 capitalize">{t.category}</span>
                             <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
                               <CreditCard className="w-3 h-3" /> {t.paymentMethod || "CASH"}
                             </span>
