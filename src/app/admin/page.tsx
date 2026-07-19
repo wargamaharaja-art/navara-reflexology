@@ -292,18 +292,18 @@ export default function AdminDashboard() {
           {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
             <div className="hidden md:block mb-6 relative z-20">
               <div className="bg-white/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                <div className="absolute bottom-0 left-10 w-40 h-40 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl -mb-10 pointer-events-none"></div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-10 w-40 h-40 bg-gradient-to-tr from-emerald-400/10 to-teal-400/10 rounded-full blur-2xl -mb-10 pointer-events-none"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 text-white transform hover:scale-105 transition-transform">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white transform hover:scale-105 transition-transform">
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
                       <h3 className="text-[14px] font-black text-gray-800 uppercase tracking-widest leading-tight">Dashboard Wilayah</h3>
                       <p className="text-[11px] text-gray-500 font-medium mt-0.5 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-blue-400" /> Filter data analitik berdasarkan cabang
+                        <Sparkles className="w-3 h-3 text-emerald-400" /> Filter data analitik berdasarkan cabang
                       </p>
                     </div>
                   </div>
@@ -314,14 +314,14 @@ export default function AdminDashboard() {
                     onClick={() => setFilterBranch("ALL")}
                     className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
                       filterBranch === "ALL" 
-                        ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
-                        : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
+                        ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
+                        : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
                     }`}
                   >
                     {filterBranch === "ALL" && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
                     )}
-                    <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
+                    <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
                     <span className="relative z-10">Semua Cabang (Pusat)</span>
                     {filterBranch === "ALL" && (
                       <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
@@ -334,14 +334,14 @@ export default function AdminDashboard() {
                       onClick={() => setFilterBranch(b.id)}
                       className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
                         filterBranch === b.id 
-                          ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
-                          : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
+                          ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
+                          : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
                       }`}
                     >
                       {filterBranch === b.id && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
                       )}
-                      <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
+                      <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
                       <span className="relative z-10">{b.name}</span>
                       {filterBranch === b.id && (
                         <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>

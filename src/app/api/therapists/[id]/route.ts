@@ -110,13 +110,14 @@ export async function DELETE(
     console.error("Failed to delete therapist:", error);
     
     // Check for foreign key constraint violation
-    const errorString = String(error).toLowerCase();
-    if (error.code === '23503' || errorString.includes('foreign key') || errorString.includes('constraint')) {
+    const errorString = String(error.message || error).toLowerCase();
+    if (error.code === '23503' || errorString.includes('foreign key') || errorString.includes('constraint') || errorString.includes('violates')) {
       return NextResponse.json({ 
         error: "Gagal menghapus: Terapis ini memiliki riwayat data pasien atau komisi. Silakan edit dan ubah statusnya menjadi 'Nonaktif' (toggle Status Aktif)." 
       }, { status: 400 });
     }
     
-    return NextResponse.json({ error: "Failed to delete therapist" }, { status: 500 });
+    // Also include error message to help debug if it happens again
+    return NextResponse.json({ error: `Gagal menghapus terapis: ${error.message || "Kesalahan server"}` }, { status: 500 });
   }
 }
