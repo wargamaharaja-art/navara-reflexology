@@ -187,6 +187,12 @@ export async function POST(request: Request) {
         visitDateStr = transactionDate.split("T")[0];
       }
   
+      // Jika ini adalah pembayaran untuk visitId yang sudah ada, hapus invoice lamanya dulu
+      // Ini mencegah duplikasi data jika kasir memproses ulang tagihan yang sama
+      if (visitId) {
+        await tx.delete(invoices).where(eq(invoices.visitId, visitId));
+      }
+
       const invoiceId = crypto.randomUUID();
       const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
   
