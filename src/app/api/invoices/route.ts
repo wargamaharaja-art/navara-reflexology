@@ -270,62 +270,33 @@ export async function POST(request: Request) {
       }
   
       // 9. Sync patientVisits with POS items
+      // Kita HANYA memperbarui visit original. Item tambahan dicatat di struk (invoices), tidak dibuat visit baru agar tidak double.
       const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
-      const finalVisitIds: string[] = [];
-
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (i < visitsToMark.length) {
-          const vId = visitsToMark[i];
-          finalVisitIds.push(vId);
-          await tx.update(patientVisits)
-            .set({ 
-              serviceId: item.serviceId || item.name, 
-              status: "completed",
-              paymentStatus: "PAID", 
-              updatedAt: now,
-              ...(therapistId && { therapistId })
-            })
-            .where(eq(patientVisits.id, vId));
-        } else {
-          // Additional item added in POS that wasn't in original visits, or POS standalone
-          const newVisitId = `V-${Date.now()}-${i}`;
-          finalVisitIds.push(newVisitId);
-          await tx.insert(patientVisits).values({
-            id: newVisitId,
-            patientId,
-            serviceId: item.serviceId || item.name,
-            branchId: finalBranchId,
-            therapistId: therapistId || null,
-            visitDate: now.split("T")[0],
-            visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
-            notes: `POS Struk ${invoiceNumber}`,
+      const primaryVisitId = visitsToMark[0] || (visitId ? visitId : null);
+      
+      if (primaryVisitId) {
+        await tx.update(patientVisits)
+          .set({ 
             status: "completed",
-            paymentStatus: "PAID",
-          });
-        }
-      }
-
-      // If there were more original visits than items paid for, remove the excess unpaid visits
-      if (visitsToMark.length > items.length) {
-        const excessIds = visitsToMark.slice(items.length);
-        for (const excessId of excessIds) {
-          await tx.delete(patientVisits).where(eq(patientVisits.id, excessId));
-        }
+            paymentStatus: "PAID", 
+            updatedAt: now,
+            ...(therapistId && { therapistId })
+          })
+          .where(eq(patientVisits.id, primaryVisitId));
       }
 
       // 10. Create therapist commission if applicable
-      if (therapistId && finalVisitIds.length > 0) {
+      if (therapistId && primaryVisitId) {
         const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
         if (therapistRecords.length > 0) {
           const therapist = therapistRecords[0];
   
-          // Calculate commission for each item
-          for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            const serviceId = item.serviceId;
-            const correspondingVisitId = finalVisitIds[i];
+          let totalCommission = 0;
+          let commissionDetails = [];
 
+          // Calculate TOTAL commission for ALL items
+          for (const item of items) {
+            const serviceId = item.serviceId;
             if (!serviceId) continue;
   
             const customOverride = await tx
@@ -345,51 +316,55 @@ export async function POST(request: Request) {
             }
             
             // Multiply by item quantity
-            commissionAmount = commissionAmount * (item.qty || 1);
-
-            if (commissionAmount > 0) {
-              // Hapus komisi lama jika ada untuk mencegah duplikasi
-              await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, correspondingVisitId));
-              await tx.delete(financeTransactions).where(
-                and(
-                  eq(financeTransactions.referenceId, correspondingVisitId),
-                  eq(financeTransactions.type, "EXPENSE"),
-                  like(financeTransactions.description, "%Bagi Hasil Terapis%")
-                )
-              );
-
-              await tx.insert(therapistCommissions).values({
-                id: crypto.randomUUID(),
-                therapistId,
-                visitId: correspondingVisitId,
-                amount: commissionAmount,
-                status: "PAID",
-                paidAt: now,
-              });
-  
-              // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
-              const commTrxId = crypto.randomUUID();
-              await tx.insert(financeTransactions).values({
-                id: commTrxId,
-                type: "EXPENSE",
-                category: "Bagi Hasil Terapis",
-                amount: commissionAmount,
-                description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${item.name || serviceId} pasien ${patientName}`,
-                referenceId: correspondingVisitId,
-                branchId: finalBranchId,
-                paymentMethod: "CASH", // Asumsi disisihkan via kas
-                date: now
-              });
-  
-              // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
-              await createJournalEntry({
-                date: now,
-                description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${item.name || serviceId}`,
-                referenceId: commTrxId,
-                debitAccountId: COA.BEBAN_KOMISI,
-                creditAccountId: COA.HUTANG_KOMISI,
-                amount: commissionAmount, tx});
+            const itemCommission = commissionAmount * (item.qty || 1);
+            if (itemCommission > 0) {
+              totalCommission += itemCommission;
+              commissionDetails.push(item.name || serviceId);
             }
+          }
+
+          if (totalCommission > 0) {
+            // Hapus komisi lama jika ada untuk mencegah duplikasi (karena disatukan)
+            await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, primaryVisitId));
+            await tx.delete(financeTransactions).where(
+              and(
+                eq(financeTransactions.referenceId, primaryVisitId),
+                eq(financeTransactions.type, "EXPENSE"),
+                like(financeTransactions.description, "%Bagi Hasil Terapis%")
+              )
+            );
+
+            await tx.insert(therapistCommissions).values({
+              id: crypto.randomUUID(),
+              therapistId,
+              visitId: primaryVisitId,
+              amount: totalCommission,
+              status: "PAID",
+              paidAt: now,
+            });
+  
+            // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
+            const commTrxId = crypto.randomUUID();
+            await tx.insert(financeTransactions).values({
+              id: commTrxId,
+              type: "EXPENSE",
+              category: "Bagi Hasil Terapis",
+              amount: totalCommission,
+              description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${commissionDetails.join(', ')} pasien ${patientName}`,
+              referenceId: primaryVisitId,
+              branchId: finalBranchId,
+              paymentMethod: "CASH", // Asumsi disisihkan via kas
+              date: now
+            });
+  
+            // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
+            await createJournalEntry({
+              date: now,
+              description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${commissionDetails.join(', ')}`,
+              referenceId: commTrxId,
+              debitAccountId: COA.BEBAN_KOMISI,
+              creditAccountId: COA.HUTANG_KOMISI, // Sesuai aturan yang ada sebelumnya
+              amount: totalCommission, tx});
           }
         }
       }
