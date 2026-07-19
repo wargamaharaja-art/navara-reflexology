@@ -2663,10 +2663,38 @@ export default function AdminVisitsPage() {
 
             <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
               <div className="space-y-4">
-                {visits
-                  .filter(v => v.patientId === selectedPatientHistoryId)
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .map((visit, idx, arr) => (
+               {(() => {
+                  const patientVisits = visits.filter(v => v.patientId === selectedPatientHistoryId);
+                  
+                  const groupedMap = new Map<string, any>();
+                  patientVisits.forEach(v => {
+                    const key = `${v.visitDate}-${v.visitTime}`;
+                    if (!groupedMap.has(key)) {
+                      groupedMap.set(key, { 
+                        ...v, 
+                        groupedServiceIds: [v.serviceId], 
+                        groupedTherapistIds: [v.therapistId]
+                      });
+                    } else {
+                      const group = groupedMap.get(key);
+                      group.groupedServiceIds.push(v.serviceId);
+                      group.groupedTherapistIds.push(v.therapistId);
+                      
+                      if (v.notes && !group.notes?.includes(v.notes)) {
+                        group.notes = group.notes ? `${group.notes}\n${v.notes}` : v.notes;
+                      }
+                      
+                      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
+                    }
+                  });
+
+                  const groupedVisits = Array.from(groupedMap.values()).sort((a, b) => {
+                    const dateA = new Date(`${a.visitDate}T${a.visitTime || '00:00'}:00`).getTime();
+                    const dateB = new Date(`${b.visitDate}T${b.visitTime || '00:00'}:00`).getTime();
+                    return dateB - dateA;
+                  });
+
+                  return groupedVisits.map((visit) => (
                     <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
                       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
@@ -2677,7 +2705,7 @@ export default function AdminVisitsPage() {
                               <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
                             </span>
                             <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
-                              Kunjungan #{arr.length - idx}
+                              Kunjungan #{getVisitSequenceNumber(visit.patientId, visit.id)}
                             </span>
                             {visit.paymentStatus === "PAID" && (
                               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 uppercase tracking-wide flex items-center gap-1">
@@ -2690,13 +2718,13 @@ export default function AdminVisitsPage() {
                             <div className="space-y-1">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
                               <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Activity className="w-4 h-4 text-teal-500"/> {getServiceName(visit.serviceId)}
+                                <Activity className="w-4 h-4 text-teal-500"/> {visit.groupedServiceIds.map((id: string) => getServiceName(id)).join(", ")}
                               </div>
                             </div>
                             <div className="space-y-1">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
                               <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(visit.therapistId)}
+                                <User className="w-4 h-4 text-indigo-400"/> {Array.from(new Set(visit.groupedTherapistIds.filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
                               </div>
                             </div>
                             <div className="space-y-1">
@@ -2718,7 +2746,8 @@ export default function AdminVisitsPage() {
                         </div>
                       </div>
                     </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
             
