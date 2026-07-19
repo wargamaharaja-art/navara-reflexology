@@ -108,6 +108,16 @@ export async function POST(
           }
 
           if (commissionAmount > 0) {
+            // Hapus komisi lama jika ada untuk mencegah duplikasi
+            await db.delete(therapistCommissions).where(eq(therapistCommissions.visitId, visitId));
+            await db.delete(financeTransactions).where(
+              and(
+                eq(financeTransactions.referenceId, visitId),
+                eq(financeTransactions.type, "EXPENSE"),
+                like(financeTransactions.description, "%Bagi Hasil Terapis%")
+              )
+            );
+
             // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
             // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
 

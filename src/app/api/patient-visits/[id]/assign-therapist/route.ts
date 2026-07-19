@@ -120,6 +120,16 @@ export async function PATCH(
           }
 
           if (commissionAmount > 0) {
+            // Hapus komisi lama jika ada untuk mencegah duplikasi
+            await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, id));
+            await tx.delete(financeTransactions).where(
+              and(
+                eq(financeTransactions.referenceId, id),
+                eq(financeTransactions.type, "EXPENSE"),
+                like(financeTransactions.description, "%Bagi Hasil Terapis%")
+              )
+            );
+
             // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
             // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
 

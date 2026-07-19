@@ -348,6 +348,16 @@ export async function POST(request: Request) {
             commissionAmount = commissionAmount * (item.qty || 1);
 
             if (commissionAmount > 0) {
+              // Hapus komisi lama jika ada untuk mencegah duplikasi
+              await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, correspondingVisitId));
+              await tx.delete(financeTransactions).where(
+                and(
+                  eq(financeTransactions.referenceId, correspondingVisitId),
+                  eq(financeTransactions.type, "EXPENSE"),
+                  like(financeTransactions.description, "%Bagi Hasil Terapis%")
+                )
+              );
+
               await tx.insert(therapistCommissions).values({
                 id: crypto.randomUUID(),
                 therapistId,
