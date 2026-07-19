@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, therapistCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
@@ -115,6 +115,24 @@ export async function POST(request: Request) {
     };
 
     await db.insert(therapists).values(newTherapist);
+
+    // Salin konfigurasi komisi kustom (jika ada) dari terapis aktif lain sebagai default
+    const referenceTherapist = await db.select().from(therapists).where(eq(therapists.isActive, true)).limit(1);
+    if (referenceTherapist.length > 0 && referenceTherapist[0].id !== newTherapist.id) {
+      const refCommissions = await db.select()
+        .from(therapistServiceCommissions)
+        .where(eq(therapistServiceCommissions.therapistId, referenceTherapist[0].id));
+      
+      if (refCommissions.length > 0) {
+        const newCommissions = refCommissions.map(c => ({
+          id: crypto.randomUUID(),
+          therapistId: newTherapist.id,
+          serviceId: c.serviceId,
+          commissionAmount: c.commissionAmount
+        }));
+        await db.insert(therapistServiceCommissions).values(newCommissions);
+      }
+    }
 
     return NextResponse.json(newTherapist, { status: 201 });
   } catch (error) {

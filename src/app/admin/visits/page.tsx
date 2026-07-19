@@ -205,7 +205,7 @@ export default function AdminVisitsPage() {
 
   // Edit Therapist States
   const [editTherapistModalOpen, setEditTherapistModalOpen] = useState(false);
-  const [editTherapistVisitId, setEditTherapistVisitId] = useState<string | null>(null);
+  const [editTherapistVisitId, setEditTherapistVisitId] = useState<string | string[] | null>(null);
   const [editTherapistBranchId, setEditTherapistBranchId] = useState<string>("");
   const [newTherapistId, setNewTherapistId] = useState<string>("");
   const [isSavingTherapist, setIsSavingTherapist] = useState(false);
@@ -214,20 +214,17 @@ export default function AdminVisitsPage() {
     if (!editTherapistVisitId || !newTherapistId) return;
     setIsSavingTherapist(true);
     try {
-      const res = await fetch(`/api/patient-visits/${editTherapistVisitId}/assign-therapist`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ therapistId: newTherapistId }),
-      });
-      if (res.ok) {
-        setEditTherapistModalOpen(false);
-        setEditTherapistVisitId(null);
-        setNewTherapistId("");
-        fetchData(); // refresh
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal menambahkan terapis");
-      }
+      const ids = Array.isArray(editTherapistVisitId) ? editTherapistVisitId : [editTherapistVisitId];
+      await Promise.all(ids.map(id => 
+        fetch(`/api/patient-visits/${id}/assign-therapist`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ therapistId: newTherapistId }),
+        })
+      ));
+      setEditTherapistModalOpen(false);
+      setNewTherapistId("");
+      fetchData(); // refresh
     } catch (error) {
       console.error(error);
       alert("Terjadi kesalahan sistem");
@@ -756,27 +753,25 @@ export default function AdminVisitsPage() {
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
+  const [visitToDelete, setVisitToDelete] = useState<string | string[] | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCompleteVisit = async (visitId: string) => {
+  const handleCompleteVisit = async (visitId: string | string[]) => {
     try {
-      const res = await fetch(`/api/patient-visits/${visitId}/complete`, {
-        method: "PATCH",
-      });
-      if (res.ok) {
-        fetchData();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal menyelesaikan kunjungan");
-      }
+      const ids = Array.isArray(visitId) ? visitId : [visitId];
+      await Promise.all(ids.map(id => 
+        fetch(`/api/patient-visits/${id}/complete`, {
+          method: "PATCH",
+        })
+      ));
+      fetchData();
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan");
     }
   };
 
-  const handleDeleteVisit = (visitId: string) => {
+  const handleDeleteVisit = (visitId: string | string[]) => {
     setVisitToDelete(visitId);
     setDeleteModalOpen(true);
   };
@@ -785,17 +780,15 @@ export default function AdminVisitsPage() {
     if (!visitToDelete) return;
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/patient-visits/${visitToDelete}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setDeleteModalOpen(false);
-        setVisitToDelete(null);
-        fetchData();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Gagal menghapus data kunjungan");
-      }
+      const ids = Array.isArray(visitToDelete) ? visitToDelete : [visitToDelete];
+      await Promise.all(ids.map(id => 
+        fetch(`/api/patient-visits/${id}`, {
+          method: "DELETE",
+        })
+      ));
+      setDeleteModalOpen(false);
+      setVisitToDelete(null);
+      fetchData();
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan");
@@ -806,11 +799,16 @@ export default function AdminVisitsPage() {
 
   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
     const patientVisits = visits.filter(v => v.patientId === patientId);
-    const index = patientVisits.findIndex(v => v.id === visitId);
-    return patientVisits.length - index;
+    const arrivals = Array.from(new Set(patientVisits.map(v => `${v.visitDate}T${v.visitTime}`)))
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    const visit = patientVisits.find(v => v.id === visitId);
+    if (!visit) return 1;
+    const key = `${visit.visitDate}T${visit.visitTime}`;
+    return arrivals.indexOf(key) + 1;
   };
 
-  let finalVisits = visits.filter(v => {
+  let rawFinalVisits = visits.filter(v => {
     const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
@@ -822,6 +820,30 @@ export default function AdminVisitsPage() {
     const dateB = new Date(`${b.visitDate}T${b.visitTime || '00:00'}:00`);
     return dateB.getTime() - dateA.getTime();
   });
+
+  const groupedMap = new Map<string, any>();
+  rawFinalVisits.forEach(v => {
+    const key = `${v.patientId}-${v.visitDate}-${v.visitTime}`;
+    if (!groupedMap.has(key)) {
+      groupedMap.set(key, { 
+        ...v, 
+        groupedServiceIds: [v.serviceId], 
+        groupedTherapistIds: [v.therapistId],
+        groupedIds: [v.id]
+      });
+    } else {
+      const group = groupedMap.get(key);
+      group.groupedServiceIds.push(v.serviceId);
+      group.groupedTherapistIds.push(v.therapistId);
+      group.groupedIds.push(v.id);
+      
+      if (v.status === "in_progress") group.status = "in_progress";
+      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
+      if (!v.checkOutTime) group.checkOutTime = null;
+    }
+  });
+
+  const finalVisits = Array.from(groupedMap.values());
 
   // KPI Calculations (Actual Data)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
@@ -1888,14 +1910,14 @@ export default function AdminVisitsPage() {
                             <div className="flex flex-col">
                               <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
                               <span className="text-[11px] text-gray-500 font-medium mb-1 flex items-center gap-1 flex-wrap">
-                                {v.visitDate.split('-').reverse().join('/')} &bull; {getServiceName(v.serviceId)}
+                                {v.visitDate.split('-').reverse().join('/')} &bull; {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
                                 <span className="flex items-center gap-1 mx-1">|</span>
-                                <span className="flex items-center gap-1"><User className="w-3 h-3"/> {getTherapistName(v.therapistId)}</span>
-                                {!v.therapistId && isCompleted && isPaid && (
+                                <span className="flex items-center gap-1"><User className="w-3 h-3"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}</span>
+                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && isCompleted && isPaid && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setEditTherapistVisitId(v.id);
+                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
                                       setEditTherapistBranchId(v.branchId);
                                       setNewTherapistId("");
                                       setEditTherapistModalOpen(true);
@@ -1921,7 +1943,7 @@ export default function AdminVisitsPage() {
                                   <Wallet className="w-5 h-5" />
                                 </button>
                                 {v.status === "in_progress" && (
-                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
+                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
                                     <CheckCircle2 className="w-5 h-5" />
                                   </button>
                                 )}
@@ -2021,15 +2043,15 @@ export default function AdminVisitsPage() {
                             </td>
                             <td className={tdClass}>
                               <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {getServiceName(v.serviceId)}
+                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
                               </div>
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
-                                <User className="w-3.5 h-3.5"/> {getTherapistName(v.therapistId)}
-                                {!v.therapistId && v.paymentStatus === "PAID" && (
+                                <User className="w-3.5 h-3.5"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
+                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && v.paymentStatus === "PAID" && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setEditTherapistVisitId(v.id);
+                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
                                       setEditTherapistBranchId(v.branchId);
                                       setNewTherapistId("");
                                       setEditTherapistModalOpen(true);
@@ -2064,7 +2086,7 @@ export default function AdminVisitsPage() {
                                       <Plus className="w-3 h-3"/> Tambah Layanan
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteVisit(v.id)}
+                                      onClick={() => handleDeleteVisit((v as any).groupedIds || v.id)}
                                       className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
                                       title="Hapus Data Kunjungan"
                                     >
@@ -2073,24 +2095,24 @@ export default function AdminVisitsPage() {
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex flex-col items-start gap-1">
+                                <div className="flex flex-col">
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }}
                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                                   >
-                                    Ke Kasir
+                                    <Wallet className="w-3.5 h-3.5" /> Ke Kasir
                                   </button>
                                   {v.status === "in_progress" && (
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }}
-                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }}
+                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border border-emerald-200 transition-colors mt-1"
                                     >
-                                      <CheckCircle2 className="w-3 h-3" /> Selesai
+                                      <CheckCircle2 className="w-3.5 h-3.5" /> Selesaikan
                                     </button>
                                   )}
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit(v.id); }}
-                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit((v as any).groupedIds || v.id); }}
+                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium mt-1"
                                     title="Hapus Data Kunjungan"
                                   >
                                     <Trash2 className="w-3 h-3" /> Hapus
