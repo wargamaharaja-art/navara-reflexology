@@ -266,11 +266,8 @@ export default function MutationsPage() {
     }
   };
 
-  const handleSendWhatsApp = (m: Mutation) => {
-    if (!m.therapistPhone) {
-      alert("Nomor telepon terapis tidak tersedia");
-      return;
-    }
+  const getWhatsAppUrl = (m: Mutation) => {
+    if (!m.therapistPhone) return "#";
     const phone = m.therapistPhone.replace(/\D/g, "");
     const waNumber = phone.startsWith("0") ? "62" + phone.slice(1) : phone;
 
@@ -288,8 +285,7 @@ ${m.reason}
 
 Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
 
-    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
+    return `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
@@ -413,13 +409,21 @@ Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
                       <td className="px-5 py-3.5 text-xs text-gray-500">{m.requestedByName}</td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleSendWhatsApp(m)}
-                            className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
+                          <a
+                            href={getWhatsAppUrl(m)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => {
+                              if (!m.therapistPhone) {
+                                e.preventDefault();
+                                alert("Nomor telepon terapis tidak tersedia");
+                              }
+                            }}
+                            className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600 inline-block"
                             title="Kirim ke Terapis (WhatsApp)"
                           >
                             <Send className="w-4 h-4" />
-                          </button>
+                          </a>
                           <Link
                             href={`/admin/therapists/mutations/${m.id}`}
                             className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
@@ -498,13 +502,21 @@ Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
                     <span>Efektif: {formatDate(m.effectiveDate)}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1 border-t border-gray-50 pt-3">
-                    <button
-                      onClick={() => handleSendWhatsApp(m)}
+                    <a
+                      href={getWhatsAppUrl(m)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => {
+                        if (!m.therapistPhone) {
+                          e.preventDefault();
+                          alert("Nomor telepon terapis tidak tersedia");
+                        }
+                      }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-green-50 text-green-600 text-xs font-semibold hover:bg-green-100 transition-colors min-w-[80px]"
                       title="Kirim WA"
                     >
                       <Send className="w-3.5 h-3.5" /> Kirim
-                    </button>
+                    </a>
                     <Link
                       href={`/admin/therapists/mutations/${m.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors min-w-[80px]"

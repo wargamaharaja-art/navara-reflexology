@@ -144,11 +144,8 @@ export default function MutationDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  const handleSendWhatsApp = () => {
-    if (!data?.therapist?.phone) {
-      alert("Nomor telepon terapis tidak tersedia");
-      return;
-    }
+  const getWhatsAppUrl = () => {
+    if (!data?.therapist?.phone) return "#";
     const phone = data.therapist.phone.replace(/\D/g, "");
     const waNumber = phone.startsWith("0") ? "62" + phone.slice(1) : phone;
 
@@ -166,8 +163,7 @@ ${data.reason}
 
 Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
 
-    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, "_blank");
+    return `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const formatDateTime = (dateStr: string | null) => {
@@ -215,12 +211,20 @@ Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
           <div className="flex items-center gap-2 flex-wrap">
             {(data.status === "APPROVED" || data.status === "EXECUTED") && (
               <>
-                <button
-                  onClick={handleSendWhatsApp}
+                <a
+                  href={getWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (!data?.therapist?.phone) {
+                      e.preventDefault();
+                      alert("Nomor telepon terapis tidak tersedia");
+                    }
+                  }}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all shadow-md"
                 >
                   <Send className="w-4 h-4" /> Kirim WA
-                </button>
+                </a>
                 <button
                   onClick={() => window.print()}
                   className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
