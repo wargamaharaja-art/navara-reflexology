@@ -95,8 +95,9 @@ export async function getSession(): Promise<AdminSession | null> {
     const dataStr = Buffer.from(dataBase64, "base64").toString("utf-8");
     const session = JSON.parse(dataStr) as AdminSession;
     
-    // Refresh permissions based on role to prevent stale cookies when new permissions are added
-    session.permissions = getDefaultPermissions(session.role);
+    // Do NOT refresh permissions based on role unconditionally. 
+    // This breaks custom permissions defined in the database (e.g., when Super Admin checks 'Cabang' for a Cashier).
+    // session.permissions = getDefaultPermissions(session.role);
     
     return session;
   } catch (error: any) {
