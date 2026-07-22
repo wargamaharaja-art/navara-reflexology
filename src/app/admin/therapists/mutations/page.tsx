@@ -283,7 +283,10 @@ Berikut adalah informasi mengenai Surat Mutasi Anda:
 Pesan/Alasan:
 ${m.reason}
 
-Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
+Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.
+
+Lihat dan cetak surat lengkap:
+${window.location.origin}/surat-mutasi/${m.id}`;
 
     return `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
   };
