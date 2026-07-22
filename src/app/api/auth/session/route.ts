@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { admins } from "@/lib/db/schema";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await getSession();
@@ -38,7 +40,14 @@ export async function GET() {
       session.permissions = getDefaultPermissions(session.role as any);
     }
 
-    return NextResponse.json({ authenticated: true, session });
+    const response = NextResponse.json({ authenticated: true, session });
+    
+    // Add headers to completely disable caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error("GET /api/auth/session error:", error);
     return NextResponse.json({ error: "Gagal memuat sesi" }, { status: 500 });
