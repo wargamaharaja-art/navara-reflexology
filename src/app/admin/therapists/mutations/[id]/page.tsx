@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Printer, CheckCircle, XCircle, Ban, RotateCcw,
-  ArrowRightLeft, Calendar, User, MapPin, FileText, Clock
+  ArrowRightLeft, Calendar, User, MapPin, FileText, Clock, Send
 } from "lucide-react";
 
 type MutationDetail = {
@@ -144,6 +144,32 @@ export default function MutationDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  const handleSendWhatsApp = () => {
+    if (!data?.therapist?.phone) {
+      alert("Nomor telepon terapis tidak tersedia");
+      return;
+    }
+    const phone = data.therapist.phone.replace(/\D/g, "");
+    const waNumber = phone.startsWith("0") ? "62" + phone.slice(1) : phone;
+
+    const message = `Halo ${data.therapist.name},
+
+Berikut adalah informasi mengenai Surat Mutasi Anda:
+*No. Surat*: ${data.mutationNumber}
+*Cabang Asal*: ${data.fromBranch?.name || "—"}
+*Cabang Tujuan*: ${data.toBranch?.name || "—"}
+*Tanggal Efektif*: ${formatDate(data.effectiveDate)}
+*Status*: ${STATUS_CONFIG[data.status]?.label || data.status}
+
+Pesan/Alasan:
+${data.reason}
+
+Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
+
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, "_blank");
+  };
+
   const formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return "—";
     try {
@@ -188,12 +214,20 @@ export default function MutationDetailPage({ params }: { params: Promise<{ id: s
           </Link>
           <div className="flex items-center gap-2 flex-wrap">
             {(data.status === "APPROVED" || data.status === "EXECUTED") && (
-              <button
-                onClick={() => window.print()}
-                className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
-              >
-                <Printer className="w-4 h-4" /> Cetak Surat
-              </button>
+              <>
+                <button
+                  onClick={handleSendWhatsApp}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all shadow-md"
+                >
+                  <Send className="w-4 h-4" /> Kirim WA
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl font-semibold text-sm transition-all"
+                >
+                  <Printer className="w-4 h-4" /> Cetak Surat
+                </button>
+              </>
             )}
             {data.status === "DRAFT" && session?.role === "SUPER_ADMIN" && (
               <button

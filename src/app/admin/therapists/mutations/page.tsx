@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText, Plus, Search, Eye, CheckCircle, XCircle, X, Ban,
-  ArrowRightLeft, Calendar, ChevronDown, RotateCcw, Filter
+  ArrowRightLeft, Calendar, ChevronDown, RotateCcw, Filter, Send
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Pagination from "@/components/ui/Pagination";
@@ -14,6 +14,7 @@ type Mutation = {
   mutationNumber: string;
   therapistId: string;
   therapistName: string;
+  therapistPhone: string | null;
   therapistSpecialization: string;
   fromBranchId: string | null;
   fromBranchName: string;
@@ -265,6 +266,32 @@ export default function MutationsPage() {
     }
   };
 
+  const handleSendWhatsApp = (m: Mutation) => {
+    if (!m.therapistPhone) {
+      alert("Nomor telepon terapis tidak tersedia");
+      return;
+    }
+    const phone = m.therapistPhone.replace(/\D/g, "");
+    const waNumber = phone.startsWith("0") ? "62" + phone.slice(1) : phone;
+
+    const message = `Halo ${m.therapistName},
+
+Berikut adalah informasi mengenai Surat Mutasi Anda:
+*No. Surat*: ${m.mutationNumber}
+*Cabang Asal*: ${m.fromBranchName}
+*Cabang Tujuan*: ${m.toBranchName}
+*Tanggal Efektif*: ${formatDate(m.effectiveDate)}
+*Status*: ${STATUS_CONFIG[m.status]?.label || m.status}
+
+Pesan/Alasan:
+${m.reason}
+
+Mohon hubungi manajemen jika ada pertanyaan. Terima kasih.`;
+
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, "_blank");
+  };
+
   const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
 
   return (
@@ -386,6 +413,13 @@ export default function MutationsPage() {
                       <td className="px-5 py-3.5 text-xs text-gray-500">{m.requestedByName}</td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleSendWhatsApp(m)}
+                            className="p-2 hover:bg-green-100 rounded-lg transition-colors text-green-600"
+                            title="Kirim ke Terapis (WhatsApp)"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
                           <Link
                             href={`/admin/therapists/mutations/${m.id}`}
                             className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
@@ -463,17 +497,24 @@ export default function MutationsPage() {
                     <Calendar className="w-3.5 h-3.5" />
                     <span>Efektif: {formatDate(m.effectiveDate)}</span>
                   </div>
-                  <div className="flex items-center gap-1 border-t border-gray-50 pt-3">
+                  <div className="flex flex-wrap items-center gap-1 border-t border-gray-50 pt-3">
+                    <button
+                      onClick={() => handleSendWhatsApp(m)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-green-50 text-green-600 text-xs font-semibold hover:bg-green-100 transition-colors min-w-[80px]"
+                      title="Kirim WA"
+                    >
+                      <Send className="w-3.5 h-3.5" /> Kirim
+                    </button>
                     <Link
                       href={`/admin/therapists/mutations/${m.id}`}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 transition-colors min-w-[80px]"
                     >
                       <Eye className="w-3.5 h-3.5" /> Detail
                     </Link>
                     {m.status === "DRAFT" && session?.role === "SUPER_ADMIN" && (
                       <button
                         onClick={() => setConfirmModal({ type: "approve", mutationId: m.id, mutationNumber: m.mutationNumber })}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold hover:bg-emerald-100 transition-colors min-w-[80px]"
                       >
                         <CheckCircle className="w-3.5 h-3.5" /> Setujui
                       </button>
@@ -481,7 +522,7 @@ export default function MutationsPage() {
                     {m.status === "DRAFT" && (session?.role === "SUPER_ADMIN" || m.requestedBy === session?.id) && (
                       <button
                         onClick={() => setConfirmModal({ type: "cancel", mutationId: m.id, mutationNumber: m.mutationNumber })}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gray-50 text-gray-500 text-xs font-semibold hover:bg-gray-100 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gray-50 text-gray-500 text-xs font-semibold hover:bg-gray-100 transition-colors min-w-[80px]"
                       >
                         <Ban className="w-3.5 h-3.5" /> Batal
                       </button>
@@ -489,7 +530,7 @@ export default function MutationsPage() {
                     {m.status === "EXECUTED" && session?.role === "SUPER_ADMIN" && (
                       <button
                         onClick={() => setConfirmModal({ type: "reverse", mutationId: m.id, mutationNumber: m.mutationNumber })}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-purple-50 text-purple-600 text-xs font-semibold hover:bg-purple-100 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-purple-50 text-purple-600 text-xs font-semibold hover:bg-purple-100 transition-colors min-w-[80px]"
                       >
                         <RotateCcw className="w-3.5 h-3.5" /> Reverse
                       </button>

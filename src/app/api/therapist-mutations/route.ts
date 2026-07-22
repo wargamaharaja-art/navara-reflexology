@@ -59,6 +59,7 @@ export async function GET(request: Request) {
         mutationNumber: therapistMutations.mutationNumber,
         therapistId: therapistMutations.therapistId,
         therapistName: therapists.name,
+        therapistPhone: therapists.phone,
         therapistSpecialization: therapists.specialization,
         fromBranchId: therapistMutations.fromBranchId,
         toBranchId: therapistMutations.toBranchId,
