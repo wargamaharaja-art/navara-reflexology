@@ -31,7 +31,7 @@ export function getDefaultPermissions(role: string): string[] {
     case "BRANCH_ADMIN":
       return superAdminPerms.filter(p => !p.startsWith("PENGATURAN_CABANG") && !p.startsWith("PENGATURAN_PENGGUNA") && !p.startsWith("PENGATURAN_KOMISI"));
     case "CASHIER":
-      return ["DASHBOARD_ANALITIK", "RESERVASI_ONLINE", "BUKUPASIEN_REKAMMEDIS", "INVENTARIS_BARANG"];
+      return ["DASHBOARD_ANALITIK", "RESERVASI_ONLINE", "BUKUPASIEN_REKAMMEDIS", "INVENTARIS_BARANG", "KEUANGAN_PEMASUKAN", "KEUANGAN_PENGELUARAN", "KEUANGAN_MUTASI"];
     case "THERAPIST":
       return ["DASHBOARD_ANALITIK", "BUKUPASIEN_REKAMMEDIS"];
     case "INVESTOR":
