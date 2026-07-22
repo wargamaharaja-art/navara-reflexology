@@ -17,15 +17,23 @@ export async function GET(
     const { id } = await params;
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month"); // YYYY-MM format
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
 
-    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-      return NextResponse.json({ error: "Query parameter 'month' (YYYY-MM) diperlukan" }, { status: 400 });
+    let filterStartDate = "";
+    let filterEndDate = "";
+
+    if (startDateParam && endDateParam) {
+      filterStartDate = startDateParam;
+      filterEndDate = endDateParam;
+    } else if (month && /^\d{4}-\d{2}$/.test(month)) {
+      const [year, m] = month.split("-");
+      filterStartDate = `${year}-${m}-01`;
+      const lastDay = new Date(parseInt(year), parseInt(m), 0).getDate();
+      filterEndDate = `${year}-${m}-${String(lastDay).padStart(2, "0")}`;
+    } else {
+      return NextResponse.json({ error: "Query parameter 'startDate' dan 'endDate' atau 'month' diperlukan" }, { status: 400 });
     }
-
-    const [year, m] = month.split("-");
-    const filterStartDate = `${year}-${m}-01`;
-    const lastDay = new Date(parseInt(year), parseInt(m), 0).getDate();
-    const filterEndDate = `${year}-${m}-${String(lastDay).padStart(2, "0")}`;
 
     // Get therapist info to verify existence and access
     const therapistData = await db.select().from(therapists).where(eq(therapists.id, id)).limit(1);
