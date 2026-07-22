@@ -13,21 +13,19 @@ export async function GET() {
     const nowJkt = new Date(nowStr);
     const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
 
-    // Cari kunjungan hari ini yang:
+    // Cari kunjungan yang:
     // - status masih in_progress
-    // - punya checkOutTime
     // - belum punya actualCheckOutTime
-    // - checkOutTime sudah lewat
     const activeVisits = await db
       .select({
         id: patientVisits.id,
         therapistId: patientVisits.therapistId,
         checkOutTime: patientVisits.checkOutTime,
+        visitDate: patientVisits.visitDate,
       })
       .from(patientVisits)
       .where(
         and(
-          eq(patientVisits.visitDate, todayStr),
           eq(patientVisits.status, "in_progress"),
           isNull(patientVisits.actualCheckOutTime)
         )
@@ -37,15 +35,19 @@ export async function GET() {
     const releasedTherapists: string[] = [];
 
     for (const visit of activeVisits) {
-      if (!visit.checkOutTime || !visit.therapistId) continue;
+      if (!visit.therapistId) continue;
 
+      // Kunjungan hari kemarin harus diselesaikan paksa
+      const isPastDate = visit.visitDate < todayStr;
       // Bandingkan waktu: checkOutTime <= currentTime berarti sudah waktunya selesai
-      if (visit.checkOutTime <= currentTime) {
+      const isTimePassed = visit.visitDate === todayStr && visit.checkOutTime && visit.checkOutTime <= currentTime;
+
+      if (isPastDate || isTimePassed) {
         // Update kunjungan: set actualCheckOutTime & status completed
         await db
           .update(patientVisits)
           .set({
-            actualCheckOutTime: currentTime,
+            actualCheckOutTime: isPastDate ? (visit.checkOutTime || "23:59") : currentTime,
             status: "completed",
             updatedAt: now.toISOString(),
           })

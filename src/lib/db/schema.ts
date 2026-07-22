@@ -24,6 +24,7 @@ export const services = pgTable("services", {
   description: text("description").notNull(),
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
+  globalCommission: integer("global_commission").notNull().default(0),
   category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
   branchId: text("branch_id").references(() => branches.id),
   isActive: boolean("is_active").notNull().default(true),
@@ -508,3 +509,46 @@ export const promoBookings = pgTable("promo_bookings", {
 
 export type PromoBooking = typeof promoBookings.$inferSelect;
 export type NewPromoBooking = typeof promoBookings.$inferInsert;
+
+// ============================================
+// THERAPIST MUTATIONS (Surat Mutasi Terapis)
+// ============================================
+export const therapistMutations = pgTable("therapist_mutations", {
+  id: text("id").primaryKey(), // UUID
+  mutationNumber: text("mutation_number").notNull().unique(), // Format: MUT-YYYYMMDD-SEQ
+  therapistId: text("therapist_id").notNull().references(() => therapists.id),
+  fromBranchId: text("from_branch_id").references(() => branches.id), // Nullable jika terapis baru tanpa cabang
+  toBranchId: text("to_branch_id").notNull().references(() => branches.id),
+  effectiveDate: text("effective_date").notNull(), // YYYY-MM-DD — tanggal berlaku mutasi
+  reason: text("reason").notNull(), // Alasan mutasi
+  notes: text("notes"), // Catatan tambahan (opsional)
+  status: text("status", {
+    enum: ["DRAFT", "APPROVED", "REJECTED", "CANCELLED", "EXECUTED", "REVERSED"]
+  }).notNull().default("DRAFT"),
+  // Pengaju
+  requestedBy: text("requested_by").notNull(), // Admin ID
+  requestedByName: text("requested_by_name").notNull(),
+  // Approval
+  approvedBy: text("approved_by"),
+  approvedByName: text("approved_by_name"),
+  approvedAt: text("approved_at"),
+  // Execution (saat branchId terapis benar-benar berubah)
+  executedAt: text("executed_at"),
+  // Rejection
+  rejectedReason: text("rejected_reason"),
+  // Reversal (rollback)
+  reversedBy: text("reversed_by"),
+  reversedByName: text("reversed_by_name"),
+  reversedAt: text("reversed_at"),
+  reversedReason: text("reversed_reason"),
+  // Timestamps
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+}, (table) => ({
+  therapistIdx: index("mutation_therapist_idx").on(table.therapistId),
+  statusIdx: index("mutation_status_idx").on(table.status),
+  dateIdx: index("mutation_date_idx").on(table.effectiveDate),
+}));
+
+export type TherapistMutation = typeof therapistMutations.$inferSelect;
+export type NewTherapistMutation = typeof therapistMutations.$inferInsert;

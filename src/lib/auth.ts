@@ -19,7 +19,7 @@ export function getDefaultPermissions(role: string): string[] {
     "DASHBOARD_ANALITIK",
     "RESERVASI_ONLINE",
     "BUKUPASIEN_REKAMMEDIS",
-    "PEGAWAI_TERAPIS", "PEGAWAI_STAFF", "PEGAWAI_ABSENSI", "PEGAWAI_SLIP",
+    "PEGAWAI_TERAPIS", "PEGAWAI_STAFF", "PEGAWAI_ABSENSI", "PEGAWAI_SLIP", "PEGAWAI_MUTASI",
     "INVENTARIS_BARANG",
     "KEUANGAN_PEMASUKAN", "KEUANGAN_PENGELUARAN", "KEUANGAN_MUTASI", "KEUANGAN_LABARUGI",
     "PENGATURAN_CABANG", "PENGATURAN_PENGGUNA", "PENGATURAN_KOMISI"
@@ -89,7 +89,12 @@ export async function getSession(): Promise<AdminSession | null> {
     if (signature !== expectedSignature) return null;
 
     const dataStr = Buffer.from(dataBase64, "base64").toString("utf-8");
-    return JSON.parse(dataStr) as AdminSession;
+    const session = JSON.parse(dataStr) as AdminSession;
+    
+    // Refresh permissions based on role to prevent stale cookies when new permissions are added
+    session.permissions = getDefaultPermissions(session.role);
+    
+    return session;
   } catch (error: any) {
     if (error && typeof error === "object" && error.digest === "DYNAMIC_SERVER_USAGE") {
       throw error;

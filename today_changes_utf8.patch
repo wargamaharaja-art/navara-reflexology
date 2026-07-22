@@ -1,0 +1,1277 @@
+﻿diff --git a/audit_commissions.ts b/audit_commissions.ts
+new file mode 100644
+index 0000000..cf84275
+--- /dev/null
++++ b/audit_commissions.ts
+@@ -0,0 +1,46 @@
++import { db } from "./src/lib/db/index";
++import { therapists, services, therapistServiceCommissions, therapistCommissions, patientVisits } from "./src/lib/db/schema";
++import { eq } from "drizzle-orm";
++
++async function main() {
++  console.log("Fetching therapists...");
++  const allTherapists = await db.select().from(therapists);
++  const suci = allTherapists.find(t => t.name.toLowerCase().includes("suci"));
++  console.log("Suci:", suci);
++
++  console.log("Fetching services...");
++  const allServices = await db.select().from(services);
++  
++  console.log("Fetching global commissions (from other therapists)...");
++  const tComms = await db.select().from(therapistServiceCommissions);
++  const globalComms: Record<string, number> = {};
++  for (const c of tComms) {
++    if (c.therapistId !== suci?.id) {
++      if (c.commissionAmount !== null) {
++        globalComms[c.serviceId] = c.commissionAmount;
++      }
++    }
++  }
++  
++  console.log("Global commissions:");
++  for (const svcId of Object.keys(globalComms)) {
++    const svc = allServices.find(s => s.id === svcId);
++    console.log(`- ${svc?.name}: ${globalComms[svcId]}`);
++  }
++  
++  if (suci) {
++    console.log("Suci's commissions in DB (therapist_commissions):");
++    const suciComms = await db.select().from(therapistCommissions).where(eq(therapistCommissions.therapistId, suci.id));
++    for (const c of suciComms) {
++      const visit = await db.select().from(patientVisits).where(eq(patientVisits.id, c.visitId)).limit(1);
++      if (visit.length > 0) {
++        const svc = allServices.find(s => s.id === visit[0].serviceId);
++        console.log(`- Visit ${c.visitId} | ${svc?.name}: Rp ${c.amount} (Expected: Rp ${globalComms[visit[0].serviceId]})`);
++      }
++    }
++  }
++
++  process.exit(0);
++}
++
++main().catch(console.error);
+diff --git a/fix_data.js b/fix_data.js
+deleted file mode 100644
+index 33fd860..0000000
+--- a/fix_data.js
++++ /dev/null
+@@ -1,15 +0,0 @@
+-const db = require('better-sqlite3')('local.db');
+-const rows = db.prepare(`SELECT pv.id as visitId, pv.service_id, p.name FROM patient_visits pv JOIN patients p ON pv.patient_id = p.id WHERE p.name LIKE '%ela%'`).all();
+-console.log('Original visits:', rows);
+-
+-// Also let's check invoices to find the right service ID
+-const invoices = db.prepare(`SELECT id, items FROM invoices WHERE patient_name LIKE '%ela%'`).all();
+-console.log('Invoices:', invoices);
+-
+-// Update visit to match invoice
+-if (rows.length > 0 && invoices.length > 0) {
+-  const invoiceItems = JSON.parse(invoices[0].items);
+-  const correctServiceId = invoiceItems[0].serviceId || invoiceItems[0].name;
+-  db.prepare(`UPDATE patient_visits SET service_id = ? WHERE id = ?`).run(correctServiceId, rows[0].visitId);
+-  console.log(`Updated visit ${rows[0].visitId} to service ${correctServiceId}`);
+-}
+diff --git a/insert_categories.js b/insert_categories.js
+deleted file mode 100644
+index 4214eea..0000000
+--- a/insert_categories.js
++++ /dev/null
+@@ -1,21 +0,0 @@
+-const { Pool } = require('pg');
+-require('dotenv').config({ path: '.env.local' });
+-const crypto = require('crypto');
+-
+-const pool = new Pool({ connectionString: process.env.POSTGRES_URL, ssl: { rejectUnauthorized: false } });
+-
+-async function run() {
+-  const categories = [
+-    { name: 'biaya penyusutan sewa ruko', type: 'EXPENSE' },
+-    { name: 'biaya sistem kasir', type: 'EXPENSE' }
+-  ];
+-  
+-  for (const cat of categories) {
+-    const id = crypto.randomUUID();
+-    await pool.query(`INSERT INTO finance_categories (id, name, type, is_active) VALUES ($1, $2, $3, true) ON CONFLICT DO NOTHING`, [id, cat.name, cat.type]);
+-    console.log(`Inserted ${cat.name}`);
+-  }
+-  
+-  pool.end();
+-}
+-run();
+diff --git a/next-env.d.ts b/next-env.d.ts
+index 9edff1c..c4b7818 100644
+--- a/next-env.d.ts
++++ b/next-env.d.ts
+@@ -1,6 +1,6 @@
+ /// <reference types="next" />
+ /// <reference types="next/image-types/global" />
+-import "./.next/types/routes.d.ts";
++import "./.next/dev/types/routes.d.ts";
+ 
+ // NOTE: This file should not be edited
+ // see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+diff --git a/package-lock.json b/package-lock.json
+index 5e67c7b..f13654d 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -27,6 +27,7 @@
+         "react-markdown": "^10.1.0",
+         "recharts": "^3.8.1",
+         "tailwind-merge": "^3.6.0",
++        "ts-node": "^10.9.2",
+         "xlsx": "^0.18.5"
+       },
+       "devDependencies": {
+@@ -310,6 +311,28 @@
+         "node": ">=6.9.0"
+       }
+     },
++    "node_modules/@cspotcode/source-map-support": {
++      "version": "0.8.1",
++      "resolved": "https://registry.npmjs.org/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz",
++      "integrity": "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==",
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/trace-mapping": "0.3.9"
++      },
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@cspotcode/source-map-support/node_modules/@jridgewell/trace-mapping": {
++      "version": "0.3.9",
++      "resolved": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.9.tgz",
++      "integrity": "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/resolve-uri": "^3.0.3",
++        "@jridgewell/sourcemap-codec": "^1.4.10"
++      }
++    },
+     "node_modules/@drizzle-team/brocli": {
+       "version": "0.10.2",
+       "resolved": "https://registry.npmjs.org/@drizzle-team/brocli/-/brocli-0.10.2.tgz",
+@@ -1987,7 +2010,6 @@
+       "version": "3.1.2",
+       "resolved": "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz",
+       "integrity": "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==",
+-      "dev": true,
+       "license": "MIT",
+       "engines": {
+         "node": ">=6.0.0"
+@@ -1997,7 +2019,6 @@
+       "version": "1.5.5",
+       "resolved": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
+       "integrity": "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==",
+-      "dev": true,
+       "license": "MIT"
+     },
+     "node_modules/@jridgewell/trace-mapping": {
+@@ -2751,6 +2772,30 @@
+         "tailwindcss": "4.3.1"
+       }
+     },
++    "node_modules/@tsconfig/node10": {
++      "version": "1.0.12",
++      "resolved": "https://registry.npmjs.org/@tsconfig/node10/-/node10-1.0.12.tgz",
++      "integrity": "sha512-UCYBaeFvM11aU2y3YPZ//O5Rhj+xKyzy7mvcIoAjASbigy8mHMryP5cK7dgjlz2hWxh1g5pLw084E0a/wlUSFQ==",
++      "license": "MIT"
++    },
++    "node_modules/@tsconfig/node12": {
++      "version": "1.0.11",
++      "resolved": "https://registry.npmjs.org/@tsconfig/node12/-/node12-1.0.11.tgz",
++      "integrity": "sha512-cqefuRsh12pWyGsIoBKJA9luFu3mRxCA+ORZvA4ktLSzIuCUtWVxGIuXigEwO5/ywWFMZ2QEGKWvkZG1zDMTag==",
++      "license": "MIT"
++    },
++    "node_modules/@tsconfig/node14": {
++      "version": "1.0.3",
++      "resolved": "https://registry.npmjs.org/@tsconfig/node14/-/node14-1.0.3.tgz",
++      "integrity": "sha512-ysT8mhdixWK6Hw3i1V2AeRqZ5WfXg1G43mqoYlM2nc6388Fq5jcXyr5mRsqViLx/GJYdoL0bfXD8nmF+Zn/Iow==",
++      "license": "MIT"
++    },
++    "node_modules/@tsconfig/node16": {
++      "version": "1.0.4",
++      "resolved": "https://registry.npmjs.org/@tsconfig/node16/-/node16-1.0.4.tgz",
++      "integrity": "sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==",
++      "license": "MIT"
++    },
+     "node_modules/@tybys/wasm-util": {
+       "version": "0.10.2",
+       "resolved": "https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.2.tgz",
+@@ -2901,7 +2946,6 @@
+       "version": "20.19.43",
+       "resolved": "https://registry.npmjs.org/@types/node/-/node-20.19.43.tgz",
+       "integrity": "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==",
+-      "devOptional": true,
+       "license": "MIT",
+       "dependencies": {
+         "undici-types": "~6.21.0"
+@@ -3649,7 +3693,6 @@
+       "version": "8.17.0",
+       "resolved": "https://registry.npmjs.org/acorn/-/acorn-8.17.0.tgz",
+       "integrity": "sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==",
+-      "dev": true,
+       "license": "MIT",
+       "bin": {
+         "acorn": "bin/acorn"
+@@ -3668,6 +3711,18 @@
+         "acorn": "^6.0.0 || ^7.0.0 || ^8.0.0"
+       }
+     },
++    "node_modules/acorn-walk": {
++      "version": "8.3.5",
++      "resolved": "https://registry.npmjs.org/acorn-walk/-/acorn-walk-8.3.5.tgz",
++      "integrity": "sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==",
++      "license": "MIT",
++      "dependencies": {
++        "acorn": "^8.11.0"
++      },
++      "engines": {
++        "node": ">=0.4.0"
++      }
++    },
+     "node_modules/adler-32": {
+       "version": "1.3.1",
+       "resolved": "https://registry.npmjs.org/adler-32/-/adler-32-1.3.1.tgz",
+@@ -3710,6 +3765,12 @@
+         "url": "https://github.com/chalk/ansi-styles?sponsor=1"
+       }
+     },
++    "node_modules/arg": {
++      "version": "4.1.3",
++      "resolved": "https://registry.npmjs.org/arg/-/arg-4.1.3.tgz",
++      "integrity": "sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA==",
++      "license": "MIT"
++    },
+     "node_modules/argparse": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/argparse/-/argparse-2.0.1.tgz",
+@@ -4417,6 +4478,12 @@
+         "node": ">=0.8"
+       }
+     },
++    "node_modules/create-require": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz",
++      "integrity": "sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==",
++      "license": "MIT"
++    },
+     "node_modules/cross-spawn": {
+       "version": "7.0.6",
+       "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
+@@ -4766,6 +4833,15 @@
+         "url": "https://github.com/sponsors/wooorm"
+       }
+     },
++    "node_modules/diff": {
++      "version": "4.0.4",
++      "resolved": "https://registry.npmjs.org/diff/-/diff-4.0.4.tgz",
++      "integrity": "sha512-X07nttJQkwkfKfvTPG/KSnE2OMdcUCao6+eXF3wmnIQRn2aPAHH3VxDbDOdegkd6JbPsXqShpvEOHfAT+nCNwQ==",
++      "license": "BSD-3-Clause",
++      "engines": {
++        "node": ">=0.3.1"
++      }
++    },
+     "node_modules/doctrine": {
+       "version": "2.1.0",
+       "resolved": "https://registry.npmjs.org/doctrine/-/doctrine-2.1.0.tgz",
+@@ -7508,6 +7584,12 @@
+         "@jridgewell/sourcemap-codec": "^1.5.5"
+       }
+     },
++    "node_modules/make-error": {
++      "version": "1.3.6",
++      "resolved": "https://registry.npmjs.org/make-error/-/make-error-1.3.6.tgz",
++      "integrity": "sha512-s8UhlNe7vPKomQhC1qFelMokr/Sc3AgNbso3n74mVPA5LTZwkB9NlXf4XPamLxJE8h0gh73rM94xvwRT2CVInw==",
++      "license": "ISC"
++    },
+     "node_modules/math-intrinsics": {
+       "version": "1.1.0",
+       "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+@@ -10171,6 +10253,49 @@
+         "typescript": ">=4.8.4"
+       }
+     },
++    "node_modules/ts-node": {
++      "version": "10.9.2",
++      "resolved": "https://registry.npmjs.org/ts-node/-/ts-node-10.9.2.tgz",
++      "integrity": "sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ==",
++      "license": "MIT",
++      "dependencies": {
++        "@cspotcode/source-map-support": "^0.8.0",
++        "@tsconfig/node10": "^1.0.7",
++        "@tsconfig/node12": "^1.0.7",
++        "@tsconfig/node14": "^1.0.0",
++        "@tsconfig/node16": "^1.0.2",
++        "acorn": "^8.4.1",
++        "acorn-walk": "^8.1.1",
++        "arg": "^4.1.0",
++        "create-require": "^1.1.0",
++        "diff": "^4.0.1",
++        "make-error": "^1.1.1",
++        "v8-compile-cache-lib": "^3.0.1",
++        "yn": "3.1.1"
++      },
++      "bin": {
++        "ts-node": "dist/bin.js",
++        "ts-node-cwd": "dist/bin-cwd.js",
++        "ts-node-esm": "dist/bin-esm.js",
++        "ts-node-script": "dist/bin-script.js",
++        "ts-node-transpile-only": "dist/bin-transpile.js",
++        "ts-script": "dist/bin-script-deprecated.js"
++      },
++      "peerDependencies": {
++        "@swc/core": ">=1.2.50",
++        "@swc/wasm": ">=1.2.50",
++        "@types/node": "*",
++        "typescript": ">=2.7"
++      },
++      "peerDependenciesMeta": {
++        "@swc/core": {
++          "optional": true
++        },
++        "@swc/wasm": {
++          "optional": true
++        }
++      }
++    },
+     "node_modules/tsconfig-paths": {
+       "version": "3.15.0",
+       "resolved": "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-3.15.0.tgz",
+@@ -10814,7 +10939,6 @@
+       "version": "5.9.3",
+       "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+-      "dev": true,
+       "license": "Apache-2.0",
+       "bin": {
+         "tsc": "bin/tsc",
+@@ -10871,7 +10995,6 @@
+       "version": "6.21.0",
+       "resolved": "https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz",
+       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==",
+-      "devOptional": true,
+       "license": "MIT"
+     },
+     "node_modules/unified": {
+@@ -11065,6 +11188,12 @@
+         "base64-arraybuffer": "^1.0.2"
+       }
+     },
++    "node_modules/v8-compile-cache-lib": {
++      "version": "3.0.1",
++      "resolved": "https://registry.npmjs.org/v8-compile-cache-lib/-/v8-compile-cache-lib-3.0.1.tgz",
++      "integrity": "sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==",
++      "license": "MIT"
++    },
+     "node_modules/vfile": {
+       "version": "6.0.3",
+       "resolved": "https://registry.npmjs.org/vfile/-/vfile-6.0.3.tgz",
+@@ -11314,6 +11443,15 @@
+       "dev": true,
+       "license": "ISC"
+     },
++    "node_modules/yn": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/yn/-/yn-3.1.1.tgz",
++      "integrity": "sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==",
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/yocto-queue": {
+       "version": "0.1.0",
+       "resolved": "https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz",
+diff --git a/package.json b/package.json
+index 78edf25..1fe2849 100644
+--- a/package.json
++++ b/package.json
+@@ -33,6 +33,7 @@
+     "react-markdown": "^10.1.0",
+     "recharts": "^3.8.1",
+     "tailwind-merge": "^3.6.0",
++    "ts-node": "^10.9.2",
+     "xlsx": "^0.18.5"
+   },
+   "devDependencies": {
+diff --git a/src/app/admin/page.tsx b/src/app/admin/page.tsx
+index f31a2a5..5945c8d 100644
+--- a/src/app/admin/page.tsx
++++ b/src/app/admin/page.tsx
+@@ -292,18 +292,18 @@ export default function AdminDashboard() {
+           {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+             <div className="hidden md:block mb-6 relative z-20">
+               <div className="bg-white/80 backdrop-blur-xl p-5 rounded-3xl border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
+-                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+-                <div className="absolute bottom-0 left-10 w-40 h-40 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl -mb-10 pointer-events-none"></div>
++                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
++                <div className="absolute bottom-0 left-10 w-40 h-40 bg-gradient-to-tr from-emerald-400/10 to-teal-400/10 rounded-full blur-2xl -mb-10 pointer-events-none"></div>
+                 
+                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                   <div className="flex items-center gap-3">
+-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 text-white transform hover:scale-105 transition-transform">
++                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white transform hover:scale-105 transition-transform">
+                       <MapPin className="w-5 h-5" />
+                     </div>
+                     <div>
+                       <h3 className="text-[14px] font-black text-gray-800 uppercase tracking-widest leading-tight">Dashboard Wilayah</h3>
+                       <p className="text-[11px] text-gray-500 font-medium mt-0.5 flex items-center gap-1">
+-                        <Sparkles className="w-3 h-3 text-blue-400" /> Filter data analitik berdasarkan cabang
++                        <Sparkles className="w-3 h-3 text-emerald-400" /> Filter data analitik berdasarkan cabang
+                       </p>
+                     </div>
+                   </div>
+@@ -314,14 +314,14 @@ export default function AdminDashboard() {
+                     onClick={() => setFilterBranch("ALL")}
+                     className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                       filterBranch === "ALL" 
+-                        ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
+-                        : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
++                        ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
++                        : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
+                     }`}
+                   >
+                     {filterBranch === "ALL" && (
+-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
++                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
+                     )}
+-                    <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
++                    <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
+                     <span className="relative z-10">Semua Cabang (Pusat)</span>
+                     {filterBranch === "ALL" && (
+                       <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+@@ -334,14 +334,14 @@ export default function AdminDashboard() {
+                       onClick={() => setFilterBranch(b.id)}
+                       className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                         filterBranch === b.id 
+-                          ? "text-white shadow-[0_8px_20px_rgba(59,130,246,0.35)] transform scale-[1.02] border-none ring-2 ring-blue-500/50 ring-offset-1 ring-offset-white" 
+-                          : "bg-white text-gray-600 border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-md hover:-translate-y-0.5"
++                          ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
++                          : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
+                       }`}
+                     >
+                       {filterBranch === b.id && (
+-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 opacity-100"></div>
++                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
+                       )}
+-                      <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-blue-100" : "text-gray-400 group-hover:text-blue-500"}`} />
++                      <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
+                       <span className="relative z-10">{b.name}</span>
+                       {filterBranch === b.id && (
+                         <div className="relative z-10 w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1 shadow-[0_0_8px_rgba(255,255,255,0.8)]"></div>
+diff --git a/src/app/admin/visits/page.tsx b/src/app/admin/visits/page.tsx
+index d8a833e..fdd3726 100644
+--- a/src/app/admin/visits/page.tsx
++++ b/src/app/admin/visits/page.tsx
+@@ -205,7 +205,7 @@ export default function AdminVisitsPage() {
+ 
+   // Edit Therapist States
+   const [editTherapistModalOpen, setEditTherapistModalOpen] = useState(false);
+-  const [editTherapistVisitId, setEditTherapistVisitId] = useState<string | null>(null);
++  const [editTherapistVisitId, setEditTherapistVisitId] = useState<string | string[] | null>(null);
+   const [editTherapistBranchId, setEditTherapistBranchId] = useState<string>("");
+   const [newTherapistId, setNewTherapistId] = useState<string>("");
+   const [isSavingTherapist, setIsSavingTherapist] = useState(false);
+@@ -214,20 +214,17 @@ export default function AdminVisitsPage() {
+     if (!editTherapistVisitId || !newTherapistId) return;
+     setIsSavingTherapist(true);
+     try {
+-      const res = await fetch(`/api/patient-visits/${editTherapistVisitId}/assign-therapist`, {
+-        method: "PATCH",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ therapistId: newTherapistId }),
+-      });
+-      if (res.ok) {
+-        setEditTherapistModalOpen(false);
+-        setEditTherapistVisitId(null);
+-        setNewTherapistId("");
+-        fetchData(); // refresh
+-      } else {
+-        const err = await res.json();
+-        alert(err.error || "Gagal menambahkan terapis");
+-      }
++      const ids = Array.isArray(editTherapistVisitId) ? editTherapistVisitId : [editTherapistVisitId];
++      await Promise.all(ids.map(id => 
++        fetch(`/api/patient-visits/${id}/assign-therapist`, {
++          method: "PATCH",
++          headers: { "Content-Type": "application/json" },
++          body: JSON.stringify({ therapistId: newTherapistId }),
++        })
++      ));
++      setEditTherapistModalOpen(false);
++      setNewTherapistId("");
++      fetchData(); // refresh
+     } catch (error) {
+       console.error(error);
+       alert("Terjadi kesalahan sistem");
+@@ -756,27 +753,25 @@ export default function AdminVisitsPage() {
+   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
+ 
+   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+-  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
++  const [visitToDelete, setVisitToDelete] = useState<string | string[] | null>(null);
+   const [isDeleting, setIsDeleting] = useState(false);
+ 
+-  const handleCompleteVisit = async (visitId: string) => {
++  const handleCompleteVisit = async (visitId: string | string[]) => {
+     try {
+-      const res = await fetch(`/api/patient-visits/${visitId}/complete`, {
+-        method: "PATCH",
+-      });
+-      if (res.ok) {
+-        fetchData();
+-      } else {
+-        const err = await res.json();
+-        alert(err.error || "Gagal menyelesaikan kunjungan");
+-      }
++      const ids = Array.isArray(visitId) ? visitId : [visitId];
++      await Promise.all(ids.map(id => 
++        fetch(`/api/patient-visits/${id}/complete`, {
++          method: "PATCH",
++        })
++      ));
++      fetchData();
+     } catch (err) {
+       console.error(err);
+       alert("Terjadi kesalahan jaringan");
+     }
+   };
+ 
+-  const handleDeleteVisit = (visitId: string) => {
++  const handleDeleteVisit = (visitId: string | string[]) => {
+     setVisitToDelete(visitId);
+     setDeleteModalOpen(true);
+   };
+@@ -785,17 +780,15 @@ export default function AdminVisitsPage() {
+     if (!visitToDelete) return;
+     setIsDeleting(true);
+     try {
+-      const res = await fetch(`/api/patient-visits/${visitToDelete}`, {
+-        method: "DELETE",
+-      });
+-      if (res.ok) {
+-        setDeleteModalOpen(false);
+-        setVisitToDelete(null);
+-        fetchData();
+-      } else {
+-        const err = await res.json();
+-        alert(err.error || "Gagal menghapus data kunjungan");
+-      }
++      const ids = Array.isArray(visitToDelete) ? visitToDelete : [visitToDelete];
++      await Promise.all(ids.map(id => 
++        fetch(`/api/patient-visits/${id}`, {
++          method: "DELETE",
++        })
++      ));
++      setDeleteModalOpen(false);
++      setVisitToDelete(null);
++      fetchData();
+     } catch (err) {
+       console.error(err);
+       alert("Terjadi kesalahan jaringan");
+@@ -806,11 +799,16 @@ export default function AdminVisitsPage() {
+ 
+   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
+     const patientVisits = visits.filter(v => v.patientId === patientId);
+-    const index = patientVisits.findIndex(v => v.id === visitId);
+-    return patientVisits.length - index;
++    const arrivals = Array.from(new Set(patientVisits.map(v => `${v.visitDate}T${v.visitTime}`)))
++      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
++    
++    const visit = patientVisits.find(v => v.id === visitId);
++    if (!visit) return 1;
++    const key = `${visit.visitDate}T${visit.visitTime}`;
++    return arrivals.indexOf(key) + 1;
+   };
+ 
+-  let finalVisits = visits.filter(v => {
++  let rawFinalVisits = visits.filter(v => {
+     const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
+     const matchDate = filterDate === "" || v.visitDate === filterDate;
+     const patientName = getPatientName(v.patientId).toLowerCase();
+@@ -818,11 +816,35 @@ export default function AdminVisitsPage() {
+     return matchBranch && matchDate && matchSearch;
+   }).sort((a, b) => {
+     // Sort by visitDate descending, then visitTime descending
+-    const dateA = new Date(`${a.visitDate}T${a.visitTime || '00:00'}:00`);
+-    const dateB = new Date(`${b.visitDate}T${b.visitTime || '00:00'}:00`);
++    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`);
++    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`);
+     return dateB.getTime() - dateA.getTime();
+   });
+ 
++  const groupedMap = new Map<string, any>();
++  rawFinalVisits.forEach(v => {
++    const key = `${v.patientId}-${v.visitDate}-${v.visitTime}`;
++    if (!groupedMap.has(key)) {
++      groupedMap.set(key, { 
++        ...v, 
++        groupedServiceIds: [v.serviceId], 
++        groupedTherapistIds: [v.therapistId],
++        groupedIds: [v.id]
++      });
++    } else {
++      const group = groupedMap.get(key);
++      group.groupedServiceIds.push(v.serviceId);
++      group.groupedTherapistIds.push(v.therapistId);
++      group.groupedIds.push(v.id);
++      
++      if (v.status === "in_progress") group.status = "in_progress";
++      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
++      if (!v.checkOutTime) group.checkOutTime = null;
++    }
++  });
++
++  const finalVisits = Array.from(groupedMap.values());
++
+   // KPI Calculations (Actual Data)
+   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+   
+@@ -1888,14 +1910,14 @@ export default function AdminVisitsPage() {
+                             <div className="flex flex-col">
+                               <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
+                               <span className="text-[11px] text-gray-500 font-medium mb-1 flex items-center gap-1 flex-wrap">
+-                                {v.visitDate.split('-').reverse().join('/')} &bull; {getServiceName(v.serviceId)}
++                                {v.visitDate.split('-').reverse().join('/')} &bull; {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
+                                 <span className="flex items-center gap-1 mx-1">|</span>
+-                                <span className="flex items-center gap-1"><User className="w-3 h-3"/> {getTherapistName(v.therapistId)}</span>
+-                                {!v.therapistId && isCompleted && isPaid && (
++                                <span className="flex items-center gap-1"><User className="w-3 h-3"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}</span>
++                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && isCompleted && isPaid && (
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+-                                      setEditTherapistVisitId(v.id);
++                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
+                                       setEditTherapistBranchId(v.branchId);
+                                       setNewTherapistId("");
+                                       setEditTherapistModalOpen(true);
+@@ -1921,7 +1943,7 @@ export default function AdminVisitsPage() {
+                                   <Wallet className="w-5 h-5" />
+                                 </button>
+                                 {v.status === "in_progress" && (
+-                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
++                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
+                                     <CheckCircle2 className="w-5 h-5" />
+                                   </button>
+                                 )}
+@@ -2021,15 +2043,15 @@ export default function AdminVisitsPage() {
+                             </td>
+                             <td className={tdClass}>
+                               <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+-                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {getServiceName(v.serviceId)}
++                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
+                               </div>
+                               <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
+-                                <User className="w-3.5 h-3.5"/> {getTherapistName(v.therapistId)}
+-                                {!v.therapistId && v.paymentStatus === "PAID" && (
++                                <User className="w-3.5 h-3.5"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
++                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && v.paymentStatus === "PAID" && (
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+-                                      setEditTherapistVisitId(v.id);
++                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
+                                       setEditTherapistBranchId(v.branchId);
+                                       setNewTherapistId("");
+                                       setEditTherapistModalOpen(true);
+@@ -2064,7 +2086,7 @@ export default function AdminVisitsPage() {
+                                       <Plus className="w-3 h-3"/> Tambah Layanan
+                                     </button>
+                                     <button
+-                                      onClick={() => handleDeleteVisit(v.id)}
++                                      onClick={() => handleDeleteVisit((v as any).groupedIds || v.id)}
+                                       className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                       title="Hapus Data Kunjungan"
+                                     >
+@@ -2073,24 +2095,24 @@ export default function AdminVisitsPage() {
+                                   </div>
+                                 </div>
+                               ) : (
+-                                <div className="flex flex-col items-start gap-1">
++                                <div className="flex flex-col">
+                                   <button 
+                                     onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }}
+                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                   >
+-                                    Ke Kasir
++                                    <Wallet className="w-3.5 h-3.5" /> Ke Kasir
+                                   </button>
+                                   {v.status === "in_progress" && (
+-                                    <button
+-                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit(v.id); }}
+-                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
++                                    <button 
++                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }}
++                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border border-emerald-200 transition-colors mt-1"
+                                     >
+-                                      <CheckCircle2 className="w-3 h-3" /> Selesai
++                                      <CheckCircle2 className="w-3.5 h-3.5" /> Selesaikan
+                                     </button>
+                                   )}
+                                   <button
+-                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit(v.id); }}
+-                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
++                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit((v as any).groupedIds || v.id); }}
++                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium mt-1"
+                                     title="Hapus Data Kunjungan"
+                                   >
+                                     <Trash2 className="w-3 h-3" /> Hapus
+@@ -2641,10 +2663,38 @@ export default function AdminVisitsPage() {
+ 
+             <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
+               <div className="space-y-4">
+-                {visits
+-                  .filter(v => v.patientId === selectedPatientHistoryId)
+-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+-                  .map((visit, idx, arr) => (
++               {(() => {
++                  const patientVisits = visits.filter(v => v.patientId === selectedPatientHistoryId);
++                  
++                  const groupedMap = new Map<string, any>();
++                  patientVisits.forEach(v => {
++                    const key = `${v.visitDate}-${v.visitTime}`;
++                    if (!groupedMap.has(key)) {
++                      groupedMap.set(key, { 
++                        ...v, 
++                        groupedServiceIds: [v.serviceId], 
++                        groupedTherapistIds: [v.therapistId]
++                      });
++                    } else {
++                      const group = groupedMap.get(key);
++                      group.groupedServiceIds.push(v.serviceId);
++                      group.groupedTherapistIds.push(v.therapistId);
++                      
++                      if (v.notes && !group.notes?.includes(v.notes)) {
++                        group.notes = group.notes ? `${group.notes}\n${v.notes}` : v.notes;
++                      }
++                      
++                      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
++                    }
++                  });
++
++                  const groupedVisits = Array.from(groupedMap.values()).sort((a, b) => {
++                    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
++                    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
++                    return dateB - dateA;
++                  });
++
++                  return groupedVisits.map((visit) => (
+                     <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
+                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
+@@ -2655,7 +2705,7 @@ export default function AdminVisitsPage() {
+                               <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
+                             </span>
+                             <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
+-                              Kunjungan #{arr.length - idx}
++                              Kunjungan #{getVisitSequenceNumber(visit.patientId, visit.id)}
+                             </span>
+                             {visit.paymentStatus === "PAID" && (
+                               <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 uppercase tracking-wide flex items-center gap-1">
+@@ -2668,13 +2718,13 @@ export default function AdminVisitsPage() {
+                             <div className="space-y-1">
+                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
+                               <div className="flex items-center gap-2 text-gray-800 font-medium">
+-                                <Activity className="w-4 h-4 text-teal-500"/> {getServiceName(visit.serviceId)}
++                                <Activity className="w-4 h-4 text-teal-500"/> {visit.groupedServiceIds.map((id: string) => getServiceName(id)).join(", ")}
+                               </div>
+                             </div>
+                             <div className="space-y-1">
+                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
+                               <div className="flex items-center gap-2 text-gray-800 font-medium">
+-                                <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(visit.therapistId)}
++                                <User className="w-4 h-4 text-indigo-400"/> {Array.from(new Set(visit.groupedTherapistIds.filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
+                               </div>
+                             </div>
+                             <div className="space-y-1">
+@@ -2696,7 +2746,8 @@ export default function AdminVisitsPage() {
+                         </div>
+                       </div>
+                     </div>
+-                ))}
++                  ));
++                })()}
+               </div>
+             </div>
+             
+diff --git a/src/app/api/fix-all-therapists/route.ts b/src/app/api/fix-all-therapists/route.ts
+new file mode 100644
+index 0000000..a367ad0
+--- /dev/null
++++ b/src/app/api/fix-all-therapists/route.ts
+@@ -0,0 +1,93 @@
++import { NextResponse } from "next/server";
++import { db } from "@/lib/db";
++import { therapists, therapistCommissions, therapistServiceCommissions, financeTransactions, patientVisits } from "@/lib/db/schema";
++import { eq, and, like } from "drizzle-orm";
++
++export async function GET() {
++  try {
++    const allTherapists = await db.select().from(therapists);
++    const activeTherapists = allTherapists.filter(t => t.isActive);
++    
++    // Find a reference therapist for global commissions
++    // We assume the therapist with the MOST custom overrides has the most complete "global" picture
++    let refTherapist = null;
++    let maxOverrides = -1;
++    let globalComms: any[] = [];
++    
++    for (const t of activeTherapists) {
++      const comms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, t.id));
++      if (comms.length > maxOverrides) {
++        maxOverrides = comms.length;
++        refTherapist = t;
++        globalComms = comms;
++      }
++    }
++
++    if (!refTherapist || globalComms.length === 0) {
++      return NextResponse.json({ error: "No reference therapist found with commissions" }, { status: 400 });
++    }
++
++    let totalFixedCommissions = 0;
++    let totalFixedOverrides = 0;
++
++    for (const t of allTherapists) {
++      // 1. Fix missing/incorrect overrides for each active therapist
++      if (t.isActive) {
++        const tComms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, t.id));
++        for (const gComm of globalComms) {
++          const existing = tComms.find(c => c.serviceId === gComm.serviceId);
++          if (!existing) {
++            await db.insert(therapistServiceCommissions).values({
++              id: crypto.randomUUID(),
++              therapistId: t.id,
++              serviceId: gComm.serviceId,
++              commissionAmount: gComm.commissionAmount,
++            });
++            totalFixedOverrides++;
++          } else if (existing.commissionAmount !== gComm.commissionAmount) {
++            await db.update(therapistServiceCommissions)
++              .set({ commissionAmount: gComm.commissionAmount })
++              .where(eq(therapistServiceCommissions.id, existing.id));
++            totalFixedOverrides++;
++          }
++        }
++      }
++
++      // 2. Fix historical commissions for all therapists (even inactive ones)
++      const pastCommissions = await db.select().from(therapistCommissions).where(eq(therapistCommissions.therapistId, t.id));
++      for (const comm of pastCommissions) {
++        const visitRecords = await db.select().from(patientVisits).where(eq(patientVisits.id, comm.visitId)).limit(1);
++        if (visitRecords.length > 0) {
++          const visit = visitRecords[0];
++          const expectedComm = globalComms.find(g => g.serviceId === visit.serviceId);
++          
++          if (expectedComm && expectedComm.commissionAmount !== null && expectedComm.commissionAmount !== comm.amount) {
++            await db.update(therapistCommissions)
++              .set({ amount: expectedComm.commissionAmount })
++              .where(eq(therapistCommissions.id, comm.id));
++              
++            await db.update(financeTransactions)
++              .set({ amount: expectedComm.commissionAmount })
++              .where(and(
++                eq(financeTransactions.referenceId, comm.visitId),
++                eq(financeTransactions.type, "EXPENSE"),
++                like(financeTransactions.description, "%Bagi Hasil Terapis%")
++              ));
++              
++            totalFixedCommissions++;
++          }
++        }
++      }
++    }
++
++    return NextResponse.json({ 
++      success: true, 
++      referenceTherapist: refTherapist.name,
++      totalFixedOverrides, 
++      totalFixedCommissions 
++    });
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json({ error: String(error) }, { status: 500 });
++  }
++}
+diff --git a/src/app/api/fix-suci/route.ts b/src/app/api/fix-suci/route.ts
+new file mode 100644
+index 0000000..3fd6111
+--- /dev/null
++++ b/src/app/api/fix-suci/route.ts
+@@ -0,0 +1,73 @@
++import { NextResponse } from "next/server";
++import { db } from "@/lib/db";
++import { therapists, therapistCommissions, therapistServiceCommissions, financeTransactions, patientVisits } from "@/lib/db/schema";
++import { eq, and, ne, like } from "drizzle-orm";
++
++export async function GET() {
++  try {
++    // 1. Find Suci
++    const allTherapists = await db.select().from(therapists);
++    const suci = allTherapists.find(t => t.name.toLowerCase().includes("suci"));
++    if (!suci) return NextResponse.json({ error: "Suci not found" }, { status: 404 });
++
++    // 2. Find a reference therapist for global commissions
++    const refTherapist = allTherapists.find(t => t.id !== suci.id && t.isActive);
++    if (!refTherapist) return NextResponse.json({ error: "No reference therapist" }, { status: 400 });
++
++    const globalComms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, refTherapist.id));
++    
++    // 3. Fix Suci's overrides
++    const suciComms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, suci.id));
++    
++    for (const gComm of globalComms) {
++      const existing = suciComms.find(c => c.serviceId === gComm.serviceId);
++      if (!existing) {
++        await db.insert(therapistServiceCommissions).values({
++          id: crypto.randomUUID(), therapistId: suci.id,
++          serviceId: gComm.serviceId,
++          commissionAmount: gComm.commissionAmount,
++        });
++      } else if (existing.commissionAmount !== gComm.commissionAmount) {
++        await db.update(therapistServiceCommissions)
++          .set({ commissionAmount: gComm.commissionAmount })
++          .where(and(eq(therapistServiceCommissions.therapistId, suci.id), eq(therapistServiceCommissions.serviceId, gComm.serviceId)));
++      }
++    }
++
++    // 4. Fix Suci's past commissions
++    const pastCommissions = await db.select().from(therapistCommissions).where(eq(therapistCommissions.therapistId, suci.id));
++    
++    let updatedCount = 0;
++    for (const comm of pastCommissions) {
++      // Find the service id for this visit
++      const visitRecords = await db.select().from(patientVisits).where(eq(patientVisits.id, comm.visitId)).limit(1);
++      if (visitRecords.length > 0) {
++        const visit = visitRecords[0];
++        const expectedComm = globalComms.find(g => g.serviceId === visit.serviceId);
++        
++        if (expectedComm && expectedComm.commissionAmount !== null && expectedComm.commissionAmount !== comm.amount) {
++          // Update therapist_commissions
++          await db.update(therapistCommissions)
++            .set({ amount: expectedComm.commissionAmount })
++            .where(eq(therapistCommissions.id, comm.id));
++            
++          // Update finance_transactions
++          await db.update(financeTransactions)
++            .set({ amount: expectedComm.commissionAmount })
++            .where(and(
++              eq(financeTransactions.referenceId, comm.visitId),
++              eq(financeTransactions.type, "EXPENSE"),
++              like(financeTransactions.description, "%Bagi Hasil Terapis%")
++            ));
++            
++          updatedCount++;
++        }
++      }
++    }
++
++    return NextResponse.json({ success: true, suciId: suci.id, updatedCommissionsCount: updatedCount });
++  } catch (error) {
++    console.error(error);
++    return NextResponse.json({ error: String(error) }, { status: 500 });
++  }
++}
+diff --git a/src/app/api/invoices/route.ts b/src/app/api/invoices/route.ts
+index 8888129..6d3459d 100644
+--- a/src/app/api/invoices/route.ts
++++ b/src/app/api/invoices/route.ts
+@@ -187,6 +187,12 @@ export async function POST(request: Request) {
+         visitDateStr = transactionDate.split("T")[0];
+       }
+   
++      // Jika ini adalah pembayaran untuk visitId yang sudah ada, hapus invoice lamanya dulu
++      // Ini mencegah duplikasi data jika kasir memproses ulang tagihan yang sama
++      if (visitId) {
++        await tx.delete(invoices).where(eq(invoices.visitId, visitId));
++      }
++
+       const invoiceId = crypto.randomUUID();
+       const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
+   
+@@ -270,62 +276,33 @@ export async function POST(request: Request) {
+       }
+   
+       // 9. Sync patientVisits with POS items
++      // Kita HANYA memperbarui visit original. Item tambahan dicatat di struk (invoices), tidak dibuat visit baru agar tidak double.
+       const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
+-      const finalVisitIds: string[] = [];
+-
+-      for (let i = 0; i < items.length; i++) {
+-        const item = items[i];
+-        if (i < visitsToMark.length) {
+-          const vId = visitsToMark[i];
+-          finalVisitIds.push(vId);
+-          await tx.update(patientVisits)
+-            .set({ 
+-              serviceId: item.serviceId || item.name, 
+-              status: "completed",
+-              paymentStatus: "PAID", 
+-              updatedAt: now,
+-              ...(therapistId && { therapistId })
+-            })
+-            .where(eq(patientVisits.id, vId));
+-        } else {
+-          // Additional item added in POS that wasn't in original visits, or POS standalone
+-          const newVisitId = `V-${Date.now()}-${i}`;
+-          finalVisitIds.push(newVisitId);
+-          await tx.insert(patientVisits).values({
+-            id: newVisitId,
+-            patientId,
+-            serviceId: item.serviceId || item.name,
+-            branchId: finalBranchId,
+-            therapistId: therapistId || null,
+-            visitDate: now.split("T")[0],
+-            visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
+-            notes: `POS Struk ${invoiceNumber}`,
++      const primaryVisitId = visitsToMark[0] || (visitId ? visitId : null);
++      
++      if (primaryVisitId) {
++        await tx.update(patientVisits)
++          .set({ 
+             status: "completed",
+-            paymentStatus: "PAID",
+-          });
+-        }
+-      }
+-
+-      // If there were more original visits than items paid for, remove the excess unpaid visits
+-      if (visitsToMark.length > items.length) {
+-        const excessIds = visitsToMark.slice(items.length);
+-        for (const excessId of excessIds) {
+-          await tx.delete(patientVisits).where(eq(patientVisits.id, excessId));
+-        }
++            paymentStatus: "PAID", 
++            updatedAt: now,
++            ...(therapistId && { therapistId })
++          })
++          .where(eq(patientVisits.id, primaryVisitId));
+       }
+ 
+       // 10. Create therapist commission if applicable
+-      if (therapistId && finalVisitIds.length > 0) {
++      if (therapistId && primaryVisitId) {
+         const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
+         if (therapistRecords.length > 0) {
+           const therapist = therapistRecords[0];
+   
+-          // Calculate commission for each item
+-          for (let i = 0; i < items.length; i++) {
+-            const item = items[i];
+-            const serviceId = item.serviceId;
+-            const correspondingVisitId = finalVisitIds[i];
++          let totalCommission = 0;
++          let commissionDetails = [];
+ 
++          // Calculate TOTAL commission for ALL items
++          for (const item of items) {
++            const serviceId = item.serviceId;
+             if (!serviceId) continue;
+   
+             const customOverride = await tx
+@@ -345,41 +322,55 @@ export async function POST(request: Request) {
+             }
+             
+             // Multiply by item quantity
+-            commissionAmount = commissionAmount * (item.qty || 1);
++            const itemCommission = commissionAmount * (item.qty || 1);
++            if (itemCommission > 0) {
++              totalCommission += itemCommission;
++              commissionDetails.push(item.name || serviceId);
++            }
++          }
++
++          if (totalCommission > 0) {
++            // Hapus komisi lama jika ada untuk mencegah duplikasi (karena disatukan)
++            await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, primaryVisitId));
++            await tx.delete(financeTransactions).where(
++              and(
++                eq(financeTransactions.referenceId, primaryVisitId),
++                eq(financeTransactions.type, "EXPENSE"),
++                like(financeTransactions.description, "%Bagi Hasil Terapis%")
++              )
++            );
+ 
+-            if (commissionAmount > 0) {
+-              await tx.insert(therapistCommissions).values({
+-                id: crypto.randomUUID(),
+-                therapistId,
+-                visitId: correspondingVisitId,
+-                amount: commissionAmount,
+-                status: "PAID",
+-                paidAt: now,
+-              });
++            await tx.insert(therapistCommissions).values({
++              id: crypto.randomUUID(),
++              therapistId,
++              visitId: primaryVisitId,
++              amount: totalCommission,
++              status: "PAID",
++              paidAt: now,
++            });
+   
+-              // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
+-              const commTrxId = crypto.randomUUID();
+-              await tx.insert(financeTransactions).values({
+-                id: commTrxId,
+-                type: "EXPENSE",
+-                category: "Bagi Hasil Terapis",
+-                amount: commissionAmount,
+-                description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${item.name || serviceId} pasien ${patientName}`,
+-                referenceId: correspondingVisitId,
+-                branchId: finalBranchId,
+-                paymentMethod: "CASH", // Asumsi disisihkan via kas
+-                date: now
+-              });
++            // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
++            const commTrxId = crypto.randomUUID();
++            await tx.insert(financeTransactions).values({
++              id: commTrxId,
++              type: "EXPENSE",
++              category: "Bagi Hasil Terapis",
++              amount: totalCommission,
++              description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${commissionDetails.join(', ')} pasien ${patientName}`,
++              referenceId: primaryVisitId,
++              branchId: finalBranchId,
++              paymentMethod: "CASH", // Asumsi disisihkan via kas
++              date: now
++            });
+   
+-              // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
+-              await createJournalEntry({
+-                date: now,
+-                description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${item.name || serviceId}`,
+-                referenceId: commTrxId,
+-                debitAccountId: COA.BEBAN_KOMISI,
+-                creditAccountId: COA.HUTANG_KOMISI,
+-                amount: commissionAmount, tx});
+-            }
++            // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
++            await createJournalEntry({
++              date: now,
++              description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${commissionDetails.join(', ')}`,
++              referenceId: commTrxId,
++              debitAccountId: COA.BEBAN_KOMISI,
++              creditAccountId: COA.HUTANG_KOMISI, // Sesuai aturan yang ada sebelumnya
++              amount: totalCommission, tx});
+           }
+         }
+       }
+diff --git a/src/app/api/patient-visits/[id]/assign-therapist/route.ts b/src/app/api/patient-visits/[id]/assign-therapist/route.ts
+index 226105b..c13e3ab 100644
+--- a/src/app/api/patient-visits/[id]/assign-therapist/route.ts
++++ b/src/app/api/patient-visits/[id]/assign-therapist/route.ts
+@@ -120,6 +120,16 @@ export async function PATCH(
+           }
+ 
+           if (commissionAmount > 0) {
++            // Hapus komisi lama jika ada untuk mencegah duplikasi
++            await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, id));
++            await tx.delete(financeTransactions).where(
++              and(
++                eq(financeTransactions.referenceId, id),
++                eq(financeTransactions.type, "EXPENSE"),
++                like(financeTransactions.description, "%Bagi Hasil Terapis%")
++              )
++            );
++
+             // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
+             // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
+ 
+diff --git a/src/app/api/patient-visits/[id]/pay/route.ts b/src/app/api/patient-visits/[id]/pay/route.ts
+index 03d5dd8..0982419 100644
+--- a/src/app/api/patient-visits/[id]/pay/route.ts
++++ b/src/app/api/patient-visits/[id]/pay/route.ts
+@@ -108,6 +108,16 @@ export async function POST(
+           }
+ 
+           if (commissionAmount > 0) {
++            // Hapus komisi lama jika ada untuk mencegah duplikasi
++            await db.delete(therapistCommissions).where(eq(therapistCommissions.visitId, visitId));
++            await db.delete(financeTransactions).where(
++              and(
++                eq(financeTransactions.referenceId, visitId),
++                eq(financeTransactions.type, "EXPENSE"),
++                like(financeTransactions.description, "%Bagi Hasil Terapis%")
++              )
++            );
++
+             // Sinkronisasi manual komisi dihapus untuk menghindari race condition.
+             // Laporan bulanan akan menghitung komisi secara dinamis saat diakses (Single Source of Truth).
+ 
+diff --git a/src/app/api/therapists/[id]/history/route.ts b/src/app/api/therapists/[id]/history/route.ts
+index 9491af4..4963d5d 100644
+--- a/src/app/api/therapists/[id]/history/route.ts
++++ b/src/app/api/therapists/[id]/history/route.ts
+@@ -149,8 +149,8 @@ export async function GET(
+ 
+     // Sort descending by date and time
+     visits.sort((a, b) => {
+-      const dateA = new Date(`${a.visitDate}T${a.visitTime}`);
+-      const dateB = new Date(`${b.visitDate}T${b.visitTime}`);
++      const dateA = new Date(`${a.visitDate}T${a.visitTime.replace('.', ':')}`);
++      const dateB = new Date(`${b.visitDate}T${b.visitTime.replace('.', ':')}`);
+       return dateB.getTime() - dateA.getTime();
+     });
+ 
+diff --git a/src/app/api/therapists/[id]/route.ts b/src/app/api/therapists/[id]/route.ts
+index 3b64182..f372b46 100644
+--- a/src/app/api/therapists/[id]/route.ts
++++ b/src/app/api/therapists/[id]/route.ts
+@@ -110,13 +110,14 @@ export async function DELETE(
+     console.error("Failed to delete therapist:", error);
+     
+     // Check for foreign key constraint violation
+-    const errorString = String(error).toLowerCase();
+-    if (error.code === '23503' || errorString.includes('foreign key') || errorString.includes('constraint')) {
++    const errorString = String(error.message || error).toLowerCase();
++    if (error.code === '23503' || errorString.includes('foreign key') || errorString.includes('constraint') || errorString.includes('violates')) {
+       return NextResponse.json({ 
+         error: "Gagal menghapus: Terapis ini memiliki riwayat data pasien atau komisi. Silakan edit dan ubah statusnya menjadi 'Nonaktif' (toggle Status Aktif)." 
+       }, { status: 400 });
+     }
+     
+-    return NextResponse.json({ error: "Failed to delete therapist" }, { status: 500 });
++    // Also include error message to help debug if it happens again
++    return NextResponse.json({ error: `Gagal menghapus terapis: ${error.message || "Kesalahan server"}` }, { status: 500 });
+   }
+ }
+diff --git a/src/app/api/therapists/route.ts b/src/app/api/therapists/route.ts
+index bd68d5c..ca8663b 100644
+--- a/src/app/api/therapists/route.ts
++++ b/src/app/api/therapists/route.ts
+@@ -1,6 +1,6 @@
+ import { NextResponse } from "next/server";
+ import { db } from "@/lib/db";
+-import { therapists, patientVisits, therapistCommissions } from "@/lib/db/schema";
++import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
+ import { eq, desc, and, like } from "drizzle-orm";
+ import { getSession, getActiveBranchFilter } from "@/lib/auth";
+ 
+@@ -116,6 +116,24 @@ export async function POST(request: Request) {
+ 
+     await db.insert(therapists).values(newTherapist);
+ 
++    // Salin konfigurasi komisi kustom (jika ada) dari terapis aktif lain sebagai default
++    const referenceTherapist = await db.select().from(therapists).where(eq(therapists.isActive, true)).limit(1);
++    if (referenceTherapist.length > 0 && referenceTherapist[0].id !== newTherapist.id) {
++      const refCommissions = await db.select()
++        .from(therapistServiceCommissions)
++        .where(eq(therapistServiceCommissions.therapistId, referenceTherapist[0].id));
++      
++      if (refCommissions.length > 0) {
++        const newCommissions = refCommissions.map(c => ({
++          id: crypto.randomUUID(),
++          therapistId: newTherapist.id,
++          serviceId: c.serviceId,
++          commissionAmount: c.commissionAmount
++        }));
++        await db.insert(therapistServiceCommissions).values(newCommissions);
++      }
++    }
++
+     return NextResponse.json(newTherapist, { status: 201 });
+   } catch (error) {
+     console.error("Failed to create therapist:", error);

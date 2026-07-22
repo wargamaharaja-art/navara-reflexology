@@ -236,6 +236,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   { name: "Data Terapis", href: "/admin/therapists", icon: Users },
                   { name: "Data Staff", href: "/admin/staff", icon: Users },
                   { name: "Absensi Pegawai", href: "/admin/attendance", icon: Clock },
+                  { name: "Surat Mutasi", href: "/admin/therapists/mutations", icon: FileText },
                   { name: "Slip Gaji Terapis", href: "/admin/therapists/reports", icon: Award },
                   { name: "Slip Gaji Staff", href: "/admin/staff/payroll", icon: Award },
                 ]
@@ -284,6 +285,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
                   if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
                   if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
+                  if (sub.name === "Surat Mutasi") return perms.includes("PEGAWAI_MUTASI");
                   if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return perms.includes("PEGAWAI_SLIP");
                   return false;
                 });
