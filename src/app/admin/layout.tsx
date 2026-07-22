@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     // useEffect ini hanya mengurus data UI: session, branch cookie, pending count, branch list.
     const checkSession = async () => {
       try {
-        const res = await fetch("/api/auth/session");
+        const res = await fetch("/api/auth/session?t=" + new Date().getTime(), { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setSession(data.session);
