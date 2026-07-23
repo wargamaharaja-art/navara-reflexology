@@ -135,7 +135,8 @@ export default function PromoBookingPage() {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="w-full bg-slate-50 border border-gray-200 rounded-xl p-4 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-inner"
-              min={new Date().toISOString().split("T")[0]}
+              min="2026-07-31"
+              max="2026-08-02"
               disabled={!!bookingId}
             />
           </div>
