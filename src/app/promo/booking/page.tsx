@@ -11,7 +11,10 @@ export default function PromoBookingPage() {
   const [date, setDate] = useState(() => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split("T")[0];
+    const dateStr = tomorrow.toISOString().split("T")[0];
+    if (dateStr < "2026-07-31") return "2026-07-31";
+    if (dateStr > "2026-08-02") return "2026-08-02";
+    return dateStr;
   });
   const [gender, setGender] = useState<"L" | "P">("L");
   const [slots, setSlots] = useState<Slot[]>([]);
