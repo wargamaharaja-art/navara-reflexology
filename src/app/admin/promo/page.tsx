@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Send, UserPlus, CheckCircle2, Search, RefreshCw, Loader2 } from "lucide-react";
+import { Send, UserPlus, CheckCircle2, Search, RefreshCw, Loader2, Trash2 } from "lucide-react";
 
 type PromoBooking = {
   id: string;
@@ -21,6 +21,7 @@ export default function AdminPromoDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [registeredPhones, setRegisteredPhones] = useState<Set<string>>(new Set());
   const [registeringIds, setRegisteringIds] = useState<Set<string>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [baseUrl, setBaseUrl] = useState("");
 
   // Fetch bookings data
@@ -93,6 +94,35 @@ export default function AdminPromoDashboard() {
       alert("Terjadi kesalahan sistem.");
     } finally {
       setRegisteringIds(prev => {
+        const next = new Set(prev);
+        next.delete(bookingId);
+        return next;
+      });
+    }
+  };
+
+  // Delete a promo booking
+  const handleDeleteBooking = async (bookingId: string, name: string) => {
+    if (!confirm(`Apakah Anda yakin ingin menghapus data promo untuk ${name}?`)) return;
+
+    setDeletingIds(prev => new Set(prev).add(bookingId));
+    try {
+      const res = await fetch(`/api/promo/bookings/${bookingId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        alert("✅ Data booking berhasil dihapus!");
+        fetchBookings();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menghapus data booking.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan sistem.");
+    } finally {
+      setDeletingIds(prev => {
         const next = new Set(prev);
         next.delete(bookingId);
         return next;
@@ -232,6 +262,7 @@ export default function AdminPromoDashboard() {
                 filteredBookings.map((b) => {
                   const isRegistered = registeredPhones.has(b.phone);
                   const isRegistering = registeringIds.has(b.id);
+                  const isDeleting = deletingIds.has(b.id);
 
                   return (
                     <tr key={b.id} className="border-b hover:bg-slate-50/50">
@@ -275,14 +306,28 @@ export default function AdminPromoDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <a 
-                          href={`https://wa.me/${b.phone.replace(/^0/, '62').replace(/^\+62/, '62')}?text=${encodeURIComponent(`Halo ${b.name},\n\nTerima kasih telah melakukan pendaftaran Promo Bekam Gratis di Navara Reflexology.\n\nBerikut adalah link E-Ticket Anda:\n${baseUrl}/promo/ticket/${b.id}\n\nSilakan tunjukkan E-Ticket ini kepada petugas kami saat kedatangan pada:\nTanggal: ${b.bookingDate}\nJam: ${b.bookingTime}\n\nSampai jumpa!`)}`} 
-                          target="_blank" 
-                          rel="noreferrer" 
-                          className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm"
-                        >
-                          <Send className="w-3.5 h-3.5" /> Kirim E-Ticket
-                        </a>
+                        <div className="flex items-center justify-center gap-2">
+                          <a 
+                            href={`https://wa.me/${b.phone.replace(/^0/, '62').replace(/^\+62/, '62')}?text=${encodeURIComponent(`Halo ${b.name},\n\nTerima kasih telah melakukan pendaftaran Promo Bekam Gratis di Navara Reflexology.\n\nBerikut adalah link E-Ticket Anda:\n${baseUrl}/promo/ticket/${b.id}\n\nSilakan tunjukkan E-Ticket ini kepada petugas kami saat kedatangan pada:\nTanggal: ${b.bookingDate}\nJam: ${b.bookingTime}\n\nSampai jumpa!`)}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="inline-flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                          >
+                            <Send className="w-3.5 h-3.5" /> Kirim E-Ticket
+                          </a>
+                          <button
+                            onClick={() => handleDeleteBooking(b.id, b.name)}
+                            disabled={isDeleting}
+                            title="Hapus Data"
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 transition-colors disabled:opacity-50"
+                          >
+                            {isDeleting ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
