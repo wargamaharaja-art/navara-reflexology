@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { promoBookings } from "@/lib/db/schema";
+import { promoBookings, patients } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { sendWhatsAppNotification } from "@/lib/whatsapp";
@@ -44,13 +44,36 @@ export async function POST(request: Request) {
       })
       .where(eq(promoBookings.id, bookingId));
 
+    // === AUTO-REGISTER PASIEN KE BUKU PASIEN ===
+    // Cek apakah pasien dengan nomor telepon ini sudah terdaftar
+    const existingPatient = await db
+      .select()
+      .from(patients)
+      .where(eq(patients.phone, phone))
+      .limit(1);
+
+    let patientRegistered = false;
+    if (existingPatient.length === 0) {
+      // Pasien belum terdaftar, buat record baru
+      const patientId = `P-PROMO-${Date.now()}`;
+      await db.insert(patients).values({
+        id: patientId,
+        name,
+        phone,
+        address: null,
+        gender: booking.gender,
+      });
+      patientRegistered = true;
+    }
+
     // Kirim WhatsApp (Asynchronous)
     const waMessage = `Assalamu'alaikum Kak ${name},\n\nTerima kasih telah mendaftar Promo Grand Opening Bekam Gratis di Navara Reflexology.\n\nDetail Reservasi:\nTanggal: ${booking.bookingDate}\nJam: ${booking.bookingTime}\nTiket: ${ticketCode}\n\nMohon tunjukkan pesan ini atau E-Ticket saat kedatangan.\nSemoga sehat selalu!`;
     sendWhatsAppNotification(phone, waMessage).catch(console.error);
 
     return NextResponse.json({ 
       success: true, 
-      ticketCode 
+      ticketCode,
+      patientRegistered,
     });
   } catch (error) {
     console.error("POST /api/promo/confirm error:", error);
