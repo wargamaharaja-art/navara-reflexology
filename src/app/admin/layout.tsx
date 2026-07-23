@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Gift } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -225,6 +225,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const navLinks = [
               { name: "Dashboard", href: "/admin", icon: TrendingUp },
               { name: "Reservasi Online", href: "/admin/reservations", icon: Inbox },
+              { name: "Promo Bekam Gratis", href: "/admin/promo", icon: Gift },
               { name: "Buku Pasien", href: "/admin/visits", icon: CalendarCheck },
               { name: "Transaksi Pelanggan", href: "/admin/transactions", icon: BookOpen },
               { name: "Layanan Terapi", href: "/admin/services", icon: Activity },
