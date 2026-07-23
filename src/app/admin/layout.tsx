@@ -277,6 +277,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
+              if (link.name === "Promo Bekam Gratis") return perms.includes("RESERVASI_ONLINE") || session?.role === "SUPER_ADMIN";
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
