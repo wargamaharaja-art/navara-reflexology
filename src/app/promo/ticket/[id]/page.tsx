@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { promoBookings } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
@@ -13,7 +13,12 @@ export default async function PromoTicketPage({ params }: { params: Promise<{ id
   const bookings = await db
     .select()
     .from(promoBookings)
-    .where(eq(promoBookings.ticketCode, ticketCode))
+    .where(
+      or(
+        eq(promoBookings.ticketCode, ticketCode),
+        eq(promoBookings.id, ticketCode)
+      )
+    )
     .limit(1);
 
   if (bookings.length === 0) {
@@ -42,10 +47,10 @@ export default async function PromoTicketPage({ params }: { params: Promise<{ id
         {/* Ticket Body */}
         <div className="p-8 text-neutral-900 bg-white flex flex-col items-center">
           <div className="bg-neutral-100 p-4 rounded-2xl mb-6">
-            <QRCodeSVG value={ticketCode} size={180} level="M" />
+            <QRCodeSVG value={booking.ticketCode || ticketCode} size={180} level="M" />
           </div>
           
-          <h2 className="text-2xl font-bold mb-6 tracking-wide text-emerald-700">{ticketCode}</h2>
+          <h2 className="text-2xl font-bold mb-6 tracking-wide text-emerald-700">{booking.ticketCode || ticketCode}</h2>
 
           <div className="w-full space-y-4 text-left border-t border-neutral-100 pt-6">
             <div>
