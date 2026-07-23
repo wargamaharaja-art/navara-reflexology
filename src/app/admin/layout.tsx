@@ -82,13 +82,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             console.error("Failed to fetch pending count", e);
           }
 
-          // If Super Admin, fetch branches for switcher
-          if (data.session.role === "SUPER_ADMIN") {
+          // Fetch branches for branch name lookups and switcher
+          try {
             const branchesRes = await fetch("/api/branches");
             if (branchesRes.ok) {
               const branchesData = await branchesRes.json();
               setBranches(branchesData.data || []);
             }
+          } catch (e) {
+            console.error("Failed to fetch branches", e);
           }
         } else {
           router.push("/admin/login");
@@ -277,7 +279,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
-              if (link.name === "Promo Bekam Gratis") return perms.includes("RESERVASI_ONLINE") || session?.role === "SUPER_ADMIN";
+              
+              if (link.name === "Promo Bekam Gratis") {
+                const hasPermission = perms.includes("RESERVASI_ONLINE") || session?.role === "SUPER_ADMIN";
+                if (!hasPermission) return false;
+                
+                const activeBranchId = (session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") ? selectedBranch : session?.branchId;
+                const isJatiasih = activeBranchId === "ALL" || branches.some(b => b.id === activeBranchId && b.name.toLowerCase().includes("jatiasih"));
+                return isJatiasih;
+              }
+
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional

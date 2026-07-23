@@ -23,6 +23,7 @@ export default function AdminPromoDashboard() {
   const [registeringIds, setRegisteringIds] = useState<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [baseUrl, setBaseUrl] = useState("");
+  const [isJatiasih, setIsJatiasih] = useState<boolean | null>(null);
 
   // Fetch bookings data
   const fetchBookings = useCallback(async () => {
@@ -58,6 +59,36 @@ export default function AdminPromoDashboard() {
   useEffect(() => {
     setBaseUrl(window.location.origin);
     fetchBookings();
+    
+    // Check if the current branch is Jatiasih
+    const checkAccess = async () => {
+      try {
+        const [sessionRes, branchesRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/branches")
+        ]);
+        
+        if (sessionRes.ok && branchesRes.ok) {
+          const sessionData = await sessionRes.json();
+          const branchesData = await branchesRes.json();
+          const s = sessionData.session;
+          const b = branchesData.data || [];
+          
+          const match = document.cookie.match(new RegExp('(^| )navara-selected-branch=([^;]+)'));
+          const selectedBranch = match ? match[2] : "ALL";
+          
+          const activeBranchId = (s?.role === "SUPER_ADMIN" || s?.role === "INVESTOR") ? selectedBranch : s?.branchId;
+          const isValid = activeBranchId === "ALL" || b.some((branch: any) => branch.id === activeBranchId && branch.name.toLowerCase().includes("jatiasih"));
+          
+          setIsJatiasih(isValid);
+        } else {
+          setIsJatiasih(false);
+        }
+      } catch (err) {
+        setIsJatiasih(false);
+      }
+    };
+    checkAccess();
   }, [fetchBookings]);
 
   useEffect(() => {
@@ -177,12 +208,23 @@ export default function AdminPromoDashboard() {
   const totalRegistered = bookings.filter(b => registeredPhones.has(b.phone)).length;
   const totalUnregistered = bookings.length - totalRegistered;
 
-  if (loading) {
+  if (loading || isJatiasih === null) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
           <p className="text-sm text-slate-500">Memuat data promo...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isJatiasih === false) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="bg-red-50 text-red-600 p-8 rounded-xl text-center max-w-md border border-red-100">
+          <h2 className="text-xl font-bold mb-2">Akses Ditolak</h2>
+          <p className="text-sm">Fitur Promo Bekam Gratis ini hanya berlaku dan dapat diakses khusus untuk <b>Cabang Jatiasih</b>. Silakan ganti cabang aktif Anda ke Cabang Jatiasih untuk melihat data ini.</p>
         </div>
       </div>
     );
