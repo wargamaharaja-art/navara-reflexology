@@ -47,6 +47,7 @@ export async function GET(request: Request) {
       operationalHours.push(`${hourStr}:00`);
       operationalHours.push(`${hourStr}:30`);
     }
+    operationalHours.push("21:00");
 
     // Initialize all slots
     for (const time of operationalHours) {
