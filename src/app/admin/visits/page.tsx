@@ -173,6 +173,14 @@ export default function AdminVisitsPage() {
   // Patient History Modal State
   const [selectedPatientHistoryId, setSelectedPatientHistoryId] = useState<string | null>(null);
 
+  // Retention States
+  const [retentionData, setRetentionData] = useState<any[]>([]);
+  const [retentionPage, setRetentionPage] = useState(1);
+  const [retentionTotalPages, setRetentionTotalPages] = useState(1);
+  const [retentionLoading, setRetentionLoading] = useState(false);
+  const [retentionBadgeCount, setRetentionBadgeCount] = useState(0);
+  const retentionItemsPerPage = 15;
+
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
@@ -383,65 +391,85 @@ export default function AdminVisitsPage() {
       fetchInvoiceHistory();
     }
   }, [activeTab, historyDate, fetchInvoiceHistory]);
-  const retentionPatients = useMemo(() => {
-    const today = new Date();
-    // 14 days in milliseconds
-    const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
-    
-    // Create a map of patient's latest visit
-    const latestVisits = new Map<string, Date>();
-    visits.forEach(v => {
-      const visitDate = new Date(v.visitDate);
-      if (!latestVisits.has(v.patientId) || visitDate > latestVisits.get(v.patientId)!) {
-        latestVisits.set(v.patientId, visitDate);
+  const fetchRetentionData = useCallback(async (page: number) => {
+    setRetentionLoading(true);
+    try {
+      const res = await fetch(`/api/patients/retention?page=${page}&limit=${retentionItemsPerPage}`);
+      if (res.ok) {
+        const json = await res.json();
+        setRetentionData(json.data || []);
+        setRetentionTotalPages(json.pagination?.totalPages || 1);
       }
-    });
+    } catch (err) {
+      console.error("Failed to fetch retention data:", err);
+    } finally {
+      setRetentionLoading(false);
+    }
+  }, [retentionItemsPerPage]);
 
-    const retentionList: Array<{patient: any, lastVisitDate: Date, daysSinceLastVisit: number}> = [];
-
-    patients.forEach(p => {
-      const lastVisit = latestVisits.get(p.id);
-      if (lastVisit) {
-        const diffMs = today.getTime() - lastVisit.getTime();
-        if (diffMs > fourteenDaysMs) {
-          retentionList.push({
-            patient: p,
-            lastVisitDate: lastVisit,
-            daysSinceLastVisit: Math.floor(diffMs / (1000 * 60 * 60 * 24))
-          });
-        }
+  const fetchRetentionBadgeCount = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/patients/retention?countOnly=true`);
+      if (res.ok) {
+        const json = await res.json();
+        setRetentionBadgeCount(json.total || 0);
       }
-    });
+    } catch (err) {
+      console.error("Failed to fetch retention count:", err);
+    }
+  }, []);
 
-    // Sort by days since last visit descending (longest absent first)
-    return retentionList.sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit);
-  }, [visits, patients]);
+  useEffect(() => {
+    // Fetch badge count on mount
+    fetchRetentionBadgeCount();
+  }, [fetchRetentionBadgeCount]);
 
-  const handleExportExcel = () => {
-    const data = retentionPatients.map((rp, idx) => ({
-      "No": idx + 1,
-      "Nama Pasien": rp.patient.name,
-      "No. Telepon / WA": rp.patient.phone,
-      "Kunjungan Terakhir": rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
-      "Lama Absen (Hari)": rp.daysSinceLastVisit
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Follow-up & Retensi");
-    XLSX.writeFile(workbook, `Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.xlsx`);
+  useEffect(() => {
+    if (activeTab === "retention") {
+      fetchRetentionData(retentionPage);
+    }
+  }, [activeTab, retentionPage, fetchRetentionData]);
+
+  const handleExportExcel = async () => {
+    // For export, we fetch all retention data or a very large limit to get the full list
+    try {
+      const res = await fetch(`/api/patients/retention?page=1&limit=1000`);
+      if (res.ok) {
+        const json = await res.json();
+        const dataToExport = json.data || [];
+        const data = dataToExport.map((rp: any, idx: number) => ({
+          "No": idx + 1,
+          "Nama Pasien": rp.patient.name,
+          "No. Telepon / WA": rp.patient.phone,
+          "Kunjungan Terakhir": new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+          "Lama Absen (Hari)": rp.daysSinceLastVisit
+        }));
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Follow-up & Retensi");
+        XLSX.writeFile(workbook, `Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.xlsx`);
+      }
+    } catch(err) {
+      alert("Gagal mengunduh excel");
+    }
   };
 
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    doc.text("Laporan Follow-up & Retensi Pasien", 14, 15);
+  const handleExportPDF = async () => {
+    try {
+      const res = await fetch(`/api/patients/retention?page=1&limit=1000`);
+      if (res.ok) {
+        const json = await res.json();
+        const dataToExport = json.data || [];
+        const doc = new jsPDF();
+        doc.text("Laporan Follow-up & Retensi Pasien", 14, 15);
     doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 22);
 
     const tableColumn = ["No", "Nama Pasien", "No. Telepon / WA", "Kunjungan Terakhir", "Lama Absen (Hari)"];
-    const tableRows = retentionPatients.map((rp, idx) => [
+    const tableRows = dataToExport.map((rp: any, idx: number) => [
       idx + 1,
       rp.patient.name,
       rp.patient.phone,
-      rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
+      new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
       rp.daysSinceLastVisit
     ]);
 
@@ -452,6 +480,10 @@ export default function AdminVisitsPage() {
     });
 
     doc.save(`Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.pdf`);
+      }
+    } catch(err) {
+      alert("Gagal mengunduh pdf");
+    }
   };
 
   const handlePOSPhoneChange = (val: string) => {
@@ -1442,9 +1474,9 @@ export default function AdminVisitsPage() {
           >
             <MessageCircle className="w-4 h-4" />
             Follow-up & Retensi
-            {retentionPatients.length > 0 && (
+            {retentionBadgeCount > 0 && (
               <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1">
-                {retentionPatients.length}
+                {retentionBadgeCount}
               </span>
             )}
           </button>
@@ -2554,7 +2586,7 @@ export default function AdminVisitsPage() {
                   <Download className="w-4 h-4" /> PDF
                 </button>
                 <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm flex items-center">
-                  Total: {retentionPatients.length} Pasien
+                  Total: {retentionBadgeCount} Pasien
                 </div>
               </div>
             </div>
@@ -2570,7 +2602,16 @@ export default function AdminVisitsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {retentionPatients.length === 0 ? (
+                  {retentionLoading ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-12 text-center text-gray-400">
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                          Sedang memuat data...
+                        </div>
+                      </td>
+                    </tr>
+                  ) : retentionData.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center">
                         <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
@@ -2581,7 +2622,7 @@ export default function AdminVisitsPage() {
                       </td>
                     </tr>
                   ) : (
-                    retentionPatients.map((rp, idx) => (
+                    retentionData.map((rp, idx) => (
                       <tr key={idx} className="hover:bg-orange-50/20 transition-colors">
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900">{rp.patient.name}</div>
@@ -2590,7 +2631,7 @@ export default function AdminVisitsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-gray-700">
-                          {rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${
@@ -2615,6 +2656,18 @@ export default function AdminVisitsPage() {
                 </tbody>
               </table>
             </div>
+
+            {!retentionLoading && retentionTotalPages > 1 && (
+              <div className="p-6 border-t border-gray-100 flex justify-center bg-gray-50/50">
+                <Pagination
+                  currentPage={retentionPage}
+                  totalPages={retentionTotalPages}
+                  onPageChange={setRetentionPage}
+                  totalItems={retentionBadgeCount}
+                  itemsPerPage={retentionItemsPerPage}
+                />
+              </div>
+            )}
           </div>
         )}
            {posModalOpen && (
