@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Send, UserPlus, CheckCircle2, Search, RefreshCw, Loader2, Trash2 } from "lucide-react";
 
 type PromoBooking = {
@@ -110,9 +111,9 @@ export default function AdminPromoDashboard() {
       if (res.ok) {
         const data = await res.json();
         if (data.alreadyRegistered) {
-          alert("Pasien sudah terdaftar di Buku Pasien.");
+          alert("Pasien sudah terdaftar di Master Data Pasien. Silakan ke menu Buku Pasien -> + Catat Kunjungan.");
         } else {
-          alert("✅ Pasien berhasil didaftarkan ke Buku Pasien!");
+          alert("✅ Pasien berhasil didaftarkan ke Master Data! Silakan ke menu Buku Pasien dan klik '+ Catat Kunjungan' untuk menjadwalkan terapinya.");
         }
         // Refresh data
         await checkRegisteredPatients(bookings);
@@ -188,7 +189,7 @@ export default function AdminPromoDashboard() {
       }
     }
 
-    alert(`✅ ${successCount} pasien baru berhasil didaftarkan ke Buku Pasien!`);
+    alert(`✅ ${successCount} pasien baru berhasil didaftarkan ke Master Data! Selanjutnya silakan ke menu Buku Pasien -> + Catat Kunjungan untuk menjadwalkan terapinya.`);
     await checkRegisteredPatients(bookings);
   };
 
@@ -330,9 +331,17 @@ export default function AdminPromoDashboard() {
                       </td>
                       <td className="px-6 py-4">
                         {isRegistered ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-                            <CheckCircle2 className="w-3 h-3" /> Terdaftar
-                          </span>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                              <CheckCircle2 className="w-3 h-3" /> Terdaftar
+                            </span>
+                            <Link
+                              href={`/admin/visits?promo=true&phone=${b.phone}`}
+                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap bg-blue-50 px-2 py-1 rounded border border-blue-100 transition-colors"
+                            >
+                              + Buat Kunjungan
+                            </Link>
+                          </div>
                         ) : (
                           <button
                             onClick={() => handleRegisterPatient(b.id)}

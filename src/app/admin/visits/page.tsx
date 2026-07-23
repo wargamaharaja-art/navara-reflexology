@@ -641,6 +641,44 @@ export default function AdminVisitsPage() {
     }
   }, []);
 
+  // Handle promo redirect query parameters to auto-fill form
+  useEffect(() => {
+    if (typeof window !== "undefined" && !loading && branches.length > 0 && services.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const isPromo = params.get("promo");
+      const phoneParam = params.get("phone");
+      
+      if (isPromo === "true" && phoneParam) {
+        setIsFormOpen(true);
+        const patient = patients.find(p => p.phone === phoneParam);
+        const jatiasih = branches.find(b => b.name.toLowerCase().includes("jatiasih"));
+        
+        // Find a specific "Bekam Gratis" service, or fallback to any "Bekam" service
+        const bekamGratisService = services.find(s => s.name.toLowerCase().includes("bekam gratis"));
+        const bekamService = bekamGratisService || services.find(s => s.name.toLowerCase().includes("bekam"));
+        
+        setFormData(prev => ({
+          ...prev,
+          phone: phoneParam,
+          name: patient ? patient.name : "",
+          gender: patient ? (patient.gender || "L") : "L",
+          address: patient ? (patient.address || "") : "",
+          branchId: jatiasih ? jatiasih.id : prev.branchId,
+        }));
+        
+        if (bekamService) {
+          setSelectedServices([bekamService.id]);
+        }
+        
+        // Remove params from URL to prevent reopening on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete("promo");
+        url.searchParams.delete("phone");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, [loading, branches, services, patients]);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (typeof window !== "undefined") {
