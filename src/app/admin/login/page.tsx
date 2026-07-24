@@ -108,7 +108,7 @@ export default function AdminLoginPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <div className="bg-white rounded-[20px] p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-center justify-center" style={{ width: '60px', height: '60px' }}>
-            <span className="text-emerald-700 font-black text-2xl">M</span>
+            <Image src="/maharaja-logo.png" alt="Maharaja Group" width={44} height={44} className="w-[44px] h-[44px] object-contain" />
           </div>
           <span className="text-white text-2xl font-black tracking-tight">Maharaja Group</span>
         </motion.div>
@@ -182,7 +182,7 @@ export default function AdminLoginPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
            <div className="bg-white rounded-2xl p-2 shadow-sm border border-emerald-100 flex items-center justify-center" style={{ width: '48px', height: '48px' }}>
-             <span className="text-emerald-700 font-black text-xl">M</span>
+             <Image src="/maharaja-logo.png" alt="Maharaja Group" width={32} height={32} className="w-8 h-8 object-contain" />
            </div>
            <span className="text-emerald-900 text-xl font-black tracking-tight">Maharaja Group</span>
         </motion.div>

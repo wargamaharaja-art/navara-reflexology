@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Gift } from "lucide-react";
+import Image from "next/image";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -194,11 +195,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         md:sticky md:top-0 md:h-screen md:translate-x-0
       `}>
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
-          <Link href="/admin" className="hover:opacity-90 transition-opacity">
-            <h1 className="text-2xl md:text-3xl font-bold">
-              <span className="text-white">Maharaja</span>{" "}
-              <span className="text-emerald-400">Group</span><br className="hidden md:block" />
-              <span className="text-white/60 font-normal text-sm md:text-base mt-1 md:block">Admin Panel</span>
+          <Link href="/admin" className="hover:opacity-90 transition-opacity flex items-center gap-3">
+            <div className="bg-white rounded-lg p-1.5 shadow-md flex items-center justify-center">
+              <Image src="/maharaja-logo.png" alt="Maharaja Group Logo" width={40} height={40} className="w-10 h-10 object-contain" />
+            </div>
+            <h1 className="text-xl md:text-2xl font-bold leading-tight">
+              <span className="text-white">Maharaja</span><br />
+              <span className="text-emerald-400">Group</span>
             </h1>
           </Link>
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-background/80 hover:text-white">
