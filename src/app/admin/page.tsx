@@ -302,9 +302,9 @@ export default function AdminDashboard() {
             >
               <div className="hidden md:flex flex-col mb-8">
             {/* Laba Bersih Highlight Card */}
-            <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 rounded-[28px] p-8 shadow-sm border border-emerald-500/30 relative overflow-hidden mb-6 flex justify-between items-center group">
+            <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 rounded-[28px] p-8 shadow-sm border border-emerald-500/30 relative overflow-hidden mb-6 flex justify-between items-center group">
               <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-400/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
               
               <div className="relative z-10 w-1/2">
                 <p className="text-emerald-100 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-2 flex items-center gap-2">

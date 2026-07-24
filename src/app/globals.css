@@ -14,6 +14,18 @@
   --color-input: #e2e8f0;
   --color-ring: #059669;
   --radius: 0.5rem;
+  
+  --color-emerald-50: var(--theme-emerald-50, #ecfdf5);
+  --color-emerald-100: var(--theme-emerald-100, #d1fae5);
+  --color-emerald-200: var(--theme-emerald-200, #a7f3d0);
+  --color-emerald-300: var(--theme-emerald-300, #6ee7b7);
+  --color-emerald-400: var(--theme-emerald-400, #34d399);
+  --color-emerald-500: var(--theme-emerald-500, #10b981);
+  --color-emerald-600: var(--theme-emerald-600, #059669);
+  --color-emerald-700: var(--theme-emerald-700, #047857);
+  --color-emerald-800: var(--theme-emerald-800, #065f46);
+  --color-emerald-900: var(--theme-emerald-900, #064e3b);
+  --color-emerald-950: var(--theme-emerald-950, #022c22);
 }
 
 :root {

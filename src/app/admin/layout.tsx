@@ -173,43 +173,43 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <>
       <style dangerouslySetInnerHTML={{ __html: `
         .theme-radja-bekam {
-          --color-emerald-50: var(--color-blue-50);
-          --color-emerald-100: var(--color-blue-100);
-          --color-emerald-200: var(--color-blue-200);
-          --color-emerald-300: var(--color-blue-300);
-          --color-emerald-400: var(--color-amber-400);
-          --color-emerald-500: var(--color-blue-500);
-          --color-emerald-600: var(--color-blue-600);
-          --color-emerald-700: var(--color-blue-700);
-          --color-emerald-800: var(--color-blue-800);
-          --color-emerald-900: var(--color-blue-900);
-          --color-emerald-950: var(--color-blue-950);
+          --theme-emerald-50: var(--color-blue-50);
+          --theme-emerald-100: var(--color-blue-100);
+          --theme-emerald-200: var(--color-blue-200);
+          --theme-emerald-300: var(--color-blue-300);
+          --theme-emerald-400: var(--color-amber-400);
+          --theme-emerald-500: var(--color-blue-500);
+          --theme-emerald-600: var(--color-blue-600);
+          --theme-emerald-700: var(--color-blue-700);
+          --theme-emerald-800: var(--color-blue-800);
+          --theme-emerald-900: var(--color-blue-900);
+          --theme-emerald-950: var(--color-blue-950);
         }
         .theme-navara {
-          --color-emerald-50: #ecfdf5;
-          --color-emerald-100: #d1fae5;
-          --color-emerald-200: #a7f3d0;
-          --color-emerald-300: #6ee7b7;
-          --color-emerald-400: #34d399;
-          --color-emerald-500: #10b981;
-          --color-emerald-600: #059669;
-          --color-emerald-700: #047857;
-          --color-emerald-800: #065f46;
-          --color-emerald-900: #064e3b;
-          --color-emerald-950: #022c22;
+          --theme-emerald-50: #ecfdf5;
+          --theme-emerald-100: #d1fae5;
+          --theme-emerald-200: #a7f3d0;
+          --theme-emerald-300: #6ee7b7;
+          --theme-emerald-400: #34d399;
+          --theme-emerald-500: #10b981;
+          --theme-emerald-600: #059669;
+          --theme-emerald-700: #047857;
+          --theme-emerald-800: #065f46;
+          --theme-emerald-900: #064e3b;
+          --theme-emerald-950: #022c22;
         }
         .theme-maharaja {
-          --color-emerald-50: var(--color-slate-50);
-          --color-emerald-100: var(--color-slate-100);
-          --color-emerald-200: var(--color-slate-200);
-          --color-emerald-300: var(--color-amber-300);
-          --color-emerald-400: var(--color-amber-400);
-          --color-emerald-500: var(--color-amber-500);
-          --color-emerald-600: var(--color-slate-700);
-          --color-emerald-700: var(--color-slate-800);
-          --color-emerald-800: var(--color-slate-900);
-          --color-emerald-900: #0f172a;
-          --color-emerald-950: #020617;
+          --theme-emerald-50: var(--color-slate-50);
+          --theme-emerald-100: var(--color-slate-100);
+          --theme-emerald-200: var(--color-slate-200);
+          --theme-emerald-300: var(--color-amber-300);
+          --theme-emerald-400: var(--color-amber-400);
+          --theme-emerald-500: var(--color-amber-500);
+          --theme-emerald-600: var(--color-slate-700);
+          --theme-emerald-700: var(--color-slate-800);
+          --theme-emerald-800: var(--color-slate-900);
+          --theme-emerald-900: #0f172a;
+          --theme-emerald-950: #020617;
         }
       `}} />
       <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${selectedBranch === 'ALL' ? 'theme-maharaja' : isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
