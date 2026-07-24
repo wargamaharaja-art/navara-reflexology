@@ -20,12 +20,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Maharaja Group - Admin Dashboard",
-  description: "Management System for Maharaja Group",
+  title: "Navara Reflexology - Admin Dashboard",
+  description: "Management System for Navara Reflexology",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Maharaja Group",
+    title: "Navara Reflexology",
   },
   manifest: "/manifest.json",
   formatDetection: {
