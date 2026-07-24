@@ -185,7 +185,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           --color-emerald-950: #022c22;
         }
       `}} />
-      <div className={\`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 \${isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}\`}>
+      <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
