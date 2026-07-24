@@ -131,19 +131,19 @@ export default function AdminLoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
           >
-            Platform manajemen klinik modern<br className="hidden xl:block" />
-            yang membantu operasional lebih cepat,<br className="hidden xl:block" />
-            aman, dan efisien.
+            Platform manajemen holding group<br className="hidden xl:block" />
+            yang menaungi Navara Reflexology<br className="hidden xl:block" />
+            dan Radja Bekam.
           </motion.p>
         </div>
 
         {/* Feature List */}
         <div className="relative z-10 space-y-4">
           {[
-            "Reservasi Real-time",
-            "Kelola Terapis",
-            "Laporan Otomatis",
-            "Multi Cabang"
+            "Navara Reflexology",
+            "Radja Bekam",
+            "Multi Cabang",
+            "Laporan Terpusat"
           ].map((feature, i) => (
             <motion.div 
               key={i}
@@ -204,7 +204,7 @@ export default function AdminLoginPage() {
               Admin Dashboard
             </h2>
             <p className="text-[#475467] text-[16px] md:text-[18px] leading-relaxed max-w-[420px] mx-auto md:mx-0">
-              Masuk untuk mengelola seluruh<br className="hidden sm:block" /> operasional cabang Maharaja Group.
+              Masuk untuk mengelola seluruh operasional<br className="hidden sm:block" /> Navara Reflexology & Radja Bekam.
             </p>
           </motion.div>
 
