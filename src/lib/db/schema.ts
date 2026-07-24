@@ -6,6 +6,7 @@ import { pgTable, text, integer, boolean, json, index } from "drizzle-orm/pg-cor
 export const branches = pgTable("branches", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  brand: text("brand", { enum: ["RADJA_BEKAM", "NAVARA"] }).notNull().default("NAVARA"),
   address: text("address").notNull(),
   phone: text("phone").notNull(),
   whatsappNumber: text("whatsapp_number").notNull(),
@@ -25,7 +26,7 @@ export const services = pgTable("services", {
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
   globalCommission: integer("global_commission").notNull().default(0),
-  category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
+  category: text("category", { enum: ["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On", "Mcu"] }).notNull().default("Paket Treatment"),
   branchId: text("branch_id").references(() => branches.id),
   isActive: boolean("is_active").notNull().default(true),
 }, (table) => ({

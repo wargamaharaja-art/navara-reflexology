@@ -164,8 +164,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity">
             <h1 className="text-2xl md:text-3xl font-bold">
-              <span className="text-white">Navara</span>{" "}
-              <span className="text-emerald-400">Reflexology</span><br className="hidden md:block" />
+              <span className="text-white">Maharaja</span>{" "}
+              <span className="text-emerald-400">Group</span><br className="hidden md:block" />
               <span className="text-white/60 font-normal text-sm md:text-base mt-1 md:block">Admin Panel</span>
             </h1>
           </Link>
@@ -206,8 +206,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     className="w-full text-xs font-semibold bg-background/10 hover:bg-background/20 border border-background/25 text-background rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 transition-colors"
                   >
                     <option value="ALL" className="text-foreground bg-white">Semua Cabang (Pusat)</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id} className="text-foreground bg-white">{b.name}</option>
+                    {Array.from(new Set(branches.map(b => b.brand))).map(brand => (
+                      <optgroup key={brand} label={brand === 'RADJA_BEKAM' ? 'Radja Bekam' : 'Navara Reflexology'}>
+                        {branches.filter(b => b.brand === brand).map(b => (
+                          <option key={b.id} value={b.id} className="text-foreground bg-white">{b.name}</option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-background/60 pointer-events-none" />
