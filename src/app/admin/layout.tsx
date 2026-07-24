@@ -209,8 +209,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       `}>
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity flex items-center gap-3.5">
-            <div className="bg-white rounded-2xl p-2 shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30">
-              <Image src={selectedBranch === "ALL" ? "/maharaja-logo.jpg" : "/navara-logo.png"} alt={selectedBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={42} height={42} className="w-10 h-10 object-contain drop-shadow-sm" />
+            <div className={`bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30 overflow-hidden ${selectedBranch === "ALL" ? "p-0 w-[56px] h-[56px]" : "p-2"}`}>
+              <Image src={selectedBranch === "ALL" ? "/maharaja-logo.jpg" : "/navara-logo.png"} alt={selectedBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={56} height={56} className={`${selectedBranch === "ALL" ? "w-full h-full object-cover scale-[1.15]" : "w-10 h-10 object-contain drop-shadow-sm"}`} />
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold leading-tight">
