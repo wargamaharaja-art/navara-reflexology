@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star, MapPin, Store } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -354,7 +355,16 @@ export default function AdminDashboard() {
           )}
 
           {/* Desktop KPI Cards (Mockup Style) */}
-          <div className="hidden md:flex flex-col mb-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={filterBranch}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="w-full flex flex-col space-y-4 md:space-y-6"
+            >
+              <div className="hidden md:flex flex-col mb-8">
             {/* Laba Bersih Highlight Card */}
             <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-800 rounded-[28px] p-8 shadow-sm border border-emerald-500/30 relative overflow-hidden mb-6 flex justify-between items-center group">
               <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
@@ -1017,6 +1027,8 @@ export default function AdminDashboard() {
               </div>
             )}
           </div>
+            </motion.div>
+          </AnimatePresence>
 
         </div>
       </div>
