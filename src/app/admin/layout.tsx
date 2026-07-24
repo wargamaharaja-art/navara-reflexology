@@ -210,7 +210,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity flex items-center gap-3.5">
             <div className="bg-white rounded-2xl p-2 shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30">
-              <Image src="/navara-logo.png" alt={selectedBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={42} height={42} className="w-10 h-10 object-contain drop-shadow-sm" />
+              <Image src={selectedBranch === "ALL" ? "/maharaja-logo.jpg" : "/navara-logo.png"} alt={selectedBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={42} height={42} className="w-10 h-10 object-contain drop-shadow-sm" />
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold leading-tight">
