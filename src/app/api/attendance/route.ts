@@ -80,7 +80,7 @@ export async function POST(request: Request) {
       }
 
       // Enforce branch context for branch admin
-      if (session.role === "BRANCH_ADMIN" && branchId !== session.branchId) {
+      if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && branchId !== session.branchId) {
         continue;
       }
 

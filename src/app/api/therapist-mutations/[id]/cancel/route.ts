@@ -34,7 +34,7 @@ export async function PUT(
     }
 
     // BRANCH_ADMIN can only cancel their own requests
-    if (session.role === "BRANCH_ADMIN" && m.requestedBy !== session.id) {
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && m.requestedBy !== session.id) {
       return NextResponse.json({ error: "Anda hanya bisa membatalkan surat mutasi yang Anda buat sendiri" }, { status: 403 });
     }
 

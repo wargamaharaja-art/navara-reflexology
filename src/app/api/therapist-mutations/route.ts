@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     }
 
     // BRANCH_ADMIN: only see mutations related to their branch
-    if (session.role === "BRANCH_ADMIN" && session.branchId) {
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && session.branchId) {
       conditions.push(
         or(
           eq(therapistMutations.fromBranchId, session.branchId),
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
     }
 
     // Check branch access for BRANCH_ADMIN
-    if (session.role === "BRANCH_ADMIN" && session.branchId && therapist.branchId !== session.branchId) {
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && session.branchId && therapist.branchId !== session.branchId) {
       return NextResponse.json({ error: "Anda hanya bisa memutasi terapis dari cabang Anda" }, { status: 403 });
     }
 

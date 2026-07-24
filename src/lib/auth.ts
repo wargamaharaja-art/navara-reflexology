@@ -126,7 +126,7 @@ export async function getActiveBranchFilter(): Promise<string | null> {
   const session = await getSession();
   if (!session) return null;
 
-  if (session.role === "BRANCH_ADMIN") {
+  if (session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") {
     return session.branchId;
   }
 

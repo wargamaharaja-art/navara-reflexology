@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const therapist = therapistQuery[0];
 
     // Check branch (optional: restrict if they must be at their assigned branch)
-    if (session.role === "BRANCH_ADMIN" && branchId !== session.branchId) {
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && branchId !== session.branchId) {
       return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk cabang Anda." }, { status: 403 });
     }
 

@@ -64,7 +64,7 @@ export async function GET(
       .limit(1);
 
     // Access control
-    if (session.role === "BRANCH_ADMIN" && session.branchId) {
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && session.branchId) {
       if (m.fromBranchId !== session.branchId && m.toBranchId !== session.branchId) {
         return NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke surat mutasi ini" }, { status: 403 });
       }

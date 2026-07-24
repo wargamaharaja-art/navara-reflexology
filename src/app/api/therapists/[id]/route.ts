@@ -53,7 +53,7 @@ export async function PUT(
     }
 
     // Force branch for branch admin
-    const finalBranchId = session.role === "BRANCH_ADMIN" ? session.branchId : branchId;
+    const finalBranchId = (session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") ? session.branchId : branchId;
 
     const updatedTherapist = await db.update(therapists)
       .set({
