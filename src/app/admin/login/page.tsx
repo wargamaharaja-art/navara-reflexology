@@ -108,9 +108,9 @@ export default function AdminLoginPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
           <div className="bg-white rounded-[20px] p-2.5 shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-center justify-center" style={{ width: '60px', height: '60px' }}>
-            <Image src="/navara-logo.png" alt="Navara Logo" width={44} height={44} className="w-[44px] h-[44px] object-contain" />
+            <span className="text-emerald-700 font-black text-2xl">M</span>
           </div>
-          <span className="text-white text-2xl font-black tracking-tight">Navara Reflexology</span>
+          <span className="text-white text-2xl font-black tracking-tight">Maharaja Group</span>
         </motion.div>
 
         {/* Hero Text */}
@@ -182,9 +182,9 @@ export default function AdminLoginPage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
            <div className="bg-white rounded-2xl p-2 shadow-sm border border-emerald-100 flex items-center justify-center" style={{ width: '48px', height: '48px' }}>
-             <Image src="/navara-logo.png" alt="Navara Logo" width={32} height={32} className="w-8 h-8 object-contain" />
+             <span className="text-emerald-700 font-black text-xl">M</span>
            </div>
-           <span className="text-emerald-900 text-xl font-black tracking-tight">Navara Reflexology</span>
+           <span className="text-emerald-900 text-xl font-black tracking-tight">Maharaja Group</span>
         </motion.div>
 
         <div className="w-full max-w-[480px] relative z-10">
@@ -204,7 +204,7 @@ export default function AdminLoginPage() {
               Admin Dashboard
             </h2>
             <p className="text-[#475467] text-[16px] md:text-[18px] leading-relaxed max-w-[420px] mx-auto md:mx-0">
-              Masuk untuk mengelola seluruh<br className="hidden sm:block" /> operasional Navara Reflexology.
+              Masuk untuk mengelola seluruh<br className="hidden sm:block" /> operasional cabang Maharaja Group.
             </p>
           </motion.div>
 
