@@ -212,12 +212,14 @@ export default function AdminPromoDashboard() {
   const dateSlots = bookings.reduce((acc, booking) => {
     const date = booking.bookingDate;
     const time = booking.bookingTime;
+    const gender = booking.gender; // "L" or "P"
     if (date && time) {
       if (!acc[date]) acc[date] = {};
-      acc[date][time] = (acc[date][time] || 0) + 1;
+      if (!acc[date][time]) acc[date][time] = { L: 0, P: 0 };
+      acc[date][time][gender] += 1;
     }
     return acc;
-  }, {} as Record<string, Record<string, number>>);
+  }, {} as Record<string, Record<string, { L: number; P: number }>>);
 
   const sortedDates = Object.keys(dateSlots).sort((a, b) => a.localeCompare(b));
 
@@ -288,12 +290,19 @@ export default function AdminPromoDashboard() {
                 <div key={date} className="border rounded-lg p-3 bg-slate-50">
                   <div className="font-medium text-slate-700 mb-2 border-b pb-2">{date}</div>
                   <div className="flex flex-wrap gap-2">
-                    {sortedTimes.map(([time, count]) => (
-                      <div key={time} className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-md text-sm shadow-sm">
-                        <span className="font-semibold text-slate-600">{time}</span>
-                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-1.5 py-0.5 rounded">
-                          {count}
-                        </span>
+                    {sortedTimes.map(([time, counts]) => (
+                      <div key={time} className="flex items-center gap-1 bg-white border border-slate-200 pl-2.5 pr-1.5 py-1 rounded-md text-sm shadow-sm">
+                        <span className="font-semibold text-slate-600 mr-1">{time}</span>
+                        {counts.L > 0 && (
+                          <span title="Ikhwan" className="bg-emerald-100 text-emerald-700 text-xs font-bold px-1.5 py-0.5 rounded">
+                            {counts.L}
+                          </span>
+                        )}
+                        {counts.P > 0 && (
+                          <span title="Akhwat" className="bg-pink-100 text-pink-700 text-xs font-bold px-1.5 py-0.5 rounded">
+                            {counts.P}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
