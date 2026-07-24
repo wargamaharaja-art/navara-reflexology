@@ -51,10 +51,10 @@ export default function AccountingDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
-            <Link href="/admin/finance" className="bg-gray-100 p-2 rounded-xl text-gray-500 hover:text-emerald-600 hover:bg-teal-50 transition-colors">
+            <Link href="/admin/finance" className="bg-gray-100 p-2 rounded-xl text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="bg-teal-100 p-3 rounded-2xl text-emerald-600">
+            <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600">
               <BookOpen className="w-8 h-8" />
             </div>
             <div>
@@ -69,7 +69,7 @@ export default function AccountingDashboard() {
               type="month" 
               value={month} 
               onChange={e => setMonth(e.target.value)}
-              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
             />
             {month && (
               <button onClick={() => setMonth("")} className="text-xs text-red-500 hover:underline">Reset</button>
@@ -92,7 +92,7 @@ export default function AccountingDashboard() {
               className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                 activeTab === tab.id 
                   ? "bg-emerald-600 text-white shadow-md" 
-                  : "bg-white text-gray-600 hover:bg-teal-50 hover:text-emerald-600 border border-gray-200"
+                  : "bg-white text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 border border-gray-200"
               }`}
             >
               <tab.icon className="w-4 h-4" /> {tab.label}
@@ -112,10 +112,10 @@ export default function AccountingDashboard() {
                   <h3 className="text-2xl font-black text-emerald-900">{formatRupiah(m.grossProfit)}</h3>
                   <p className="text-emerald-600/70 text-xs mt-2">Pendapatan - HPP</p>
                 </div>
-                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5">
-                  <p className="text-teal-700 text-xs font-bold uppercase tracking-wider mb-1">Laba Bersih</p>
-                  <h3 className="text-2xl font-black text-teal-900">{formatRupiah(m.netIncome)}</h3>
-                  <p className="text-teal-600/70 text-xs mt-2">Laba Kotor - Beban Operasional</p>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+                  <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">Laba Bersih</p>
+                  <h3 className="text-2xl font-black text-emerald-900">{formatRupiah(m.netIncome)}</h3>
+                  <p className="text-emerald-600/70 text-xs mt-2">Laba Kotor - Beban Operasional</p>
                 </div>
                 <div className="bg-purple-50 border border-purple-100 rounded-2xl p-5">
                   <p className="text-purple-700 text-xs font-bold uppercase tracking-wider mb-1">Total Aset</p>
@@ -215,7 +215,7 @@ export default function AccountingDashboard() {
                 </div>
 
                 {/* Laba Bersih */}
-                <div className="flex justify-between py-4 px-4 bg-teal-600 text-white rounded-xl font-black text-xl shadow-lg">
+                <div className="flex justify-between py-4 px-4 bg-emerald-600 text-white rounded-xl font-black text-xl shadow-lg">
                   <span>LABA BERSIH</span>
                   <span>{formatRupiah(m.netIncome)}</span>
                 </div>
@@ -235,7 +235,7 @@ export default function AccountingDashboard() {
                 {/* KIRI: ASET */}
                 <div className="space-y-6">
                   <div>
-                    <h3 className="font-black text-lg text-emerald-900 border-b-2 border-teal-200 pb-2 mb-4 bg-teal-50/50 px-2 pt-2 rounded-t-lg">ASET (AKTIVA)</h3>
+                    <h3 className="font-black text-lg text-emerald-900 border-b-2 border-emerald-200 pb-2 mb-4 bg-emerald-50/50 px-2 pt-2 rounded-t-lg">ASET (AKTIVA)</h3>
                     {Object.values(data.balances).filter((a:any) => a.type === "ASSET" && a.balance !== 0).map((a:any, i) => (
                       <div key={i} className="flex justify-between py-2 px-2 border-b border-gray-100 hover:bg-gray-50">
                         <span className="text-gray-700">{a.name}</span>

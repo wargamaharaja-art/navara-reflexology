@@ -440,11 +440,11 @@ export default function AdminFinancePage() {
             <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
           </div>
           
-          <div className="bg-gradient-to-br from-primary to-teal-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
+          <div className="bg-gradient-to-br from-primary to-emerald-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
             <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
               <DollarSign className="h-32 w-32" />
             </div>
-            <div className="flex items-center gap-2 text-teal-100 font-medium mb-2 relative z-10">
+            <div className="flex items-center gap-2 text-emerald-100 font-medium mb-2 relative z-10">
               <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm"><Wallet className="h-5 w-5" /></div>
               Laba Bersih
             </div>
@@ -622,7 +622,7 @@ export default function AdminFinancePage() {
                     const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
                     
                     return (
-                      <tr key={t.id} className="hover:bg-teal-50/50 transition-colors group">
+                      <tr key={t.id} className="hover:bg-emerald-50/50 transition-colors group">
                         <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3"/> {formattedTime}</div>
@@ -636,11 +636,11 @@ export default function AdminFinancePage() {
                           </div>
                           <div className="md:hidden flex items-center gap-2 mt-1">
                             <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded capitalize">{t.category}</span>
-                            <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">{t.paymentMethod || "CASH"}</span>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{t.paymentMethod || "CASH"}</span>
                           </div>
 
                           <div className="flex gap-2 mt-1 items-center">
-                            {t.referenceId && <span className="text-xs text-teal-600">Ref: {t.referenceId}</span>}
+                            {t.referenceId && <span className="text-xs text-emerald-600">Ref: {t.referenceId}</span>}
                             {t.attachmentUrl && (
                               <a href={t.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-primary flex items-center gap-1 border border-gray-200 px-1.5 py-0.5 rounded-md bg-white">
                                 <LinkIcon className="w-3 h-3" /> Bukti
@@ -651,7 +651,7 @@ export default function AdminFinancePage() {
                         <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
                             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200 capitalize">{t.category}</span>
-                            <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+                            <span className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
                               <CreditCard className="w-3 h-3" /> {t.paymentMethod || "CASH"}
                             </span>
                           </div>

@@ -1041,9 +1041,9 @@ export default function AdminVisitsPage() {
 
                 {/* Service Selection Card */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-gray-100">
+                  <div className="px-6 py-4 bg-gradient-to-r from-emerald-50 to-emerald-50 border-b border-gray-100">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-teal-600" /> Pilih Layanan
+                      <Activity className="w-5 h-5 text-emerald-600" /> Pilih Layanan
                     </h3>
                   </div>
                   <div className="p-6">
@@ -1314,7 +1314,7 @@ export default function AdminVisitsPage() {
                     <button
                       type="submit"
                       disabled={posProcessing || posItems.length === 0 || totalPosPaid < posGrandTotal}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       {posProcessing ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1332,7 +1332,7 @@ export default function AdminVisitsPage() {
       ) : (
 <div className="max-w-lg mx-auto animate-in fade-in duration-300">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden text-center">
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-8 py-10 text-white">
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-8 py-10 text-white">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <Check className="w-8 h-8 text-white" />
                 </div>
@@ -1412,7 +1412,7 @@ export default function AdminVisitsPage() {
                   { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
                   { name: "Laporan", icon: FileText, action: () => handleTabChange("recap"), color: "text-orange-500", badge: "" },
                   { name: "Pasien", icon: Users, action: () => handleTabChange("retention"), color: "text-purple-500", badge: "" },
-                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-teal-500", badge: "" },
+                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-emerald-500", badge: "" },
                   { name: "POS", icon: Store, action: () => handleTabChange("pos"), color: "text-rose-500", badge: "" },
                 ].map((item, idx) => (
                   <button key={idx} onClick={item.action} className="flex flex-col items-center justify-start gap-1.5 relative group">
@@ -1524,7 +1524,7 @@ export default function AdminVisitsPage() {
         {isFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-5xl max-h-[90vh] overflow-y-auto relative transform transition-all animate-in zoom-in-95 duration-300">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-500 to-emerald-500 z-10"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-emerald-500 z-10"></div>
               
               <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-20">
               <div>
@@ -1542,7 +1542,7 @@ export default function AdminVisitsPage() {
                 {/* Kolom Kiri: Data Pasien */}
                 <div className="lg:col-span-5 space-y-5">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-teal-600 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
                       <User className="w-4 h-4"/> Data Pasien
                     </h4>
                     <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
@@ -1555,14 +1555,14 @@ export default function AdminVisitsPage() {
                       Nomor Telepon/WA <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative group">
-                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-teal-500' : 'text-gray-400 group-focus-within:text-teal-500'}`} />
-                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-teal-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-teal-400 focus:border-teal-500 text-teal-900' : 'border-gray-300 focus:border-teal-500 text-gray-900'}`} />
+                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-emerald-500' : 'text-gray-400 group-focus-within:text-emerald-500'}`} />
+                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-emerald-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-emerald-400 focus:border-emerald-500 text-emerald-900' : 'border-gray-300 focus:border-emerald-500 text-gray-900'}`} />
                       {patients.find(p => p.phone === formData.phone) && (
-                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-teal-500" />
+                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />
                       )}
                     </div>
                     {patients.find(p => p.phone === formData.phone) ? (
-                      <p className="text-[11px] font-bold text-teal-700 mt-1 flex items-center gap-1 bg-teal-50 px-2 py-1 rounded-md w-max border border-teal-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
+                      <p className="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md w-max border border-emerald-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
                     ) : formData.phone.length > 8 ? (
                       <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><Plus className="w-3.5 h-3.5"/> + Pasien baru</p>
                     ) : null}
@@ -1571,8 +1571,8 @@ export default function AdminVisitsPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Nama Lengkap <span className="text-red-500 font-bold">*</span></label>
                     <div className="relative">
-                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
-                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-teal-500" />}
+                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
+                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
                     </div>
                   </div>
 
@@ -1594,7 +1594,7 @@ export default function AdminVisitsPage() {
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-1">Alamat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
                     <div className="relative">
                       <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-300" />
-                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
+                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
                     </div>
                   </div>
                 </div>
@@ -1605,7 +1605,7 @@ export default function AdminVisitsPage() {
 
                 {/* Kolom Kanan: Rincian Layanan */}
                 <div className="lg:col-span-6 space-y-5">
-                  <h4 className="text-sm font-bold text-teal-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Activity className="w-4 h-4"/> Rincian Layanan
                   </h4>
 
@@ -1639,7 +1639,7 @@ export default function AdminVisitsPage() {
                                     placeholder="Cari layanan..."
                                     value={serviceSearch}
                                     onChange={(e) => setServiceSearch(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm transition-all"
+                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-sm transition-all"
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                 </div>
@@ -1669,10 +1669,10 @@ export default function AdminVisitsPage() {
                                                 setSelectedServices([...selectedServices, s.id]);
                                               }
                                             }}
-                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-teal-50 text-teal-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-teal-600'}`}
+                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-emerald-600'}`}
                                           >
                                             <div className="flex items-center gap-3">
-                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-teal-500 border-teal-500 text-white' : 'border-gray-300'}`}>
+                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300'}`}>
                                                 {isSelected && <Check className="w-3 h-3" />}
                                               </div>
                                               <span className="text-sm font-medium">{s.name}</span>
@@ -1699,12 +1699,12 @@ export default function AdminVisitsPage() {
                           disabled={session?.role === "BRANCH_ADMIN"}
                           value={formData.branchId} 
                           onChange={e => setFormData({ ...formData, branchId: e.target.value })} 
-                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none disabled:opacity-70 font-medium"
+                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none disabled:opacity-70 font-medium"
                         >
                           <option value="">Pilih Cabang</option>
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
-                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-teal-500" />}
+                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-emerald-500" />}
                       </div>
                     </div>
                   </div>
@@ -1712,7 +1712,7 @@ export default function AdminVisitsPage() {
                   {/* Terapis Penanggung Jawab — Premium Card Picker */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                      <UserCheck className="w-4 h-4 text-teal-600" />
+                      <UserCheck className="w-4 h-4 text-emerald-600" />
                       Terapis Penanggung Jawab
                       <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span>
                     </label>
@@ -1730,12 +1730,12 @@ export default function AdminVisitsPage() {
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tanggal <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
                         <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium" />
+                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-teal-600" />
+                        <Clock className="w-4 h-4 text-emerald-600" />
                         Jam Masuk <span className="text-red-500 font-bold">*</span>
                       </label>
                       <div className="relative">
@@ -1744,7 +1744,7 @@ export default function AdminVisitsPage() {
                           required
                           value={formData.checkInTime} 
                           onChange={e => setFormData({ ...formData, checkInTime: e.target.value })} 
-                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-500 transition-all font-medium" 
+                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" 
                         />
                       </div>
                     </div>
@@ -1762,7 +1762,7 @@ export default function AdminVisitsPage() {
                         />
                       </div>
                       {formData.checkOutTime && formData.checkInTime && (
-                        <p className="text-[10px] text-teal-600 font-bold flex items-center gap-1">
+                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
                           ⏱ Durasi: {(() => {
                             const [h1, m1] = formData.checkInTime.split(":").map(Number);
                             const [h2, m2] = formData.checkOutTime.split(":").map(Number);
@@ -1782,7 +1782,7 @@ export default function AdminVisitsPage() {
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tensi Darah <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
                       <div className="relative">
                         <Activity className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all font-medium" />
+                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all font-medium" />
                         {!formData.bloodPressure && <span title="Tensi belum diisi" className="absolute right-3 top-1/2 -translate-y-1/2"><AlertCircle className="w-4 h-4 text-amber-400" /></span>}
                       </div>
                     </div>
@@ -1790,13 +1790,13 @@ export default function AdminVisitsPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
-                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-teal-500/20 focus:border-teal-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
+                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
                   </div>
                   
                   {/* Summary Ringkasan */}
                   {selectedServices.length > 0 && (
-                    <div className="mt-6 bg-teal-50/50 border border-teal-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
-                      <h5 className="text-xs font-bold text-teal-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
+                    <div className="mt-6 bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
+                      <h5 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
                       <div className="space-y-2">
                         {selectedServices.map(id => {
                           const s = services.find(srv => srv.id === id);
@@ -1807,9 +1807,9 @@ export default function AdminVisitsPage() {
                             </div>
                           );
                         })}
-                        <div className="border-t border-teal-200/50 pt-2 mt-2 flex justify-between font-bold">
-                          <span className="text-teal-900">Estimasi Total</span>
-                          <span className="text-teal-700">
+                        <div className="border-t border-emerald-200/50 pt-2 mt-2 flex justify-between font-bold">
+                          <span className="text-emerald-900">Estimasi Total</span>
+                          <span className="text-emerald-700">
                             {formatRupiah(selectedServices.reduce((sum, id) => sum + (services.find(s => s.id === id)?.price || 0), 0))}
                           </span>
                         </div>
@@ -1822,7 +1822,7 @@ export default function AdminVisitsPage() {
               
               <div className="sticky bottom-0 bg-white z-20 pb-6 pt-4 border-t border-gray-100 mt-8 flex gap-3 justify-end shadow-[0_-10px_20px_rgba(255,255,255,1)]">
                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm">Batalkan</button>
-                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
+                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
                   {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5"/>}
                   {saving ? "Memproses..." : "Simpan Kunjungan"}
                 </button>
@@ -1855,7 +1855,7 @@ export default function AdminVisitsPage() {
                   />
                   <div className="flex gap-3 justify-end pt-4 border-t border-gray-100 mt-6">
                     <button type="button" onClick={() => setEditTherapistModalOpen(false)} className="px-4 py-2 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200">Batal</button>
-                    <button type="button" onClick={handleAssignTherapist} disabled={isSavingTherapist || !newTherapistId} className="bg-teal-600 hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center gap-2">
+                    <button type="button" onClick={handleAssignTherapist} disabled={isSavingTherapist || !newTherapistId} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center gap-2">
                       {isSavingTherapist ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4"/>}
                       {isSavingTherapist ? "Menyimpan..." : "Simpan Terapis"}
                     </button>
@@ -1936,8 +1936,8 @@ export default function AdminVisitsPage() {
                       <button onClick={() => setTableDensity("large")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "large" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Large</button>
                     </div>
                     <div className="relative group">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
-                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors w-full sm:w-64" />
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors w-full sm:w-64" />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-60 group-focus-within:opacity-0 transition-opacity">
                         <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">⌘</kbd>
                         <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">K</kbd>
@@ -1992,7 +1992,7 @@ export default function AdminVisitsPage() {
                                       setNewTherapistId("");
                                       setEditTherapistModalOpen(true);
                                     }}
-                                    className="p-1 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded ml-1 transition-colors flex items-center"
+                                    className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded ml-1 transition-colors flex items-center"
                                   >
                                     <Plus className="w-3 h-3" />
                                   </button>
@@ -2067,11 +2067,11 @@ export default function AdminVisitsPage() {
                     ) : finalVisits.length === 0 ? (
                       <tr><td colSpan={6} className="px-6 py-20 text-center">
                         <div className="bg-[#F8FAFC] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border border-gray-100 shadow-sm">
-                          <Calendar className="h-10 w-10 text-teal-500/70" />
+                          <Calendar className="h-10 w-10 text-emerald-500/70" />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada kunjungan hari ini</h3>
                         <p className="text-sm text-gray-500 mb-6">Klik "Catat Kunjungan" untuk mulai mencatat pasien.</p>
-                        <button onClick={() => setIsFormOpen(true)} className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-teal-500/20 transition-all flex items-center gap-2 mx-auto">
+                        <button onClick={() => setIsFormOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2 mx-auto">
                           <Plus className="w-4 h-4" /> Catat Kunjungan
                         </button>
                       </td></tr>
@@ -2113,7 +2113,7 @@ export default function AdminVisitsPage() {
                             </td>
                             <td className={tdClass}>
                               <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
+                                <Activity className="w-3.5 h-3.5 text-emerald-500"/> {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
                               </div>
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
                                 <User className="w-3.5 h-3.5"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
@@ -2126,7 +2126,7 @@ export default function AdminVisitsPage() {
                                       setNewTherapistId("");
                                       setEditTherapistModalOpen(true);
                                     }}
-                                    className="p-1 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded ml-1 transition-colors flex items-center"
+                                    className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded ml-1 transition-colors flex items-center"
                                     title="Tambahkan Terapis"
                                   >
                                     <Plus className="w-3 h-3" /> Terapis
@@ -2809,7 +2809,7 @@ export default function AdminVisitsPage() {
                             <div className="space-y-1">
                               <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
                               <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Activity className="w-4 h-4 text-teal-500"/> {visit.groupedServiceIds.map((id: string) => getServiceName(id)).join(", ")}
+                                <Activity className="w-4 h-4 text-emerald-500"/> {visit.groupedServiceIds.map((id: string) => getServiceName(id)).join(", ")}
                               </div>
                             </div>
                             <div className="space-y-1">

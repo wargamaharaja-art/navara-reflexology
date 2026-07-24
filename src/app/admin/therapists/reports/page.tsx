@@ -335,7 +335,7 @@ export default function TherapistReportsPage() {
                   <select
                     value={filterBranch}
                     onChange={(e) => setFilterBranch(e.target.value)}
-                    className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10"
+                    className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10"
                   >
                     <option value="ALL">Semua Cabang</option>
                     {branches.map(b => (
@@ -350,13 +350,13 @@ export default function TherapistReportsPage() {
               <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-1">
                 <button
                   onClick={() => setFilterMode("month")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "month" ? "bg-teal-50 text-teal-700" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "month" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:text-gray-700"}`}
                 >
                   Per Bulan
                 </button>
                 <button
                   onClick={() => setFilterMode("dateRange")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "dateRange" ? "bg-teal-50 text-teal-700" : "text-gray-500 hover:text-gray-700"}`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${filterMode === "dateRange" ? "bg-emerald-50 text-emerald-700" : "text-gray-500 hover:text-gray-700"}`}
                 >
                   Rentang Tanggal
                 </button>
@@ -370,7 +370,7 @@ export default function TherapistReportsPage() {
                     type="month"
                     value={month}
                     onChange={(e) => setMonth(e.target.value)}
-                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all"
+                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all"
                   />
                 </div>
               ) : (
@@ -380,7 +380,7 @@ export default function TherapistReportsPage() {
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
+                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
                     />
                   </div>
                   <span className="text-gray-400 text-sm">s/d</span>
@@ -389,7 +389,7 @@ export default function TherapistReportsPage() {
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
+                      className="px-3 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-36 transition-all"
                     />
                   </div>
                 </div>

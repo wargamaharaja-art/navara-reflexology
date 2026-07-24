@@ -252,13 +252,13 @@ export default function AdminTherapistsPage() {
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
               <div className="relative w-full sm:w-auto group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Cari nama/spesialisasi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-14 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 placeholder-gray-400 text-sm transition-all"
+                  className="w-full pl-9 pr-14 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 placeholder-gray-400 text-sm transition-all"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 opacity-60">
                   <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-[10px] font-bold text-gray-500">⌘</kbd>
@@ -269,7 +269,7 @@ export default function AdminTherapistsPage() {
                 <select 
                   value={filterBranch} 
                   onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer"
                 >
                   <option value="all">Semua Cabang</option>
                   {branches.map(b => (
@@ -282,7 +282,7 @@ export default function AdminTherapistsPage() {
                   setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
                   setIsFormOpen(true);
                 }}
-                className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
+                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-500 ease-in-out" />
                 <Plus className="h-5 w-5 relative z-10" /> 
@@ -560,11 +560,11 @@ export default function AdminTherapistsPage() {
               {filteredTherapists.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((therapist) => (
                 <div 
                   key={therapist.id} 
-                  className={`bg-white rounded-2xl border ${therapist.isActive ? 'border-gray-200' : 'border-gray-200 opacity-80'} shadow-sm flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-teal-400 hover:-translate-y-1.5 group relative overflow-hidden`}
+                  className={`bg-white rounded-2xl border ${therapist.isActive ? 'border-gray-200' : 'border-gray-200 opacity-80'} shadow-sm flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-emerald-400 hover:-translate-y-1.5 group relative overflow-hidden`}
                   onClick={() => setSelectedTherapist(therapist)}
                 >
                   {therapist.isActive && (
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                   
                   <div className="p-5 flex-grow">
@@ -573,13 +573,13 @@ export default function AdminTherapistsPage() {
                         {therapist.photoUrl ? (
                           <img src={therapist.photoUrl} alt={therapist.name} className="h-14 w-14 rounded-2xl object-cover border border-gray-100 shadow-sm shrink-0" />
                         ) : (
-                          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-100 text-teal-600 flex items-center justify-center text-xl font-black border border-teal-100/50 shadow-sm shrink-0">
+                          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-black border border-emerald-100/50 shadow-sm shrink-0">
                             {therapist.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="font-bold text-[17px] text-gray-900 leading-tight group-hover:text-teal-700 transition-colors line-clamp-1">{therapist.name}</h4>
+                            <h4 className="font-bold text-[17px] text-gray-900 leading-tight group-hover:text-emerald-700 transition-colors line-clamp-1">{therapist.name}</h4>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${therapist.isActive ? 'bg-emerald-100/80 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
@@ -634,7 +634,7 @@ export default function AdminTherapistsPage() {
                     <div className="w-[1px] bg-gray-200"></div>
                     <div className="flex-1">
                       <div className="text-[10px] text-gray-500 mb-0.5 font-bold uppercase tracking-widest">Komisi bln ini</div>
-                      <div className="font-black text-teal-600 text-[15px] mt-1 line-clamp-1">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(therapist.totalCommission || 0)}</div>
+                      <div className="font-black text-emerald-600 text-[15px] mt-1 line-clamp-1">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(therapist.totalCommission || 0)}</div>
                     </div>
                   </div>
                 </div>
@@ -679,7 +679,7 @@ export default function AdminTherapistsPage() {
                 {selectedTherapist.photoUrl ? (
                   <img src={selectedTherapist.photoUrl} alt={selectedTherapist.name} className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-md bg-white relative z-10" />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-md relative z-10">
+                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-md relative z-10">
                     {selectedTherapist.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -691,7 +691,7 @@ export default function AdminTherapistsPage() {
                       {selectedTherapist.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
-                  <p className="text-teal-600 font-semibold text-sm">{selectedTherapist.specialization}</p>
+                  <p className="text-emerald-600 font-semibold text-sm">{selectedTherapist.specialization}</p>
                 </div>
               </div>
             </div>
@@ -707,7 +707,7 @@ export default function AdminTherapistsPage() {
                 <div className="w-[1px] h-8 bg-gray-200"></div>
                 <div className="text-center flex-1">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Komisi</p>
-                  <p className="text-lg font-black text-teal-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(selectedTherapist.totalCommission || 0)}</p>
+                  <p className="text-lg font-black text-emerald-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(selectedTherapist.totalCommission || 0)}</p>
                 </div>
                 <div className="w-[1px] h-8 bg-gray-200"></div>
                 <div className="text-center flex-1">
@@ -811,7 +811,7 @@ export default function AdminTherapistsPage() {
                   href={`https://wa.me/${selectedTherapist.phone.replace(/^0/, '62')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-[2] bg-gradient-to-r from-teal-500 to-emerald-600 text-white hover:from-teal-600 hover:to-emerald-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-emerald-500/20 text-sm"
+                  className="flex-[2] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-emerald-500/20 text-sm"
                 >
                   <MessageCircle className="h-4 w-4" /> Hubungi WhatsApp
                 </a>

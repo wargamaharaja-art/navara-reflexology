@@ -231,7 +231,7 @@ export default function AdminLabaRugiPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-50/50 via-white to-emerald-50/30 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-50/50 via-white to-emerald-50/30 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <PageHeader
           title="Laporan Laba Rugi"
@@ -244,14 +244,14 @@ export default function AdminLabaRugiPage() {
                 <select
                   value={selectedYear}
                   onChange={e => setSelectedYear(parseInt(e.target.value))}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-teal-300"
+                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
                 >
                   {[...Array(5)].map((_, i) => {
                     const y = new Date().getFullYear() - i;
                     return <option key={y} value={y}>{y}</option>;
                   })}
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-teal-500 transition-colors" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
               </div>
 
               {/* Filter Bulan */}
@@ -259,49 +259,49 @@ export default function AdminLabaRugiPage() {
                 <select
                   value={selectedMonth}
                   onChange={e => setSelectedMonth(e.target.value)}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-teal-300"
+                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
                 >
                   <option value="ALL">Semua Bulan</option>
                   {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
                     <option key={i + 1} value={String(i + 1)}>{m}</option>
                   ))}
                 </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-teal-500 transition-colors" />
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
               </div>
 
               {/* Bagi Hasil Investor */}
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-teal-200 transition-colors">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-emerald-200 transition-colors">
                 <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Bagi Hasil Inv:</span>
                 <input
                   type="number" min="0" max="100"
                   value={investorPercentage}
                   onChange={e => setInvestorPercentage(Number(e.target.value))}
-                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-teal-500 focus:outline-none text-teal-700 text-center text-sm font-black transition-colors"
+                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-emerald-500 focus:outline-none text-emerald-700 text-center text-sm font-black transition-colors"
                 />
-                <span className="text-teal-600 text-sm font-black">%</span>
+                <span className="text-emerald-600 text-sm font-black">%</span>
               </div>
 
               {/* Bagi Hasil Manajemen */}
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-teal-200 transition-colors">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-emerald-200 transition-colors">
                 <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Bagi Hasil Mgt:</span>
                 <input
                   type="number" min="0" max="100"
                   value={managementPercentage}
                   onChange={e => setManagementPercentage(Number(e.target.value))}
-                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-teal-500 focus:outline-none text-teal-700 text-center text-sm font-black transition-colors"
+                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-emerald-500 focus:outline-none text-emerald-700 text-center text-sm font-black transition-colors"
                 />
-                <span className="text-teal-600 text-sm font-black">%</span>
+                <span className="text-emerald-600 text-sm font-black">%</span>
               </div>
 
               {/* Penyusutan Sewa Ruko */}
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-teal-200 transition-colors">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-emerald-200 transition-colors">
                 <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Penyusutan Sewa Ruko:</span>
                 <span className="text-gray-400 text-sm font-bold">Rp</span>
                 <input
                   type="number" min="0"
                   value={penyusutanModalInvestor || ""}
                   onChange={e => setPenyusutanModalInvestor(Number(e.target.value))}
-                  className="w-24 bg-transparent border-b-2 border-transparent focus:border-teal-500 focus:outline-none text-gray-800 text-sm font-black transition-colors placeholder:text-gray-300"
+                  className="w-24 bg-transparent border-b-2 border-transparent focus:border-emerald-500 focus:outline-none text-gray-800 text-sm font-black transition-colors placeholder:text-gray-300"
                   placeholder="0"
                 />
               </div>
@@ -310,7 +310,7 @@ export default function AdminLabaRugiPage() {
               <div className="relative ml-auto" ref={dropdownRef}>
                 <button
                   onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                  className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white shadow-lg shadow-teal-500/30 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-lg shadow-emerald-500/30 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
                   <Download className="w-4 h-4" /> Export Laporan <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isExportMenuOpen ? "rotate-180" : ""}`} />
                 </button>
@@ -336,8 +336,8 @@ export default function AdminLabaRugiPage() {
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-md rounded-3xl mt-8 border border-white/50">
-            <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin shadow-lg"></div>
-            <p className="mt-4 font-semibold text-teal-800">Menyiapkan Laporan...</p>
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin shadow-lg"></div>
+            <p className="mt-4 font-semibold text-emerald-800">Menyiapkan Laporan...</p>
           </div>
         ) : (
           <div className="space-y-8 mt-8">
@@ -345,13 +345,13 @@ export default function AdminLabaRugiPage() {
             {/* ── Summary Cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
                   <TrendingUp className="w-7 h-7 text-white" />
                 </div>
                 <div className="relative z-10">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Pendapatan</p>
-                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600 tracking-tight">{formatRupiah(reportData.totalPendapatan)}</p>
+                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-600 tracking-tight">{formatRupiah(reportData.totalPendapatan)}</p>
                 </div>
               </div>
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(244,63,94,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
@@ -384,9 +384,9 @@ export default function AdminLabaRugiPage() {
 
               {/* ── Laporan Laba Rugi Table ── */}
               <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
-                <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-teal-50/30 to-transparent">
+                <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-emerald-50/30 to-transparent">
                   <h3 className="font-black text-xl text-gray-800 flex items-center gap-3">
-                    <div className="bg-teal-100 p-2 rounded-xl"><FileText className="w-5 h-5 text-teal-600" /></div>
+                    <div className="bg-emerald-100 p-2 rounded-xl"><FileText className="w-5 h-5 text-emerald-600" /></div>
                     Rincian Laba Rugi
                   </h3>
                 </div>
@@ -395,14 +395,14 @@ export default function AdminLabaRugiPage() {
                     <tbody>
                       {/* ── PENDAPATAN USAHA ── */}
                       <tr>
-                        <td colSpan={2} className="font-black text-teal-800 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-teal-500"></div> Pendapatan Usaha
+                        <td colSpan={2} className="font-black text-emerald-800 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Pendapatan Usaha
                         </td>
                       </tr>
                       {reportData.incomeItems.map(item => (
                         <tr key={item.name} className="group">
-                          <td className="py-3 px-4 text-gray-600 font-medium group-hover:bg-teal-50/50 rounded-l-xl transition-colors">{item.name}</td>
-                          <td className="py-3 px-4 text-right font-bold text-gray-800 group-hover:bg-teal-50/50 rounded-r-xl transition-colors">{formatRupiah(item.amount)}</td>
+                          <td className="py-3 px-4 text-gray-600 font-medium group-hover:bg-emerald-50/50 rounded-l-xl transition-colors">{item.name}</td>
+                          <td className="py-3 px-4 text-right font-bold text-gray-800 group-hover:bg-emerald-50/50 rounded-r-xl transition-colors">{formatRupiah(item.amount)}</td>
                         </tr>
                       ))}
                       {reportData.incomeItems.length === 0 && (
@@ -413,9 +413,9 @@ export default function AdminLabaRugiPage() {
                       )}
                       {/* TOTAL PENDAPATAN */}
                       <tr><td colSpan={2} className="py-1"></td></tr>
-                      <tr className="bg-teal-50/80 rounded-2xl">
-                        <td className="py-4 px-5 font-black text-teal-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-teal-500">TOTAL PENDAPATAN</td>
-                        <td className="py-4 px-5 text-right font-black text-teal-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalPendapatan)}</td>
+                      <tr className="bg-emerald-50/80 rounded-2xl">
+                        <td className="py-4 px-5 font-black text-emerald-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-emerald-500">TOTAL PENDAPATAN</td>
+                        <td className="py-4 px-5 text-right font-black text-emerald-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalPendapatan)}</td>
                       </tr>
 
                       {/* ── BIAYA USAHA ── */}
@@ -447,7 +447,7 @@ export default function AdminLabaRugiPage() {
                       <tr><td colSpan={2} className="pt-8"></td></tr>
                       <tr>
                         <td colSpan={2}>
-                          <div className={`p-6 sm:p-8 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${reportData.labaRugi >= 0 ? "bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-400 shadow-xl shadow-emerald-500/20" : "bg-gradient-to-r from-rose-500 to-red-600 border-rose-400 shadow-xl shadow-rose-500/20"}`}>
+                          <div className={`p-6 sm:p-8 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${reportData.labaRugi >= 0 ? "bg-gradient-to-r from-emerald-500 to-emerald-600 border-emerald-400 shadow-xl shadow-emerald-500/20" : "bg-gradient-to-r from-rose-500 to-red-600 border-rose-400 shadow-xl shadow-rose-500/20"}`}>
                             <span className="font-black text-white/90 text-sm tracking-widest uppercase flex items-center gap-2">
                               {reportData.labaRugi >= 0 ? <TrendingUp className="w-5 h-5 text-white" /> : <TrendingDown className="w-5 h-5 text-white" />}
                               Laba Rugi Bersih
@@ -465,7 +465,7 @@ export default function AdminLabaRugiPage() {
                                <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Sewa Ruko</p>
                                <p className="text-xl font-black text-amber-900">{formatRupiah(reportData.penyusutanModalInvestor)}</p>
                             </div>
-                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                            <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                                <p className="text-xs font-extrabold text-emerald-700/80 uppercase tracking-widest mb-1.5">Infaq (2.5%)</p>
                                <p className="text-xl font-black text-emerald-900">{formatRupiah(reportData.infaqShare)}</p>
                             </div>

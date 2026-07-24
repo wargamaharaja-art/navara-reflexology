@@ -373,7 +373,7 @@ export default function AdminExpensesPage() {
         {isFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-4xl max-h-[90vh] overflow-y-auto relative transform transition-all animate-in zoom-in-95 duration-300">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-teal-500 z-10"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-emerald-500 z-10"></div>
               
               <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10 backdrop-blur-md">
                 <h3 className="text-lg font-bold text-gray-800">Catat Transaksi Manual</h3>
@@ -523,7 +523,7 @@ export default function AdminExpensesPage() {
                     const formattedTime = new Date(t.date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
                     
                     return (
-                      <tr key={t.id} className="hover:bg-teal-50/50 transition-colors group">
+                      <tr key={t.id} className="hover:bg-emerald-50/50 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3"/> {formattedTime}</div>
@@ -531,7 +531,7 @@ export default function AdminExpensesPage() {
                         <td className="px-6 py-4">
                           <div className="font-medium text-gray-900 line-clamp-2">{t.description}</div>
                           <div className="flex gap-2 mt-1 items-center">
-                            {t.referenceId && <span className="text-xs text-teal-600">Ref: {t.referenceId}</span>}
+                            {t.referenceId && <span className="text-xs text-emerald-600">Ref: {t.referenceId}</span>}
                             {t.attachmentUrl && (
                               <a href={t.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-primary flex items-center gap-1 border border-gray-200 px-1.5 py-0.5 rounded-md bg-white">
                                 <LinkIcon className="w-3 h-3" /> Bukti
@@ -542,7 +542,7 @@ export default function AdminExpensesPage() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
                             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200 capitalize">{t.category}</span>
-                            <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 px-2 py-1 rounded-md border border-teal-100">
+                            <span className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
                               <CreditCard className="w-3 h-3" /> {t.paymentMethod || "CASH"}
                             </span>
                           </div>

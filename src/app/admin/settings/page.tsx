@@ -406,7 +406,7 @@ export default function AdminSettingsPage() {
 
               {/* Landing Page Content */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-teal-500" /> Konten Landing Page (Hero)</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-emerald-500" /> Konten Landing Page (Hero)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700">Teks Label Badge (Kecil)</label>
@@ -425,7 +425,7 @@ export default function AdminSettingsPage() {
 
               {/* Kontak */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-teal-600" /> Kontak & Jam Operasional</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-emerald-600" /> Kontak & Jam Operasional</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700">No. Telepon</label>
@@ -543,7 +543,7 @@ export default function AdminSettingsPage() {
 
               {/* Story Section */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-teal-500" /> Cerita Singkat (Story)</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-emerald-500" /> Cerita Singkat (Story)</h3>
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700">Teks Badge (Cth: 5+ Tahun Pengalaman)</label>

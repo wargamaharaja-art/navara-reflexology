@@ -61,21 +61,21 @@ export default function ReservationsClient({
   return (
     <div className="space-y-8 p-2 pb-12">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-teal-600 to-emerald-700 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]"></div>
         <div className="relative z-10 flex items-center gap-5">
           <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-            <CalendarHeart className="w-8 h-8 text-teal-100" />
+            <CalendarHeart className="w-8 h-8 text-emerald-100" />
           </div>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Reservasi & Jadwal</h1>
-            <p className="text-teal-100 mt-1 text-sm font-medium">Kelola jadwal dan konfirmasi pasien masuk</p>
+            <p className="text-emerald-100 mt-1 text-sm font-medium">Kelola jadwal dan konfirmasi pasien masuk</p>
           </div>
         </div>
         
         <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl flex items-center gap-4">
           <div>
-            <p className="text-xs text-teal-100 font-bold uppercase tracking-wider">Menunggu Konfirmasi</p>
+            <p className="text-xs text-emerald-100 font-bold uppercase tracking-wider">Menunggu Konfirmasi</p>
             <p className="text-2xl font-black text-amber-300">{pendingCount}</p>
           </div>
           {pendingCount > 0 && (
@@ -112,7 +112,7 @@ export default function ReservationsClient({
             <select
               value={filterBranch}
               onChange={(e) => setFilterBranch(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
+              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
             >
               <option value="ALL">Semua Cabang</option>
               {branches.map(b => (

@@ -226,8 +226,8 @@ export default function AdminUsersPage() {
 
   const roleColors: Record<string, string> = {
     SUPER_ADMIN: "bg-purple-100 text-purple-800",
-    BRANCH_ADMIN: "bg-teal-100 text-teal-800",
-    THERAPIST: "bg-teal-100 text-teal-800",
+    BRANCH_ADMIN: "bg-emerald-100 text-emerald-800",
+    THERAPIST: "bg-emerald-100 text-emerald-800",
     CASHIER: "bg-amber-100 text-amber-800",
     INVESTOR: "bg-slate-100 text-slate-800",
   };
@@ -493,7 +493,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => handleEdit(user)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-xl transition-colors" title="Edit">
+                          <button onClick={() => handleEdit(user)} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-xl transition-colors" title="Edit">
                             <Edit className="h-4 w-4" />
                           </button>
                           {user.role !== "SUPER_ADMIN" && (

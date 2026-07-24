@@ -230,7 +230,7 @@ function TherapistCommissionsContent() {
                 <select
                   value={filterBranch}
                   onChange={(e) => setFilterBranch(e.target.value)}
-                  className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
                 >
                   <option value="ALL">Semua Cabang (Global)</option>
                   {branches.map(b => (
@@ -243,18 +243,18 @@ function TherapistCommissionsContent() {
           }
         />
 
-        <div className="bg-teal-50 border border-teal-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">
+        <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">
           <div className="flex items-center gap-4">
-             <div className="bg-teal-100 p-3 rounded-full">
-                <Users className="w-6 h-6 text-teal-600" />
+             <div className="bg-emerald-100 p-3 rounded-full">
+                <Users className="w-6 h-6 text-emerald-600" />
              </div>
              <div>
                <h3 className="text-lg font-bold text-gray-900">Total Terapis Aktif</h3>
                <p className="text-gray-600 text-sm">Sinkronisasi akan diterapkan pada {totalActiveTherapists} terapis ini secara massal.</p>
              </div>
           </div>
-          <div className="text-center bg-white px-5 py-3 rounded-xl shadow-sm border border-teal-50">
-             <span className="text-3xl font-black text-teal-600">{totalActiveTherapists}</span>
+          <div className="text-center bg-white px-5 py-3 rounded-xl shadow-sm border border-emerald-50">
+             <span className="text-3xl font-black text-emerald-600">{totalActiveTherapists}</span>
              <span className="text-sm font-semibold text-gray-500 block">Terapis</span>
           </div>
         </div>
@@ -283,7 +283,7 @@ function TherapistCommissionsContent() {
                   <tr>
                     <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
                       <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                         Sedang memuat data layanan...
                       </div>
                     </td>
@@ -296,7 +296,7 @@ function TherapistCommissionsContent() {
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <tr key={row.serviceId} className={`hover:bg-teal-50/30 transition-colors group ${row.isModified ? 'bg-amber-50/30' : ''}`}>
+                    <tr key={row.serviceId} className={`hover:bg-emerald-50/30 transition-colors group ${row.isModified ? 'bg-amber-50/30' : ''}`}>
                       <td className="px-6 py-4 font-bold text-gray-900">
                         {row.serviceName}
                       </td>
@@ -311,7 +311,7 @@ function TherapistCommissionsContent() {
                             placeholder={!row.isUniform && row.activeCount > 0 ? "Bervariasi" : "Tidak ada komisi (Rp 0)"}
                             value={row.commissionAmount !== null ? row.commissionAmount : ""}
                             onChange={(e) => handleAmountChange(row.serviceId, e.target.value)}
-                            className={`px-4 py-2.5 bg-gray-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm font-semibold outline-none w-44 text-center transition-all ${row.isModified ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-200'}`}
+                            className={`px-4 py-2.5 bg-gray-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm font-semibold outline-none w-44 text-center transition-all ${row.isModified ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-200'}`}
                           />
                         </div>
                       </td>
@@ -331,7 +331,7 @@ function TherapistCommissionsContent() {
                             onClick={() => handleSaveRow(row)}
                             disabled={!row.isModified || saving || row.commissionAmount === null}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border
-                              ${row.isModified && row.commissionAmount !== null ? 'bg-teal-600 text-white hover:bg-teal-700 border-teal-700' : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'}
+                              ${row.isModified && row.commissionAmount !== null ? 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-700' : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'}
                             `}
                           >
                             Simpan & Sinkronisasi
@@ -363,7 +363,7 @@ function TherapistCommissionsContent() {
                 id="save-all-commissions-btn"
                 onClick={handleSaveAll}
                 disabled={saving || !hasModifiedRows}
-                className="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 active:scale-95 transition-all cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 active:scale-95 transition-all cursor-pointer"
               >
                 {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <RefreshCw className="w-5 h-5" />}
                 {saving ? "Menyinkronkan..." : "Sinkronisasi Semua Perubahan"}

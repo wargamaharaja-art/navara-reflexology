@@ -84,7 +84,7 @@ export default function AttendancePage() {
                   <select
                     value={filterBranch}
                     onChange={(e) => setFilterBranch(e.target.value)}
-                    className="pl-4 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all appearance-none"
+                    className="pl-4 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all appearance-none"
                   >
                     <option value="ALL">Semua Cabang</option>
                     {branches.map(b => (
@@ -102,7 +102,7 @@ export default function AttendancePage() {
                   placeholder="Cari terapis..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 placeholder-gray-400 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full shadow-sm transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 placeholder-gray-400 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full shadow-sm transition-all"
                 />
               </div>
               <div className="relative w-full sm:w-auto">
@@ -112,12 +112,12 @@ export default function AttendancePage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all"
                 />
               </div>
               <button
                 onClick={() => router.push("/admin/attendance/kiosk")}
-                className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-teal-200 transition-all whitespace-nowrap active:scale-95"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all whitespace-nowrap active:scale-95"
               >
                 <Play className="w-4 h-4" /> Buka Kiosk Absensi
               </button>

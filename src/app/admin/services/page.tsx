@@ -183,13 +183,13 @@ export default function AdminServicesPage() {
                   type="checkbox"
                   checked={showInactive}
                   onChange={(e) => setShowInactive(e.target.checked)}
-                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 w-4 h-4"
+                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                 />
                 Tampilkan Nonaktif
               </label>
               <button
                 onClick={openAddModal}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 transition-colors shadow-lg shadow-teal-200 active:scale-95"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 active:scale-95"
               >
                 <Plus className="w-4 h-4" /> Tambah Layanan
               </button>
@@ -204,26 +204,26 @@ export default function AdminServicesPage() {
             const isOpen = openCategory === cat;
 
             return (
-              <div key={cat} className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${isOpen ? 'border-teal-200' : 'border-gray-100 hover:border-gray-200'}`} style={{ animationDelay: `${catIndex * 100}ms` }}>
+              <div key={cat} className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${isOpen ? 'border-emerald-200' : 'border-gray-100 hover:border-gray-200'}`} style={{ animationDelay: `${catIndex * 100}ms` }}>
                 <button
                   onClick={() => setOpenCategory(isOpen ? null : cat)}
-                  className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-teal-50/80' : 'bg-white hover:bg-gray-50'}`}
+                  className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-emerald-50/80' : 'bg-white hover:bg-gray-50'}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${isOpen ? 'bg-teal-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${isOpen ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
                       {filteredServices.length}
                     </div>
-                    <h3 className={`font-bold text-lg ${isOpen ? 'text-teal-900' : 'text-gray-700'}`}>
+                    <h3 className={`font-bold text-lg ${isOpen ? 'text-emerald-900' : 'text-gray-700'}`}>
                       {cat}
                     </h3>
                   </div>
-                  <div className={`p-2 rounded-full transition-colors ${isOpen ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-full transition-colors ${isOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
                     {isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                   </div>
                 </button>
 
                 {/* Accordion Content */}
-                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 border-t border-teal-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 border-t border-emerald-100' : 'max-h-0 opacity-0'}`}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse whitespace-nowrap">
                       <thead>
@@ -242,7 +242,7 @@ export default function AdminServicesPage() {
                           <tr><td colSpan={5} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
                         ) : (
                           filteredServices.map(s => (
-                            <tr key={s.id} className="hover:bg-teal-50/30 transition-colors">
+                            <tr key={s.id} className="hover:bg-emerald-50/30 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="font-bold text-gray-900">{s.name}</div>
                                 <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
@@ -261,7 +261,7 @@ export default function AdminServicesPage() {
                               <td className="px-6 py-4 text-right">
                                 <button
                                   onClick={() => openEditModal(s)}
-                                  className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors mr-2"
+                                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors mr-2"
                                   title="Edit"
                                 >
                                   <Edit2 className="w-4 h-4" />
@@ -313,7 +313,7 @@ export default function AdminServicesPage() {
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       >
                         {CATEGORIES.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -327,7 +327,7 @@ export default function AdminServicesPage() {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                         placeholder="e.g. Pijat Refleksi"
                       />
                     </div>
@@ -339,7 +339,7 @@ export default function AdminServicesPage() {
                       rows={3}
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       placeholder="Penjelasan singkat layanan..."
                     />
                   </div>
@@ -352,7 +352,7 @@ export default function AdminServicesPage() {
                         min="0"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                         placeholder="150000"
                       />
                     </div>
@@ -364,7 +364,7 @@ export default function AdminServicesPage() {
                         min="1"
                         value={formData.durationMinutes}
                         onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                         placeholder="60"
                       />
                     </div>
@@ -375,7 +375,7 @@ export default function AdminServicesPage() {
                         type="checkbox"
                         checked={formData.isActive}
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 w-4 h-4"
+                        className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
                       />
                       <span className="text-sm font-medium text-gray-700">Layanan Aktif</span>
                     </label>
@@ -395,7 +395,7 @@ export default function AdminServicesPage() {
                   type="submit"
                   form="serviceForm"
                   disabled={saving}
-                  className="px-5 py-2.5 text-sm font-semibold text-white bg-teal-600 rounded-xl hover:bg-teal-700 disabled:opacity-50 flex items-center"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center"
                 >
                   {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>

@@ -153,12 +153,12 @@ export default function CashMutationsPage() {
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${netCash >= 0 ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-600"}`}>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${netCash >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
               <Wallet className="w-6 h-6" />
             </div>
             <div>
               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Saldo Bersih Mutasi</p>
-              <h4 className={`text-xl font-black mt-1 ${netCash >= 0 ? "text-teal-600" : "text-red-600"}`}>{formatRupiah(netCash)}</h4>
+              <h4 className={`text-xl font-black mt-1 ${netCash >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatRupiah(netCash)}</h4>
             </div>
           </div>
         </div>

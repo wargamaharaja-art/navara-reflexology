@@ -245,7 +245,7 @@ export default function AdminBranchesPage() {
                       </span>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => handleEdit(branch)} className="text-teal-600 hover:bg-teal-50 p-2 rounded-md transition-colors" title="Edit">
+                      <button onClick={() => handleEdit(branch)} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-md transition-colors" title="Edit">
                         <Edit className="h-4 w-4" />
                       </button>
                       <button onClick={() => handleDelete(branch.id)} className="text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors" title="Hapus">

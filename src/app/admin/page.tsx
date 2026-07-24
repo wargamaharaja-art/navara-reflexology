@@ -371,7 +371,7 @@ export default function AdminDashboard() {
                <Link href="/admin/visits" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-sky-400 hover:text-sky-600 hover:-translate-y-1 hover:shadow-md">
                   <Users className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:scale-110 transition-transform" /> + Tambah Pasien
                </Link>
-               <Link href="/admin/finance" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-teal-400 hover:text-teal-600 hover:-translate-y-1 hover:shadow-md">
+               <Link href="/admin/finance" className="group bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-emerald-400 hover:text-emerald-600 hover:-translate-y-1 hover:shadow-md">
                   <Wallet className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:scale-110 transition-transform" /> + Input Transaksi
                </Link>
                <Link href="/admin/finance" className="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-xl border border-gray-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)] font-bold text-sm flex items-center gap-2 transition-all hover:border-blue-400 hover:text-blue-600 hover:-translate-y-0.5">
@@ -400,18 +400,18 @@ export default function AdminDashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-4 xl:gap-5">
                   {/* Pendapatan Hari Ini */}
-                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-teal-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-emerald-400 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-[12px] bg-teal-50 border border-teal-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <TrendingUp className="w-5 h-5 text-teal-700" />
+                      <div className="w-10 h-10 rounded-[12px] bg-emerald-50 border border-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <TrendingUp className="w-5 h-5 text-emerald-700" />
                       </div>
-                      <span className="text-[11px] font-black text-teal-800 uppercase tracking-wider leading-tight">Pendapatan<br/>Harian</span>
+                      <span className="text-[11px] font-black text-emerald-800 uppercase tracking-wider leading-tight">Pendapatan<br/>Harian</span>
                     </div>
                     <div>
                       <p className="text-[10px] text-gray-500 font-medium mb-1">Pemasukan Hari Ini</p>
-                      <p className="text-xl xl:text-2xl font-black text-teal-700 tracking-tighter">{showBalance ? <AnimatedNumber value={summaryData.pendapatanHarian} /> : <span className="tracking-wider">Rp ••••••</span>}</p>
+                      <p className="text-xl xl:text-2xl font-black text-emerald-700 tracking-tighter">{showBalance ? <AnimatedNumber value={summaryData.pendapatanHarian} /> : <span className="tracking-wider">Rp ••••••</span>}</p>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ${Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin || 0) ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                        <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ${Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin || 0) ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
                           {Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin || 0) ? '🟢 ↑' : '🔴 ↓'} 
                           {Number(summaryData.pendapatanKemarin) > 0 
                             ? ` ${(Number(summaryData.pendapatanHarian) >= Number(summaryData.pendapatanKemarin) ? '+' : '')}${Math.round((Number(summaryData.pendapatanHarian) - Number(summaryData.pendapatanKemarin)) / Number(summaryData.pendapatanKemarin) * 100)}%` 
@@ -564,11 +564,11 @@ export default function AdminDashboard() {
                 </Link>
 
                 {/* Transaksi Pelanggan */}
-                <Link href="/admin/transactions" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-teal-300 transition-all duration-300 group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-teal-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
+                <Link href="/admin/transactions" className="bg-white rounded-[24px] xl:rounded-[32px] p-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)] border border-gray-100 flex flex-col justify-between min-h-[160px] hover:shadow-xl hover:-translate-y-1.5 hover:border-emerald-300 transition-all duration-300 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 bg-emerald-500/5 w-32 h-32 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none transition-transform group-hover:scale-150"></div>
                   <div className="flex justify-between items-start mb-4 relative z-10">
-                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-teal-50 flex items-center justify-center group-hover:bg-teal-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-teal-100/50">
-                      <BookOpen className="w-7 h-7 xl:w-8 xl:h-8 text-teal-500 group-hover:text-white transition-colors" />
+                    <div className="w-14 h-14 xl:w-16 xl:h-16 rounded-[18px] bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-inner border border-emerald-100/50">
+                      <BookOpen className="w-7 h-7 xl:w-8 xl:h-8 text-emerald-500 group-hover:text-white transition-colors" />
                     </div>
                     {/* Badge Status */}
                     <div className="bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-emerald-100 shadow-sm">
@@ -577,7 +577,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="relative z-10 mt-auto">
-                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-teal-600 transition-colors">Transaksi Pelanggan</h4>
+                    <h4 className="text-[15px] xl:text-[17px] font-black text-gray-900 mb-1 group-hover:text-emerald-600 transition-colors">Transaksi Pelanggan</h4>
                     <p className="text-[11px] xl:text-[12px] text-gray-500 font-medium line-clamp-1">Catat & validasi kas masuk</p>
                   </div>
                 </Link>
@@ -716,7 +716,7 @@ export default function AdminDashboard() {
                 { name: "Pegawai", icon: Users, href: "/admin/therapists", color: "text-purple-500", badge: "" },
                 { name: "Inventaris", icon: Package, href: "/admin/inventory", color: "text-amber-500", badge: "Promo" },
                 { name: "Layanan", icon: Activity, href: "/admin/services", color: "text-rose-500", badge: "" },
-                { name: "Laporan", icon: Receipt, href: "/admin/finance", color: "text-teal-500", badge: "" },
+                { name: "Laporan", icon: Receipt, href: "/admin/finance", color: "text-emerald-500", badge: "" },
                 { name: "Semua", icon: LayoutDashboard, href: "/admin/settings", color: "text-gray-500", badge: "" }
               ].map((link) => (
                 <Link
@@ -911,13 +911,13 @@ export default function AdminDashboard() {
           )}
 
           {/* AI Analysis Section */}
-          <div className="mt-8 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-[32px] p-6 md:p-8 border border-teal-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+          <div className="mt-8 bg-gradient-to-br from-emerald-50 to-emerald-50 rounded-[32px] p-6 md:p-8 border border-emerald-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 relative z-10">
               <div>
-                <h3 className="text-xl font-bold text-teal-900 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-emerald-900 flex items-center gap-2">
                   <Sparkles className="w-6 h-6 text-emerald-500" /> Analisa Performa Bisnis AI
                 </h3>
-                <p className="text-teal-600/80 text-sm mt-1 font-medium">Dapatkan insight dan saran strategis berdasarkan performa bulan ini menggunakan Google Gemini AI.</p>
+                <p className="text-emerald-600/80 text-sm mt-1 font-medium">Dapatkan insight dan saran strategis berdasarkan performa bulan ini menggunakan Google Gemini AI.</p>
               </div>
               <button
                 onClick={handleAnalyzeAI}
@@ -944,7 +944,7 @@ export default function AdminDashboard() {
             )}
 
             {aiResult && (
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-teal-100/50 relative z-10 overflow-auto shadow-sm">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-emerald-100/50 relative z-10 overflow-auto shadow-sm">
                 <div className="markdown-ai text-gray-800 space-y-4">
                   <style dangerouslySetInnerHTML={{
                     __html: `
