@@ -198,8 +198,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           --color-emerald-900: #064e3b;
           --color-emerald-950: #022c22;
         }
+        .theme-maharaja {
+          --color-emerald-50: var(--color-slate-50);
+          --color-emerald-100: var(--color-slate-100);
+          --color-emerald-200: var(--color-slate-200);
+          --color-emerald-300: var(--color-amber-300);
+          --color-emerald-400: var(--color-amber-400);
+          --color-emerald-500: var(--color-amber-500);
+          --color-emerald-600: var(--color-slate-700);
+          --color-emerald-700: var(--color-slate-800);
+          --color-emerald-800: var(--color-slate-900);
+          --color-emerald-900: #0f172a;
+          --color-emerald-950: #020617;
+        }
       `}} />
-      <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
+      <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${selectedBranch === 'ALL' ? 'theme-maharaja' : isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
