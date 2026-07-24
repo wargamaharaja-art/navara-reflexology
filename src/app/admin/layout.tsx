@@ -210,12 +210,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity flex items-center gap-3.5">
             <div className="bg-white rounded-2xl p-2 shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30">
-              <Image src="/navara-logo.png" alt="Navara Reflexology Logo" width={42} height={42} className="w-10 h-10 object-contain drop-shadow-sm" />
+              <Image src="/navara-logo.png" alt={isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={42} height={42} className="w-10 h-10 object-contain drop-shadow-sm" />
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold leading-tight">
-                <span className="text-white">Navara</span>{" "}
-                <span className="text-emerald-400">Reflexology</span>
+                <span className="text-white">{isRadjaBekam ? "Radja" : "Navara"}</span>{" "}
+                <span className="text-emerald-400">{isRadjaBekam ? "Bekam" : "Reflexology"}</span>
               </h1>
               <span className="text-white/50 font-medium text-xs tracking-wide">Admin Panel</span>
             </div>
