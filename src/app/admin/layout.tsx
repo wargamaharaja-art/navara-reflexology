@@ -152,8 +152,29 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return false;
   });
 
+  const activeBranchObj = branches.find(b => b.id === selectedBranch);
+  const isRadjaBekam = activeBranchObj?.brand === "RADJA_BEKAM";
+
   return (
-    <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
+    <>
+      {isRadjaBekam && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          :root {
+            --color-emerald-50: var(--color-blue-50);
+            --color-emerald-100: var(--color-blue-100);
+            --color-emerald-200: var(--color-blue-200);
+            --color-emerald-300: var(--color-blue-300);
+            --color-emerald-400: var(--color-amber-400);
+            --color-emerald-500: var(--color-blue-500);
+            --color-emerald-600: var(--color-blue-600);
+            --color-emerald-700: var(--color-blue-700);
+            --color-emerald-800: var(--color-blue-800);
+            --color-emerald-900: var(--color-blue-900);
+            --color-emerald-950: var(--color-blue-950);
+          }
+        `}} />
+      )}
+      <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
@@ -482,5 +503,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         
       </div>
     </div>
+    </>
   );
 }
