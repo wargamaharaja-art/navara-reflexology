@@ -312,14 +312,14 @@ export default function AdminDashboard() {
                 <div className="relative z-10 flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide pt-1">
                   <button
                     onClick={() => setFilterBranch("ALL")}
-                    className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                    className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group theme-navara ${
                       filterBranch === "ALL" 
                         ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
                         : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
                     }`}
                   >
                     {filterBranch === "ALL" && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-700 opacity-100"></div>
                     )}
                     <LayoutDashboard className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === "ALL" ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
                     <span className="relative z-10">Semua Cabang (Pusat)</span>
@@ -332,14 +332,14 @@ export default function AdminDashboard() {
                     <button
                       key={b.id}
                       onClick={() => setFilterBranch(b.id)}
-                      className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${
+                      className={`relative px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden group ${b.brand === 'RADJA_BEKAM' ? 'theme-radja-bekam' : 'theme-navara'} ${
                         filterBranch === b.id 
                           ? "text-white shadow-[0_8px_20px_rgba(16,185,129,0.35)] transform scale-[1.02] border-none ring-2 ring-emerald-500/50 ring-offset-1 ring-offset-white" 
                           : "bg-white text-gray-600 border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 hover:shadow-md hover:-translate-y-0.5"
                       }`}
                     >
                       {filterBranch === b.id && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 opacity-100"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-emerald-700 opacity-100"></div>
                       )}
                       <Store className={`relative z-10 w-4 h-4 transition-colors ${filterBranch === b.id ? "text-emerald-100" : "text-gray-400 group-hover:text-emerald-500"}`} />
                       <span className="relative z-10">{b.name}</span>
