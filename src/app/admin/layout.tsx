@@ -400,7 +400,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
                   if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
                   if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
-                  if (sub.name === "Surat Mutasi") return perms.includes("PEGAWAI_MUTASI");
+                  if (sub.name === "Surat Mutasi") {
+                    return session?.role === "SUPER_ADMIN" && selectedBranch === "ALL" && perms.includes("PEGAWAI_MUTASI");
+                  }
                   if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return perms.includes("PEGAWAI_SLIP");
                   return false;
                 });

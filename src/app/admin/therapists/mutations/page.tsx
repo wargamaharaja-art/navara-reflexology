@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText, Plus, Search, Eye, CheckCircle, XCircle, X, Ban,
-  ArrowRightLeft, Calendar, ChevronDown, RotateCcw, Filter, Send
+  ArrowRightLeft, Calendar, ChevronDown, RotateCcw, Filter, Send,
+  Lock, ArrowLeft
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Pagination from "@/components/ui/Pagination";
@@ -292,6 +293,27 @@ ${window.location.origin}/surat-mutasi/${m.id}`;
   };
 
   const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+
+  const isAuthorized = session?.role === "SUPER_ADMIN" && (typeof document !== "undefined" ? document.cookie.match(new RegExp('(^| )navara-selected-branch=([^;]+)'))?.[2] || "ALL" : "ALL") === "ALL";
+
+  if (!loading && session && !isAuthorized) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center bg-white p-8 rounded-3xl shadow-sm border border-gray-100 max-w-md w-full">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-black text-gray-800 mb-2">Akses Ditolak</h2>
+          <p className="text-gray-500 font-medium mb-8">
+            Fitur Surat Mutasi hanya dapat diakses oleh Super Admin ketika sedang mengelola <b>Maharaja Group</b> (Semua Cabang).
+          </p>
+          <Link href="/admin" className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-md shadow-emerald-500/20 w-full">
+            <ArrowLeft className="w-5 h-5" /> Kembali ke Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 p-4 md:p-6">
