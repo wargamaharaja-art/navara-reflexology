@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Send, UserPlus, CheckCircle2, Search, RefreshCw, Loader2, Trash2 } from "lucide-react";
+import { Send, UserPlus, CheckCircle2, Search, RefreshCw, Loader2, Trash2, Clock } from "lucide-react";
 
 type PromoBooking = {
   id: string;
@@ -209,6 +209,18 @@ export default function AdminPromoDashboard() {
   const totalRegistered = bookings.filter(b => registeredPhones.has(b.phone)).length;
   const totalUnregistered = bookings.length - totalRegistered;
 
+  const dateSlots = bookings.reduce((acc, booking) => {
+    const date = booking.bookingDate;
+    const time = booking.bookingTime;
+    if (date && time) {
+      if (!acc[date]) acc[date] = {};
+      acc[date][time] = (acc[date][time] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, Record<string, number>>);
+
+  const sortedDates = Object.keys(dateSlots).sort((a, b) => a.localeCompare(b));
+
   if (loading || isJatiasih === null) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
@@ -260,6 +272,38 @@ export default function AdminPromoDashboard() {
             </p>
           )}
         </div>
+      </div>
+
+      <div className="bg-white p-5 rounded-xl border shadow-sm mb-8">
+        <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-emerald-600" />
+          Summary Jadwal Kedatangan
+        </h3>
+        {sortedDates.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sortedDates.map((date) => {
+              const times = dateSlots[date];
+              const sortedTimes = Object.entries(times).sort(([a], [b]) => a.localeCompare(b));
+              return (
+                <div key={date} className="border rounded-lg p-3 bg-slate-50">
+                  <div className="font-medium text-slate-700 mb-2 border-b pb-2">{date}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {sortedTimes.map(([time, count]) => (
+                      <div key={time} className="flex items-center gap-1.5 bg-white border border-slate-200 px-2.5 py-1 rounded-md text-sm shadow-sm">
+                        <span className="font-semibold text-slate-600">{time}</span>
+                        <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-1.5 py-0.5 rounded">
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Belum ada jadwal yang di-booking.</p>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
