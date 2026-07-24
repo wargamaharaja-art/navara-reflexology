@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Gift } from "lucide-react";
@@ -14,6 +14,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = useState("ALL");
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsBranchDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const [pendingReservations, setPendingReservations] = useState(0);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     Keuangan: false,
@@ -235,25 +248,59 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Branch Selector / Display */}
             {(session.role === "SUPER_ADMIN" || session.role === "INVESTOR") ? (
-              <div className="mt-4">
+              <div className="mt-4 relative" ref={dropdownRef}>
                 <label className="block text-[10px] font-bold tracking-wider text-background/50 uppercase mb-1.5">Pilih Cabang Aktif</label>
-                <div className="relative">
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => handleBranchChange(e.target.value)}
-                    className="w-full text-xs font-semibold bg-background/10 hover:bg-background/20 border border-background/25 text-background rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 transition-colors"
-                  >
-                    <option value="ALL" className="text-foreground bg-white">Semua Cabang (Pusat)</option>
-                    {Array.from(new Set(branches.map(b => b.brand))).map(brand => (
-                      <optgroup key={brand} label={brand === 'RADJA_BEKAM' ? 'Radja Bekam' : 'Navara Reflexology'}>
-                        {branches.filter(b => b.brand === brand).map(b => (
-                          <option key={b.id} value={b.id} className="text-foreground bg-white">{b.name}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-background/60 pointer-events-none" />
+                <div 
+                  onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                  className="w-full flex items-center justify-between bg-white/10 hover:bg-white/15 border border-white/20 text-white rounded-xl px-3.5 py-2.5 cursor-pointer transition-all shadow-[0_2px_10px_rgba(0,0,0,0.1)] group"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Store className="w-4 h-4 text-emerald-300 shrink-0 group-hover:scale-110 transition-transform" />
+                    <span className="text-sm font-bold truncate">
+                      {selectedBranch === "ALL" 
+                        ? "Semua Cabang (Pusat)" 
+                        : branches.find(b => b.id === selectedBranch)?.name || "Pilih Cabang"}
+                    </span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-white/70 transition-transform duration-300 ${isBranchDropdownOpen ? "rotate-180" : ""}`} />
                 </div>
+                
+                {/* Custom Dropdown Menu */}
+                {isBranchDropdownOpen && (
+                  <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.25)] border border-emerald-100/50 overflow-hidden transform origin-top animate-in fade-in zoom-in-95 duration-200">
+                    <div className="max-h-[320px] overflow-y-auto scrollbar-hide">
+                      <div 
+                        onClick={() => { handleBranchChange("ALL"); setIsBranchDropdownOpen(false); }}
+                        className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${selectedBranch === "ALL" ? "bg-emerald-50" : "hover:bg-gray-50"}`}
+                      >
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border-2 ${selectedBranch === "ALL" ? "border-emerald-500 bg-emerald-500 text-white" : "border-gray-300 bg-transparent"}`}>
+                          {selectedBranch === "ALL" && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                        </div>
+                        <span className={`text-sm ${selectedBranch === "ALL" ? "font-bold text-emerald-800" : "font-medium text-gray-700"}`}>Semua Cabang (Pusat)</span>
+                      </div>
+                      
+                      {Array.from(new Set(branches.map(b => b.brand))).map((brand, i) => (
+                        <div key={brand}>
+                          <div className="px-4 py-2 bg-gray-50/90 border-y border-gray-100 text-[10px] font-black uppercase tracking-widest text-emerald-800/50 sticky top-0 backdrop-blur-sm z-10 flex items-center gap-2">
+                            {brand === 'RADJA_BEKAM' ? 'Radja Bekam' : 'Navara Reflexology'}
+                          </div>
+                          {branches.filter(b => b.brand === brand).map(b => (
+                            <div 
+                              key={b.id}
+                              onClick={() => { handleBranchChange(b.id); setIsBranchDropdownOpen(false); }}
+                              className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${selectedBranch === b.id ? "bg-emerald-50" : "hover:bg-gray-50"}`}
+                            >
+                              <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 border-2 ${selectedBranch === b.id ? "border-emerald-500 bg-emerald-500 text-white" : "border-gray-300 bg-transparent"}`}>
+                                {selectedBranch === b.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              </div>
+                              <span className={`text-sm ${selectedBranch === b.id ? "font-bold text-emerald-800" : "font-medium text-gray-700"}`}>{b.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-2 bg-background/15 rounded-lg px-3 py-2 flex items-center gap-2 border border-background/10 overflow-hidden">
