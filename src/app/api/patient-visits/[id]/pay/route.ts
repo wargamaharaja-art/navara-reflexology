@@ -3,6 +3,7 @@ import { patientVisits, financeTransactions, therapists, therapistCommissions, p
 import { eq, and, like, desc } from "drizzle-orm";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { checkBranchAccess, getSession } from "@/lib/auth";
+import { calculateTherapistCommission } from "@/lib/commission";
 import crypto from "crypto";
 
 export async function POST(
@@ -89,23 +90,12 @@ export async function POST(
         if (therapistRecords.length > 0) {
           const therapist = therapistRecords[0];
           
-          let commissionAmount = therapist.commissionRate;
-          
-          // Check for service commission override (consistent with POS flow)
-          const customOverride = await db
-            .select()
-            .from(therapistServiceCommissions)
-            .where(
-              and(
-                eq(therapistServiceCommissions.therapistId, visit.therapistId),
-                eq(therapistServiceCommissions.serviceId, visit.serviceId)
-              )
-            )
-            .limit(1);
-
-          if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-            commissionAmount = customOverride[0].commissionAmount;
-          }
+          const commissionAmount = await calculateTherapistCommission(
+            db,
+            visit.therapistId,
+            visit.serviceId,
+            1
+          );
 
           if (commissionAmount > 0) {
             // Hapus komisi lama jika ada untuk mencegah duplikasi

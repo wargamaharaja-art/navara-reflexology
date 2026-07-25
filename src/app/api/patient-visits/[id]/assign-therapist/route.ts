@@ -14,6 +14,7 @@ import { getSession } from "@/lib/auth";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import crypto from "crypto";
 import { logSystemAction } from "@/lib/logger";
+import { calculateTherapistCommission } from "@/lib/commission";
 
 export async function PATCH(
   request: Request,
@@ -103,21 +104,12 @@ export async function PATCH(
           const serviceId = item.serviceId;
           if (!serviceId) continue;
 
-          const customOverride = await tx
-            .select()
-            .from(therapistServiceCommissions)
-            .where(
-              and(
-                eq(therapistServiceCommissions.therapistId, therapistId),
-                eq(therapistServiceCommissions.serviceId, serviceId)
-              )
-            )
-            .limit(1);
-
-          let commissionAmount = 0;
-          if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-            commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
-          }
+          const commissionAmount = await calculateTherapistCommission(
+            tx,
+            therapistId,
+            serviceId,
+            item.qty || 1
+          );
 
           if (commissionAmount > 0) {
             // Hapus komisi lama jika ada untuk mencegah duplikasi

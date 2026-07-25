@@ -6,6 +6,7 @@ import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { financeTransactions, therapistCommissions, therapistServiceCommissions, therapistMonthlyReports } from "@/lib/db/schema";
+import { calculateTherapistCommission } from "@/lib/commission";
 import crypto from "crypto";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
@@ -305,24 +306,12 @@ export async function POST(request: Request) {
             const serviceId = item.serviceId;
             if (!serviceId) continue;
   
-            const customOverride = await tx
-              .select()
-              .from(therapistServiceCommissions)
-              .where(
-                and(
-                  eq(therapistServiceCommissions.therapistId, therapistId),
-                  eq(therapistServiceCommissions.serviceId, serviceId)
-                )
-              )
-              .limit(1);
-  
-            let commissionAmount = therapist.commissionRate;
-            if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-              commissionAmount = customOverride[0].commissionAmount;
-            }
-            
-            // Multiply by item quantity
-            const itemCommission = commissionAmount * (item.qty || 1);
+            const itemCommission = await calculateTherapistCommission(
+              tx,
+              therapistId,
+              serviceId,
+              item.qty || 1
+            );
             if (itemCommission > 0) {
               totalCommission += itemCommission;
               commissionDetails.push(item.name || serviceId);
