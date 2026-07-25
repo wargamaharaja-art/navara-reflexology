@@ -10,10 +10,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { pinCode, branchId, photoBase64 } = await request.json();
+    const { pinCode, branchId: clientBranchId, photoBase64 } = await request.json();
 
-    if (!pinCode || !branchId || !photoBase64) {
+    if (!pinCode || !photoBase64) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const branchId = (session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") ? session.branchId : clientBranchId;
+
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && !branchId) {
+      return NextResponse.json({ error: "Cabang admin tidak ditemukan pada sesi." }, { status: 403 });
     }
 
     // 1. Find therapist by PIN
@@ -30,8 +36,8 @@ export async function POST(request: Request) {
     const therapist = therapistQuery[0];
 
     // Check branch (optional: restrict if they must be at their assigned branch)
-    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && branchId !== session.branchId) {
-      return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk cabang Anda." }, { status: 403 });
+    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && therapist.branchId !== session.branchId) {
+      return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk terapis cabang Anda." }, { status: 403 });
     }
 
     const dateStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
