@@ -474,7 +474,7 @@ ${window.location.origin}/surat-mutasi/${m.id}`;
                               <XCircle className="w-4 h-4" />
                             </button>
                           )}
-                          {m.status === "DRAFT" && (session?.role === "SUPER_ADMIN" || m.requestedBy === session?.id) && (
+                          {(m.status === "DRAFT" || m.status === "APPROVED") && (session?.role === "SUPER_ADMIN" || m.requestedBy === session?.id) && (
                             <button
                               onClick={() => setConfirmModal({ type: "cancel", mutationId: m.id, mutationNumber: m.mutationNumber })}
                               className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500"
@@ -556,7 +556,7 @@ ${window.location.origin}/surat-mutasi/${m.id}`;
                         <CheckCircle className="w-3.5 h-3.5" /> Setujui
                       </button>
                     )}
-                    {m.status === "DRAFT" && (session?.role === "SUPER_ADMIN" || m.requestedBy === session?.id) && (
+                    {(m.status === "DRAFT" || m.status === "APPROVED") && (session?.role === "SUPER_ADMIN" || m.requestedBy === session?.id) && (
                       <button
                         onClick={() => setConfirmModal({ type: "cancel", mutationId: m.id, mutationNumber: m.mutationNumber })}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-gray-50 text-gray-500 text-xs font-semibold hover:bg-gray-100 transition-colors min-w-[80px]"

@@ -29,8 +29,8 @@ export async function PUT(
 
     const m = mutation[0];
 
-    if (m.status !== "DRAFT") {
-      return NextResponse.json({ error: `Hanya surat mutasi berstatus DRAFT yang bisa dibatalkan. Status saat ini: ${m.status}` }, { status: 400 });
+    if (m.status !== "DRAFT" && m.status !== "APPROVED") {
+      return NextResponse.json({ error: `Hanya surat mutasi berstatus DRAFT atau APPROVED yang bisa dibatalkan. Status saat ini: ${m.status}` }, { status: 400 });
     }
 
     // BRANCH_ADMIN can only cancel their own requests
