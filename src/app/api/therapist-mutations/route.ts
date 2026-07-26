@@ -12,9 +12,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const perms = session.permissions || [];
-    if (!perms.includes("PEGAWAI_MUTASI") && session.role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const branchFilter = await getActiveBranchFilter();
+
+    if (session.role !== "SUPER_ADMIN" || branchFilter !== null) {
+      return NextResponse.json({ error: "Fitur Surat Mutasi hanya dapat diakses oleh Super Admin via Maharaja Group (Semua Cabang)" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -42,16 +43,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Super Admin branch filter (from cookie)
-    const branchFilter = await getActiveBranchFilter();
-    if (branchFilter) {
-      conditions.push(
-        or(
-          eq(therapistMutations.fromBranchId, branchFilter),
-          eq(therapistMutations.toBranchId, branchFilter)
-        )
-      );
-    }
 
     const mutations = await db
       .select({
@@ -132,9 +123,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const perms = session.permissions || [];
-    if (!perms.includes("PEGAWAI_MUTASI") && session.role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const branchFilter = await getActiveBranchFilter();
+
+    if (session.role !== "SUPER_ADMIN" || branchFilter !== null) {
+      return NextResponse.json({ error: "Fitur Surat Mutasi hanya dapat diakses oleh Super Admin via Maharaja Group (Semua Cabang)" }, { status: 403 });
     }
 
     const body = await request.json();
@@ -166,10 +158,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Terapis tidak aktif, tidak bisa dimutasi" }, { status: 400 });
     }
 
-    // Check branch access for BRANCH_ADMIN
-    if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && session.branchId && therapist.branchId !== session.branchId) {
-      return NextResponse.json({ error: "Anda hanya bisa memutasi terapis dari cabang Anda" }, { status: 403 });
-    }
+    // No need to check branch access for BRANCH_ADMIN anymore since only SUPER_ADMIN via Maharaja Group can access this
 
     // Validate destination branch exists and is active
     const destBranch = await db.select().from(branches).where(eq(branches.id, toBranchId)).limit(1);
