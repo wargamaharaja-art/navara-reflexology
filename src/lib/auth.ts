@@ -99,6 +99,11 @@ export async function getSession(): Promise<AdminSession | null> {
     // This breaks custom permissions defined in the database (e.g., when Super Admin checks 'Cabang' for a Cashier).
     // session.permissions = getDefaultPermissions(session.role);
     
+    // Ensure SUPER_ADMIN always has all permissions
+    if (session.role === "SUPER_ADMIN") {
+      session.permissions = getDefaultPermissions("SUPER_ADMIN");
+    }
+    
     return session;
   } catch (error: any) {
     if (error && typeof error === "object" && error.digest === "DYNAMIC_SERVER_USAGE") {

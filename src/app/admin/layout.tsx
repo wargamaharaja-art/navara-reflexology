@@ -158,15 +158,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   const bottomNavLinks = bottomNavLinksRaw.filter(link => {
+    const isSuperAdmin = session?.role === "SUPER_ADMIN";
     const perms = session?.permissions || [];
-    if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
-    if (link.name === "Visits") return perms.includes("BUKUPASIEN_REKAMMEDIS");
-    if (link.name === "Reservasi") return perms.includes("RESERVASI_ONLINE");
-    if (link.name === "Finance") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("KEUANGAN_PENGELUARAN") || perms.includes("KEUANGAN_MUTASI") || perms.includes("KEUANGAN_LABARUGI");
+    if (link.name === "Dashboard") return isSuperAdmin || perms.includes("DASHBOARD_ANALITIK");
+    if (link.name === "Visits") return isSuperAdmin || perms.includes("BUKUPASIEN_REKAMMEDIS");
+    if (link.name === "Reservasi") return isSuperAdmin || perms.includes("RESERVASI_ONLINE");
+    if (link.name === "Finance") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("KEUANGAN_PENGELUARAN") || perms.includes("KEUANGAN_MUTASI") || perms.includes("KEUANGAN_LABARUGI");
     return false;
   });
 
-  const activeBranchObj = branches.find(b => b.id === selectedBranch);
+  const effectiveBranch = (session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") ? selectedBranch : (session?.branchId || "ALL");
+  const activeBranchObj = branches.find(b => b.id === effectiveBranch);
   const isRadjaBekam = activeBranchObj?.brand === "RADJA_BEKAM";
 
   return (
@@ -212,7 +214,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           --theme-emerald-950: #020617;
         }
       `}} />
-      <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${selectedBranch === 'ALL' ? 'theme-maharaja' : isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
+      <div className={`min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-emerald-100/30 md:via-emerald-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0 ${effectiveBranch === 'ALL' ? 'theme-maharaja' : isRadjaBekam ? 'theme-radja-bekam' : 'theme-navara'}`}>
       {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
@@ -222,13 +224,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       `}>
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity flex items-center gap-3.5">
-            <div className={`bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30 overflow-hidden ${selectedBranch === "ALL" ? "p-0 w-[56px] h-[56px]" : "p-2"}`}>
-              <Image src={selectedBranch === "ALL" ? "/maharaja-logo.jpg" : "/navara-logo.png"} alt={selectedBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={56} height={56} className={`${selectedBranch === "ALL" ? "w-full h-full object-cover scale-[1.15]" : "w-10 h-10 object-contain drop-shadow-sm"}`} />
+            <div className={`bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.2)] flex items-center justify-center border border-emerald-800/30 overflow-hidden ${effectiveBranch === "ALL" ? "p-0 w-[56px] h-[56px]" : "p-2"}`}>
+              <Image src={effectiveBranch === "ALL" ? "/maharaja-logo.jpg" : "/navara-logo.png"} alt={effectiveBranch === "ALL" ? "Maharaja Group Logo" : isRadjaBekam ? "Radja Bekam Logo" : "Navara Reflexology Logo"} width={56} height={56} className={`${effectiveBranch === "ALL" ? "w-full h-full object-cover scale-[1.15]" : "w-10 h-10 object-contain drop-shadow-sm"}`} />
             </div>
             <div>
               <h1 className="text-lg md:text-xl font-bold leading-tight">
-                <span className="text-white">{selectedBranch === "ALL" ? "Maharaja" : isRadjaBekam ? "Radja" : "Navara"}</span>{" "}
-                <span className="text-emerald-400">{selectedBranch === "ALL" ? "Group" : isRadjaBekam ? "Bekam" : "Reflexology"}</span>
+                <span className="text-white">{effectiveBranch === "ALL" ? "Maharaja" : isRadjaBekam ? "Radja" : "Navara"}</span>{" "}
+                <span className="text-emerald-400">{effectiveBranch === "ALL" ? "Group" : isRadjaBekam ? "Bekam" : "Reflexology"}</span>
               </h1>
               <span className="text-white/50 font-medium text-xs tracking-wide">Admin Panel</span>
             </div>
@@ -377,47 +379,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             // Permissions filtering
             const filteredNavLinks = navLinks.filter(link => {
+              const isSuperAdmin = session?.role === "SUPER_ADMIN";
               const perms = session?.permissions || [];
 
-              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
-              if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
+              if (link.name === "Dashboard") return isSuperAdmin || perms.includes("DASHBOARD_ANALITIK");
+              if (link.name === "Reservasi Online") return isSuperAdmin || perms.includes("RESERVASI_ONLINE");
               
               if (link.name === "Promo Bekam Gratis") {
-                const hasPermission = perms.includes("RESERVASI_ONLINE") || session?.role === "SUPER_ADMIN";
+                const hasPermission = isSuperAdmin || perms.includes("RESERVASI_ONLINE");
                 if (!hasPermission) return false;
                 
-                const activeBranchId = (session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") ? selectedBranch : session?.branchId;
+                const activeBranchId = (isSuperAdmin || session?.role === "INVESTOR") ? selectedBranch : session?.branchId;
                 const isJatiasih = activeBranchId === "ALL" || branches.some(b => b.id === activeBranchId && b.name.toLowerCase().includes("jatiasih"));
                 return isJatiasih;
               }
 
-              if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
+              if (link.name === "Buku Pasien") return isSuperAdmin || perms.includes("BUKUPASIEN_REKAMMEDIS");
+              if (link.name === "Transaksi Pelanggan") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
+              if (link.name === "Layanan Terapi") return isSuperAdmin || perms.includes("PENGATURAN_CABANG"); // Opsional
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
-                  if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
-                  if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
+                  if (sub.name === "Data Terapis") return isSuperAdmin || perms.includes("PEGAWAI_TERAPIS");
+                  if (sub.name === "Data Staff") return isSuperAdmin || perms.includes("PEGAWAI_STAFF");
+                  if (sub.name === "Absensi Pegawai") return isSuperAdmin || perms.includes("PEGAWAI_ABSENSI");
                   if (sub.name === "Surat Mutasi") {
-                    return session?.role === "SUPER_ADMIN" && selectedBranch === "ALL" && perms.includes("PEGAWAI_MUTASI");
+                    return isSuperAdmin && selectedBranch === "ALL";
                   }
-                  if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return perms.includes("PEGAWAI_SLIP");
+                  if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return isSuperAdmin || perms.includes("PEGAWAI_SLIP");
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
 
-              if (link.name === "Inventaris") return perms.includes("INVENTARIS_BARANG");
+              if (link.name === "Inventaris") return isSuperAdmin || perms.includes("INVENTARIS_BARANG");
 
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
-                  if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN");
-                  if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI");
-                  if (sub.name === "Laporan Laba Rugi") return perms.includes("KEUANGAN_LABARUGI");
-                  if (sub.name === "Buku Besar") return perms.includes("KEUANGAN_LABARUGI");
+                  if (sub.name === "Pemasukan & Pengeluaran") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN");
+                  if (sub.name === "Pengeluaran Klinik") return isSuperAdmin || perms.includes("KEUANGAN_PENGELUARAN");
+                  if (sub.name === "Mutasi Kas") return isSuperAdmin || perms.includes("KEUANGAN_MUTASI");
+                  if (sub.name === "Laporan Laba Rugi") return isSuperAdmin || perms.includes("KEUANGAN_LABARUGI");
+                  if (sub.name === "Buku Besar") return isSuperAdmin || perms.includes("KEUANGAN_LABARUGI");
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);
@@ -425,10 +428,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Pengaturan") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (sub.name === "Info Perusahaan") return session?.role === "SUPER_ADMIN";
-                  if (sub.name === "Cabang") return perms.includes("PENGATURAN_CABANG");
-                  if (sub.name === "Pengguna Sistem") return perms.includes("PENGATURAN_PENGGUNA");
-                  if (sub.name === "Sinkronisasi Komisi") return perms.includes("PENGATURAN_KOMISI");
+                  if (sub.name === "Info Perusahaan") return isSuperAdmin;
+                  if (sub.name === "Cabang") return isSuperAdmin || perms.includes("PENGATURAN_CABANG");
+                  if (sub.name === "Pengguna Sistem") return isSuperAdmin || perms.includes("PENGATURAN_PENGGUNA");
+                  if (sub.name === "Sinkronisasi Komisi") return isSuperAdmin || perms.includes("PENGATURAN_KOMISI");
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);
