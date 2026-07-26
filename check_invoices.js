@@ -8,7 +8,8 @@ const pool = new Pool({
 
 async function run() {
   try {
-    const res = await pool.query(`SELECT id, name FROM branches`);
+    const res = await pool.query(`SELECT id, "invoice_number", "created_at" FROM invoices WHERE "created_at" LIKE '2026-07-24%'`);
+    console.log('Invoices on 2026-07-24:', res.rows.length);
     console.log(res.rows);
   } catch (err) {
     console.error(err);
