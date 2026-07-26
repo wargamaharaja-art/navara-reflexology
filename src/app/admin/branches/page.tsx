@@ -14,6 +14,7 @@ type Branch = {
   operatingHoursWeekend: string;
   mapUrl: string | null;
   isActive: boolean;
+  brand: string;
 };
 
 export default function AdminBranchesPage() {
@@ -34,6 +35,7 @@ export default function AdminBranchesPage() {
     operatingHoursWeekend: "09:00 - 21:00 WIB",
     mapUrl: "",
     isActive: true,
+    brand: "NAVARA",
   });
 
   const fetchBranches = async () => {
@@ -72,6 +74,7 @@ export default function AdminBranchesPage() {
       operatingHoursWeekend: "09:00 - 21:00 WIB",
       mapUrl: "",
       isActive: true,
+      brand: "NAVARA",
     });
     setIsEditMode(false);
     setIsFormOpen(true);
@@ -193,6 +196,13 @@ export default function AdminBranchesPage() {
                       <option value="false">Tidak Aktif (Coming Soon)</option>
                     </select>
                   </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Brand</label>
+                    <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary">
+                      <option value="NAVARA">Navara Reflexology</option>
+                      <option value="RADJA_BEKAM">Radja Bekam</option>
+                    </select>
+                  </div>
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-sm font-medium text-gray-700">URL Lokasi GMaps (Sematkan / Embed)</label>
                     <input 
@@ -240,6 +250,9 @@ export default function AdminBranchesPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-bold text-lg text-gray-900">{branch.name}</h3>
+                      <span className={`inline-block mt-1 mr-2 text-xs px-2 py-0.5 rounded-full font-medium ${branch.brand === 'RADJA_BEKAM' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {branch.brand === 'RADJA_BEKAM' ? 'Radja Bekam' : 'Navara'}
+                      </span>
                       <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${branch.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {branch.isActive ? "Aktif" : "Nonaktif"}
                       </span>

@@ -7,7 +7,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive } = body;
+    const { name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive, brand } = body;
 
     const updatedBranch = await db.update(branches)
       .set({
@@ -15,10 +15,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         address,
         phone,
         whatsappNumber,
-        operatingHours,
-        operatingHoursWeekend,
-        mapUrl,
-        isActive,
+        operatingHours: operatingHours || "09:00 - 21:00 WIB",
+        operatingHoursWeekend: operatingHoursWeekend || "09:00 - 21:00 WIB",
+        mapUrl: mapUrl || null,
+        isActive: isActive !== undefined ? isActive : true,
+        brand: brand || "NAVARA",
       })
       .where(eq(branches.id, id))
       .returning();

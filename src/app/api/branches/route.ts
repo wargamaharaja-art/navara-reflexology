@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive } = body;
+    const { id, name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive, brand } = body;
 
     if (!id || !name || !address || !phone || !whatsappNumber) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       operatingHoursWeekend: operatingHoursWeekend || "09:00 - 21:00 WIB",
       mapUrl: mapUrl || null,
       isActive: isActive !== undefined ? isActive : true,
+      brand: brand || "NAVARA",
     }).returning();
 
     return Response.json({ message: "Branch created successfully", data: newBranch[0] }, { status: 201 });
