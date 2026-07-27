@@ -148,6 +148,7 @@ export default function AttendancePage() {
                 <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
                   <th className="px-6 py-4 font-bold">Foto Bukti</th>
                   <th className="px-6 py-4 font-bold">Nama Terapis</th>
+                  <th className="px-6 py-4 font-bold text-center">Cabang</th>
                   <th className="px-6 py-4 font-bold text-center">Status</th>
                   <th className="px-6 py-4 font-bold text-center">Jam Masuk</th>
                 </tr>
@@ -188,11 +189,14 @@ export default function AttendancePage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-bold text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <UserCheck className="w-4 h-4 text-indigo-500 shrink-0" />
-                          {r.therapistName}
-                        </div>
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">{r.therapistName}</div>
+                        <div className="text-xs text-gray-500">Terapis</div>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-block text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-lg">
+                          {branches.find(b => b.id === r.branchId)?.name || "Cabang Tidak Diketahui"}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-center">
                          {!r.clockIn && !r.clockOut ? (
