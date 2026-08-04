@@ -38,11 +38,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    
+
     // Note: If branch is referenced in other tables, this might fail unless cascading delete is set up.
     // Real-world scenario might prefer "soft delete" (isActive = false).
     await db.delete(branches).where(eq(branches.id, id));
-    
+
     return NextResponse.json({ message: "Cabang berhasil dihapus" });
   } catch (error) {
     console.error("Error deleting branch:", error);
