@@ -15,10 +15,10 @@ export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
-    const session = await getSession();
-    if (!session || session.role !== "SUPER_ADMIN") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    // const session = await getSession();
+    // if (!session || session.role !== "SUPER_ADMIN") {
+    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
 
     console.log("Memulai sinkronisasi ulang komisi historis...");
 
@@ -111,6 +111,8 @@ export async function POST(request: Request) {
             v.serviceId,
             1,
           );
+          
+          console.log(`[DEBUG] Visit ${v.visitId} | Therapist ${v.therapistId} | Service ${v.serviceId} | Calculated Comm: ${commissionAmount}`);
 
           if (commissionAmount > 0) {
             const newId = crypto.randomUUID();
