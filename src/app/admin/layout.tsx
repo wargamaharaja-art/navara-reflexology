@@ -396,7 +396,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Buku Pasien") return isSuperAdmin || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || perms.includes("PENGATURAN_CABANG"); // Menampilkan untuk semua admin cabang
+              if (link.name === "Layanan Terapi") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER" || perms.includes("PENGATURAN_CABANG"); // Menampilkan untuk semua admin cabang & kasir
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
