@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, therapistCommissions, therapistServiceCommissions, financeTransactions, patientVisits } from "@/lib/db/schema";
+import { therapists, therapistCommissions, therapistServiceCommissions, financeTransactions, patientVisits, services } from "@/lib/db/schema";
 import { eq, and, like } from "drizzle-orm";
 
 export async function GET() {
@@ -13,6 +13,7 @@ export async function GET() {
     let refTherapist = null;
     let maxOverrides = -1;
     let globalComms: any[] = [];
+    const allServices = await db.select().from(services);
     
     for (const t of activeTherapists) {
       const comms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, t.id));
@@ -27,6 +28,21 @@ export async function GET() {
       return NextResponse.json({ error: "No reference therapist found with commissions" }, { status: 400 });
     }
 
+    // Expand globalComms to include branch-specific services with the SAME name
+    let expandedGlobalComms: any[] = [];
+    for (const gComm of globalComms) {
+      const refService = allServices.find(s => s.id === gComm.serviceId);
+      if (refService) {
+        const matchingServices = allServices.filter(s => s.name.toLowerCase().trim() === refService.name.toLowerCase().trim());
+        for (const ms of matchingServices) {
+           expandedGlobalComms.push({
+             serviceId: ms.id,
+             commissionAmount: gComm.commissionAmount
+           });
+        }
+      }
+    }
+
     let totalFixedCommissions = 0;
     let totalFixedOverrides = 0;
 
@@ -34,7 +50,7 @@ export async function GET() {
       // 1. Fix missing/incorrect overrides for each active therapist
       if (t.isActive) {
         const tComms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, t.id));
-        for (const gComm of globalComms) {
+        for (const gComm of expandedGlobalComms) {
           const existing = tComms.find(c => c.serviceId === gComm.serviceId);
           if (!existing) {
             await db.insert(therapistServiceCommissions).values({
@@ -59,7 +75,7 @@ export async function GET() {
         const visitRecords = await db.select().from(patientVisits).where(eq(patientVisits.id, comm.visitId)).limit(1);
         if (visitRecords.length > 0) {
           const visit = visitRecords[0];
-          const expectedComm = globalComms.find(g => g.serviceId === visit.serviceId);
+          const expectedComm = expandedGlobalComms.find(g => g.serviceId === visit.serviceId);
           
           if (expectedComm && expectedComm.commissionAmount !== null && expectedComm.commissionAmount !== comm.amount) {
             await db.update(therapistCommissions)

@@ -34,7 +34,7 @@ type PatientVisit = {
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
 type Branch = { id: string; name: string; address?: string; phone?: string };
-type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number };
+type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null };
 
 type InvoiceItem = {
   serviceId: string;
@@ -95,6 +95,18 @@ export default function AdminVisitsPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Helper to deduplicate services and filter for selected branch
+  const getValidServicesForBranch = useCallback((branchId: string) => {
+    const map = new Map<string, Service>();
+    // Global services first
+    services.filter(s => !s.branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
+    // Branch-specific override
+    if (branchId) {
+      services.filter(s => s.branchId === branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
+    }
+    return Array.from(map.values());
+  }, [services]);
 
   // Custom Dropdown states
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
@@ -1019,7 +1031,8 @@ export default function AdminVisitsPage() {
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
                         {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On"].map(cat => {
-                          const catServices = services.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
+                          const activePosServices = getValidServicesForBranch(posBranchId);
+                          const catServices = activePosServices.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
                           if (catServices.length === 0) return null;
                           return (
                             <optgroup key={cat} label={cat}>
@@ -1028,9 +1041,9 @@ export default function AdminVisitsPage() {
                           );
                         })}
                         {/* Fallback */}
-                        {services.filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).length > 0 && (
+                        {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).length > 0 && (
                           <optgroup label="Lainnya">
-                            {services.filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).map(s => (
+                            {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).map(s => (
                               <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.price || 0)}</option>
                             ))}
                           </optgroup>
@@ -1631,7 +1644,8 @@ export default function AdminVisitsPage() {
                               
                               <div className="max-h-64 overflow-y-auto p-2 space-y-2">
                                 {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
-                                  const catServices = services.filter(s => {
+                                  const activeServices = getValidServicesForBranch(formData.branchId);
+                                  const catServices = activeServices.filter(s => {
                                     if (cat === "Lainnya") return !s.category;
                                     return (s.category === cat || (!s.category && cat === "Paket Treatment")) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
                                   });

@@ -117,21 +117,28 @@ export async function POST(request: Request) {
     await db.insert(therapists).values(newTherapist);
 
     // Salin konfigurasi komisi kustom (jika ada) dari terapis aktif lain sebagai default
-    const referenceTherapist = await db.select().from(therapists).where(eq(therapists.isActive, true)).limit(1);
-    if (referenceTherapist.length > 0 && referenceTherapist[0].id !== newTherapist.id) {
-      const refCommissions = await db.select()
-        .from(therapistServiceCommissions)
-        .where(eq(therapistServiceCommissions.therapistId, referenceTherapist[0].id));
-      
-      if (refCommissions.length > 0) {
-        const newCommissions = refCommissions.map(c => ({
-          id: crypto.randomUUID(),
-          therapistId: newTherapist.id,
-          serviceId: c.serviceId,
-          commissionAmount: c.commissionAmount
-        }));
-        await db.insert(therapistServiceCommissions).values(newCommissions);
+    // Cari terapis yang memiliki override komisi paling banyak sebagai referensi (sistem bagi hasil yang sudah ditetapkan)
+    const allActiveTherapists = await db.select().from(therapists).where(eq(therapists.isActive, true));
+    let maxOverrides = -1;
+    let bestCommissions: any[] = [];
+    
+    for (const t of allActiveTherapists) {
+      if (t.id === newTherapist.id) continue;
+      const comms = await db.select().from(therapistServiceCommissions).where(eq(therapistServiceCommissions.therapistId, t.id));
+      if (comms.length > maxOverrides) {
+        maxOverrides = comms.length;
+        bestCommissions = comms;
       }
+    }
+
+    if (bestCommissions.length > 0) {
+      const newCommissions = bestCommissions.map(c => ({
+        id: crypto.randomUUID(),
+        therapistId: newTherapist.id,
+        serviceId: c.serviceId,
+        commissionAmount: c.commissionAmount
+      }));
+      await db.insert(therapistServiceCommissions).values(newCommissions);
     }
 
     return NextResponse.json(newTherapist, { status: 201 });
