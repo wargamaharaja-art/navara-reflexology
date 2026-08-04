@@ -12,7 +12,7 @@ export async function GET(request: Request) {
       return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     })();
 
-    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    let branchFilter = await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
     // 1. Kas & Bank (All time)

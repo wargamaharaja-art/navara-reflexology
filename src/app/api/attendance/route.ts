@@ -12,7 +12,9 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const branchFilter = await getActiveBranchFilter();
+    
+    // Use query param if provided, otherwise fallback to global cookie
+    let branchFilter = await getActiveBranchFilter();
 
     // 1. Get therapists based on branch filter
     const therapistConditions = [eq(therapists.isActive, true)];
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
       }
 
       // Enforce branch context for branch admin
-      if ((session.role !== "SUPER_ADMIN" && session.role !== "INVESTOR") && branchId !== session.branchId) {
+      if (session.role === "BRANCH_ADMIN" && branchId !== session.branchId) {
         continue;
       }
 

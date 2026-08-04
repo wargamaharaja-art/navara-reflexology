@@ -48,9 +48,9 @@ export default function AdminFinancePage() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
+  const [session, setSession] = useState<any>(null);
   
   // Filters
-  const [filterBranch, setFilterBranch] = useState("");
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(1);
@@ -97,7 +97,6 @@ export default function AdminFinancePage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filterBranch) params.append("branch", filterBranch);
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -168,6 +167,18 @@ export default function AdminFinancePage() {
   };
 
   useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          setSession(data.session);
+        }
+      } catch (err) {
+        console.error("Failed to load session:", err);
+      }
+    };
+    fetchSession();
     fetchCategories();
     fetchBranches();
   }, []);
@@ -175,7 +186,7 @@ export default function AdminFinancePage() {
   useEffect(() => {
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
-  }, [filterBranch, startDate, endDate]);
+  }, [startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus catatan kas ini? Tindakan ini tidak bisa dibatalkan.")) return;
@@ -299,6 +310,14 @@ export default function AdminFinancePage() {
     return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
   }, [transactions]);
 
+  const expensePieData = useMemo(() => {
+    const categoriesMap: Record<string, number> = {};
+    transactions.filter(t => t.type === "EXPENSE").forEach(t => {
+      categoriesMap[t.category] = (categoriesMap[t.category] || 0) + t.amount;
+    });
+    return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
+  }, [transactions]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -315,24 +334,16 @@ export default function AdminFinancePage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            <Link 
-              href="/admin/finance/accounting"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
-            >
-              <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
-            </Link>
+            {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+              <Link 
+                href="/admin/finance/accounting"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
+              >
+                <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
+              </Link>
+            )}
             
-            <select
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="">Semua Cabang</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            
+
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-sm rounded-lg px-2 py-1.5">
               <input
                 type="date"
@@ -349,27 +360,31 @@ export default function AdminFinancePage() {
               />
             </div>
 
-            <button 
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm"
-              title="Kelola Kategori"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
+            {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+              <>
+                <button 
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm"
+                  title="Kelola Kategori"
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
 
-            <button 
-              onClick={handleExportCSV}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-            >
-              <Download className="h-5 w-5" /> Export CSV
-            </button>
+                <button 
+                  onClick={handleExportCSV}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                >
+                  <Download className="h-5 w-5" /> Export CSV
+                </button>
 
-            <Link 
-              href="/admin/finance/expenses"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-            >
-              <TrendingDown className="h-5 w-5" /> Kelola Pengeluaran
-            </Link>
+                <Link 
+                  href="/admin/finance/expenses"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                >
+                  <TrendingDown className="h-5 w-5" /> Kelola Pengeluaran
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -421,94 +436,130 @@ export default function AdminFinancePage() {
                 <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
               </div>
             </div>
+
+            {/* Charts Section */}
+            <div className="flex flex-col gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
+                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
+                <div className="h-72 w-full">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 12}} 
+                          dy={10} 
+                        />
+                        <YAxis 
+                          tickFormatter={(value) => `Rp ${value / 1000}k`} 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 12}}
+                          width={80}
+                          dx={-10}
+                        />
+                        <Tooltip 
+                          formatter={(value: any) => formatRupiah(Number(value))}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                          itemStyle={{ fontWeight: 600 }}
+                        />
+                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                        <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
+                        <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
+                  <div className="h-[450px] w-full">
+                    {pieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={65}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: any) => formatRupiah(Number(value))}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontWeight: 600 }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
+                  <div className="h-[450px] w-full">
+                    {expensePieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                          <Pie
+                            data={expensePieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={65}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                          >
+                            {expensePieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: any) => formatRupiah(Number(value))}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontWeight: 600 }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pengeluaran</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         )}
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
-            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
-            <div className="h-72 w-full">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#9ca3af', fontSize: 12}} 
-                      dy={10} 
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => `Rp ${value / 1000}k`} 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#9ca3af', fontSize: 12}}
-                      width={80}
-                      dx={-10}
-                    />
-                    <Tooltip 
-                      formatter={(value: any) => formatRupiah(Number(value))}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                    <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
-                    <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
-              )}
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
-            <div className="h-64 w-full">
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={4}
-                      dataKey="value"
-                      stroke="none"
-                      cornerRadius={6}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => formatRupiah(Number(value))}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
-              )}
-            </div>
-          </div>
-        </div>
 
 
 
@@ -594,7 +645,7 @@ export default function AdminFinancePage() {
                     const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
                     
                     return (
-                      <tr key={t.id} className="hover:bg-emerald-50/50 transition-colors group">
+                      <tr key={t.id} className="hover:bg-blue-50/50 transition-colors group">
                         <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3"/> {formattedTime}</div>
@@ -608,11 +659,11 @@ export default function AdminFinancePage() {
                           </div>
                           <div className="md:hidden flex items-center gap-2 mt-1">
                             <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded capitalize">{t.category}</span>
-                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">{t.paymentMethod || "CASH"}</span>
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{t.paymentMethod || "CASH"}</span>
                           </div>
 
                           <div className="flex gap-2 mt-1 items-center">
-                            {t.referenceId && <span className="text-xs text-emerald-600">Ref: {t.referenceId}</span>}
+                            {t.referenceId && <span className="text-xs text-blue-600">Ref: {t.referenceId}</span>}
                             {t.attachmentUrl && (
                               <a href={t.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-500 hover:text-primary flex items-center gap-1 border border-gray-200 px-1.5 py-0.5 rounded-md bg-white">
                                 <LinkIcon className="w-3 h-3" /> Bukti
@@ -623,14 +674,14 @@ export default function AdminFinancePage() {
                         <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
                             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200 capitalize">{t.category}</span>
-                            <span className="flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                            <span className="flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
                               <CreditCard className="w-3 h-3" /> {t.paymentMethod || "CASH"}
                             </span>
                           </div>
                         </td>
                         <td className="px-4 sm:px-6 py-4 text-right font-bold">
                           {t.type === "INCOME" ? (
-                            <span className="text-green-600">+{formatRupiah(t.amount)}</span>
+                            <span className="text-blue-600">+{formatRupiah(t.amount)}</span>
                           ) : (
                             <span className="text-red-500">-{formatRupiah(t.amount)}</span>
                           )}

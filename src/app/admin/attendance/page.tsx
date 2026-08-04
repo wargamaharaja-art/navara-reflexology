@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Users, Camera, UserCheck, Play, Image as ImageIcon, Search } from "lucide-react";
+import { Calendar, Users, Camera, UserCheck, Play, Image as ImageIcon, Search, Store } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Image from "next/image";
 
@@ -28,27 +28,39 @@ export default function AttendancePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
+
+
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [sessionRes, branchesRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/branches")
+        ]);
+        
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          setSession(sessionData);
+        }
+        
+        if (branchesRes.ok) {
+          const branchesJson = await branchesRes.json();
+          setBranches(branchesJson.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+      }
+    };
+    fetchInitialData();
+  }, []);
 
   const fetchAttendance = useCallback(async (targetDate: string) => {
     setLoading(true);
     try {
-      const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/attendance?date=${targetDate}`),
-        fetch("/api/branches"),
-        fetch("/api/auth/session")
-      ]);
+      const res = await fetch(`/api/attendance?date=${targetDate}`);
       if (res.ok) {
         const json = await res.json();
         setRecords(json.data || []);
-      }
-      if (branchRes.ok) {
-        const bJson = await branchRes.json();
-        setBranches(bJson.data || []);
-      }
-      if (sessionRes.ok) {
-        const sJson = await sessionRes.json();
-        setSession(sJson.session);
       }
     } catch (err) {
       console.error(err);
@@ -61,11 +73,7 @@ export default function AttendancePage() {
     fetchAttendance(date);
   }, [date, fetchAttendance]);
 
-  const filteredRecords = records.filter(r => {
-    const matchName = r.therapistName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchBranch = filterBranch === "ALL" || r.branchId === filterBranch;
-    return matchName && matchBranch;
-  });
+  const filteredRecords = records.filter(r => r.therapistName.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
@@ -78,23 +86,7 @@ export default function AttendancePage() {
           icon={Users}
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
-              {/* Branch Filter Dropdown - Only show if Super Admin */}
-              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-                <div className="relative w-full sm:w-auto">
-                  <select
-                    value={filterBranch}
-                    onChange={(e) => setFilterBranch(e.target.value)}
-                    className="pl-4 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all appearance-none"
-                  >
-                    <option value="ALL">Semua Cabang</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
-                </div>
-              )}
-              
+
               <div className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input 
@@ -102,7 +94,7 @@ export default function AttendancePage() {
                   placeholder="Cari terapis..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 placeholder-gray-400 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full shadow-sm transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 placeholder-gray-400 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm outline-none w-full shadow-sm transition-all"
                 />
               </div>
               <div className="relative w-full sm:w-auto">
@@ -112,12 +104,12 @@ export default function AttendancePage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm outline-none w-full cursor-pointer shadow-sm transition-all"
                 />
               </div>
               <button
                 onClick={() => router.push("/admin/attendance/kiosk")}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all whitespace-nowrap active:scale-95"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all whitespace-nowrap active:scale-95"
               >
                 <Play className="w-4 h-4" /> Buka Kiosk Absensi
               </button>
@@ -148,7 +140,6 @@ export default function AttendancePage() {
                 <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
                   <th className="px-6 py-4 font-bold">Foto Bukti</th>
                   <th className="px-6 py-4 font-bold">Nama Terapis</th>
-                  <th className="px-6 py-4 font-bold text-center">Cabang</th>
                   <th className="px-6 py-4 font-bold text-center">Status</th>
                   <th className="px-6 py-4 font-bold text-center">Jam Masuk</th>
                 </tr>
@@ -189,14 +180,11 @@ export default function AttendancePage() {
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">{r.therapistName}</div>
-                        <div className="text-xs text-gray-500">Terapis</div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-block text-xs font-semibold text-gray-700 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-lg">
-                          {branches.find(b => b.id === r.branchId)?.name || "Cabang Tidak Diketahui"}
-                        </span>
+                      <td className="px-6 py-4 font-bold text-gray-900">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-indigo-500 shrink-0" />
+                          {r.therapistName}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-center">
                          {!r.clockIn && !r.clockOut ? (
@@ -204,7 +192,7 @@ export default function AttendancePage() {
                          ) : (r.status === "LATE" || (r.clockIn && r.clockIn > "09:00")) ? (
                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">TERLAMBAT</span>
                          ) : (
-                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">HADIR</span>
+                           <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">HADIR</span>
                          )}
                       </td>
                       <td className="px-6 py-4 text-center">

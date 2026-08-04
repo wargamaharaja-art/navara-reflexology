@@ -12,9 +12,7 @@ import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 import TherapistPicker from "@/components/ui/TherapistPicker";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+
 
 type PatientVisit = {
   id: string;
@@ -74,14 +72,26 @@ export default function AdminVisitsPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [session, setSession] = useState<any>(null);
+  const [todayInvoices, setTodayInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterDate, setFilterDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+  const [filterDate, setFilterDate] = useState("");
   const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
   
+  // Helper for local date string (YYYY-MM-DD)
+  const getLocalDateString = useCallback(() => {
+    const today = new Date();
+    return today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  }, []);
+
+  // Set default filter date to today on mount
+  useEffect(() => {
+    setFilterDate(getLocalDateString());
+  }, [getLocalDateString]);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -112,6 +122,11 @@ export default function AdminVisitsPage() {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
+
+  const [matchingPatients, setMatchingPatients] = useState<any[]>([]);
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [posMatchingPatients, setPosMatchingPatients] = useState<any[]>([]);
+  const [showPosPatientDropdown, setShowPosPatientDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     phone: "",
@@ -173,18 +188,10 @@ export default function AdminVisitsPage() {
   // Patient History Modal State
   const [selectedPatientHistoryId, setSelectedPatientHistoryId] = useState<string | null>(null);
 
-  // Retention States
-  const [retentionData, setRetentionData] = useState<any[]>([]);
-  const [retentionPage, setRetentionPage] = useState(1);
-  const [retentionTotalPages, setRetentionTotalPages] = useState(1);
-  const [retentionLoading, setRetentionLoading] = useState(false);
-  const [retentionBadgeCount, setRetentionBadgeCount] = useState(0);
-  const retentionItemsPerPage = 15;
-
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedBranchId, activeTab, filterDate]);
+  }, [searchQuery, activeTab, filterDate]);
 
   // POS (Kasir) Tab States
   const [posPhone, setPosPhone] = useState("");
@@ -211,54 +218,59 @@ export default function AdminVisitsPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyPaymentFilter, setHistoryPaymentFilter] = useState("ALL");
 
-  // Edit Therapist States
-  const [editTherapistModalOpen, setEditTherapistModalOpen] = useState(false);
-  const [editTherapistVisitId, setEditTherapistVisitId] = useState<string | string[] | null>(null);
-  const [editTherapistBranchId, setEditTherapistBranchId] = useState<string>("");
-  const [newTherapistId, setNewTherapistId] = useState<string>("");
-  const [isSavingTherapist, setIsSavingTherapist] = useState(false);
-
-  const handleAssignTherapist = async () => {
-    if (!editTherapistVisitId || !newTherapistId) return;
-    setIsSavingTherapist(true);
-    try {
-      const ids = Array.isArray(editTherapistVisitId) ? editTherapistVisitId : [editTherapistVisitId];
-      await Promise.all(ids.map(id => 
-        fetch(`/api/patient-visits/${id}/assign-therapist`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ therapistId: newTherapistId }),
-        })
-      ));
-      setEditTherapistModalOpen(false);
-      setNewTherapistId("");
-      fetchData(); // refresh
-    } catch (error) {
-      console.error(error);
-      alert("Terjadi kesalahan sistem");
-    } finally {
-      setIsSavingTherapist(false);
-    }
-  };
-
   // Timer state for active therapies
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const [finishModalOpen, setFinishModalOpen] = useState(false);
+  const [visitToFinish, setVisitToFinish] = useState<string | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
+
+  const handleFinishVisit = (visitId: string) => {
+    setVisitToFinish(visitId);
+    setFinishModalOpen(true);
+  };
+
+  const confirmFinishVisit = async () => {
+    if (!visitToFinish) return;
+    setIsFinishing(true);
+    
+    try {
+      const res = await fetch(`/api/patient-visits/${visitToFinish}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" })
+      });
+      if (res.ok) {
+        setFinishModalOpen(false);
+        setVisitToFinish(null);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menyelesaikan kunjungan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan jaringan");
+    } finally {
+      setIsFinishing(false);
+    }
+  };
 
   const renderTherapyStatus = (v: PatientVisit) => {
     if (v.status === "completed") {
       return (
-        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+        <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
           <CheckCircle2 className="w-3 h-3" /> Selesai
         </div>
       );
     }
     if (v.status === "cancelled") {
       return (
-        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
+        <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
           <X className="w-3 h-3" /> Batal
         </div>
       );
@@ -267,27 +279,38 @@ export default function AdminVisitsPage() {
       const parts = v.visitDate.split('-');
       const [h, m] = v.checkOutTime.split(":").map(Number);
       const target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), h, m, 0);
-      const diffMs = target.getTime() - currentTime.getTime();
-      const mins = Math.ceil(diffMs / 60000);
+      
+      // Zero out seconds from currentTime to align countdown perfectly with wall-clock minutes
+      const currentMins = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), currentTime.getHours(), currentTime.getMinutes(), 0);
+      const diffMs = target.getTime() - currentMins.getTime();
+      const mins = Math.round(diffMs / 60000);
       
       if (mins > 0) {
         return (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in">
-            <Timer className="w-3 h-3 animate-pulse" /> Sisa {mins} mnt
-          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleFinishVisit(v.id); }}
+            title="Klik untuk menyelesaikan layanan sekarang"
+            className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in hover:bg-amber-200 transition-colors"
+          >
+            <Timer className="w-2.5 h-2.5 animate-pulse" /> Sisa {mins} mnt
+          </button>
         );
       } else {
         if (v.paymentStatus === "PAID") {
           return (
-            <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+            <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
               <CheckCircle2 className="w-3 h-3" /> Selesai
             </div>
           );
         }
         return (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
-            <AlertCircle className="w-3 h-3 animate-pulse" /> Waktu Habis ({Math.abs(mins)} mnt)
-          </div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleFinishVisit(v.id); }}
+            title="Klik untuk menyelesaikan layanan sekarang"
+            className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in hover:bg-red-200 transition-colors"
+          >
+            <AlertCircle className="w-2.5 h-2.5 animate-pulse" /> Habis ({Math.abs(mins)}m)
+          </button>
         );
       }
     }
@@ -296,8 +319,9 @@ export default function AdminVisitsPage() {
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const existing = patients.find(p => p.phone === val);
-    if (existing) {
+    const matches = patients.filter(p => p.phone === val);
+    if (matches.length === 1) {
+      const existing = matches[0];
       setFormData(prev => ({
         ...prev,
         phone: val,
@@ -305,31 +329,50 @@ export default function AdminVisitsPage() {
         gender: existing.gender || "L",
         address: existing.address || "",
       }));
+      setShowPatientDropdown(false);
+    } else if (matches.length > 1) {
+      setFormData(prev => ({ ...prev, phone: val, name: "", address: "", gender: "L" }));
+      setMatchingPatients(matches);
+      setShowPatientDropdown(true);
     } else {
       setFormData(prev => ({ ...prev, phone: val }));
+      setShowPatientDropdown(false);
     }
+  };
+
+  const handleSelectPatient = (patient: any) => {
+    setFormData(prev => ({
+      ...prev,
+      name: patient.name,
+      gender: patient.gender || "L",
+      address: patient.address || "",
+    }));
+    setShowPatientDropdown(false);
   };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resVisits, resPatients, resTherapists, resBranches, resServices, resSession] = await Promise.all([
+      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+      const [resVisits, resPatients, resTherapists, resBranches, resServices, resSession, resInvoices] = await Promise.all([
         fetch("/api/patient-visits"),
         fetch("/api/patients"),
         fetch("/api/therapists"),
         fetch("/api/branches"),
         fetch("/api/services"),
-        fetch("/api/auth/session")
+        fetch("/api/auth/session"),
+        fetch(`/api/invoices?date=${today}`)
       ]);
       if (resVisits.ok) setVisits((await resVisits.json()).data || []);
       if (resPatients.ok) setPatients((await resPatients.json()).data || []);
       if (resTherapists.ok) setTherapists(await resTherapists.json() || []);
       if (resBranches.ok) setBranches((await resBranches.json()).data || []);
       if (resServices.ok) setServices((await resServices.json()).data || []);
+      if (resInvoices.ok) setTodayInvoices((await resInvoices.json()).data || []);
       if (resSession.ok) {
         const sessionData = await resSession.json();
         setSession(sessionData.session);
-        if (sessionData.session.role === "BRANCH_ADMIN") {
+        if (sessionData.session.role === "BRANCH_ADMIN" || sessionData.session.role === "CASHIER") {
           setFormData(prev => ({ ...prev, branchId: sessionData.session.branchId || "" }));
           setPosBranchId(sessionData.session.branchId || "");
         }
@@ -391,107 +434,58 @@ export default function AdminVisitsPage() {
       fetchInvoiceHistory();
     }
   }, [activeTab, historyDate, fetchInvoiceHistory]);
-  const fetchRetentionData = useCallback(async (page: number) => {
-    setRetentionLoading(true);
-    try {
-      const res = await fetch(`/api/patients/retention?page=${page}&limit=${retentionItemsPerPage}`);
-      if (res.ok) {
-        const json = await res.json();
-        setRetentionData(json.data || []);
-        setRetentionTotalPages(json.pagination?.totalPages || 1);
+  const retentionPatients = useMemo(() => {
+    const today = new Date();
+    // 14 days in milliseconds
+    const fourteenDaysMs = 14 * 24 * 60 * 60 * 1000;
+    
+    // Create a map of patient's latest visit
+    const latestVisits = new Map<string, Date>();
+    visits.forEach(v => {
+      const visitDate = new Date(v.visitDate);
+      if (!latestVisits.has(v.patientId) || visitDate > latestVisits.get(v.patientId)!) {
+        latestVisits.set(v.patientId, visitDate);
       }
-    } catch (err) {
-      console.error("Failed to fetch retention data:", err);
-    } finally {
-      setRetentionLoading(false);
-    }
-  }, [retentionItemsPerPage]);
-
-  const fetchRetentionBadgeCount = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/patients/retention?countOnly=true`);
-      if (res.ok) {
-        const json = await res.json();
-        setRetentionBadgeCount(json.total || 0);
-      }
-    } catch (err) {
-      console.error("Failed to fetch retention count:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Fetch badge count on mount
-    fetchRetentionBadgeCount();
-  }, [fetchRetentionBadgeCount]);
-
-  useEffect(() => {
-    if (activeTab === "retention") {
-      fetchRetentionData(retentionPage);
-    }
-  }, [activeTab, retentionPage, fetchRetentionData]);
-
-  const handleExportExcel = async () => {
-    // For export, we fetch all retention data or a very large limit to get the full list
-    try {
-      const res = await fetch(`/api/patients/retention?page=1&limit=1000`);
-      if (res.ok) {
-        const json = await res.json();
-        const dataToExport = json.data || [];
-        const data = dataToExport.map((rp: any, idx: number) => ({
-          "No": idx + 1,
-          "Nama Pasien": rp.patient.name,
-          "No. Telepon / WA": rp.patient.phone,
-          "Kunjungan Terakhir": new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
-          "Lama Absen (Hari)": rp.daysSinceLastVisit
-        }));
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Follow-up & Retensi");
-        XLSX.writeFile(workbook, `Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.xlsx`);
-      }
-    } catch(err) {
-      alert("Gagal mengunduh excel");
-    }
-  };
-
-  const handleExportPDF = async () => {
-    try {
-      const res = await fetch(`/api/patients/retention?page=1&limit=1000`);
-      if (res.ok) {
-        const json = await res.json();
-        const dataToExport = json.data || [];
-        const doc = new jsPDF();
-        doc.text("Laporan Follow-up & Retensi Pasien", 14, 15);
-    doc.text(`Tanggal: ${new Date().toLocaleDateString("id-ID")}`, 14, 22);
-
-    const tableColumn = ["No", "Nama Pasien", "No. Telepon / WA", "Kunjungan Terakhir", "Lama Absen (Hari)"];
-    const tableRows = dataToExport.map((rp: any, idx: number) => [
-      idx + 1,
-      rp.patient.name,
-      rp.patient.phone,
-      new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }),
-      rp.daysSinceLastVisit
-    ]);
-
-    autoTable(doc, {
-      head: [tableColumn],
-      body: tableRows,
-      startY: 30,
     });
 
-    doc.save(`Data_Retensi_Pasien_${new Date().toISOString().split('T')[0]}.pdf`);
+    const retentionList: Array<{patient: any, lastVisitDate: Date, daysSinceLastVisit: number}> = [];
+
+    patients.forEach(p => {
+      const lastVisit = latestVisits.get(p.id);
+      if (lastVisit) {
+        const diffMs = today.getTime() - lastVisit.getTime();
+        if (diffMs > fourteenDaysMs) {
+          retentionList.push({
+            patient: p,
+            lastVisitDate: lastVisit,
+            daysSinceLastVisit: Math.floor(diffMs / (1000 * 60 * 60 * 24))
+          });
+        }
       }
-    } catch(err) {
-      alert("Gagal mengunduh pdf");
-    }
-  };
+    });
+
+    // Sort by days since last visit descending (longest absent first)
+    return retentionList.sort((a, b) => b.daysSinceLastVisit - a.daysSinceLastVisit);
+  }, [visits, patients]);
 
   const handlePOSPhoneChange = (val: string) => {
     setPosPhone(val);
-    const existing = patients.find(p => p.phone === val);
-    if (existing) {
-      setPosPatientName(existing.name);
+    const matches = patients.filter(p => p.phone === val);
+    if (matches.length === 1) {
+      setPosPatientName(matches[0].name);
+      setShowPosPatientDropdown(false);
+    } else if (matches.length > 1) {
+      setPosPatientName("");
+      setPosMatchingPatients(matches);
+      setShowPosPatientDropdown(true);
+    } else {
+      setShowPosPatientDropdown(false);
     }
+  };
+
+  const handleSelectPosPatient = (patient: any) => {
+    setPosPatientName(patient.name);
+    setShowPosPatientDropdown(false);
   };
 
   const addPOSItem = (serviceId: string) => {
@@ -641,44 +635,6 @@ export default function AdminVisitsPage() {
     }
   }, []);
 
-  // Handle promo redirect query parameters to auto-fill form
-  useEffect(() => {
-    if (typeof window !== "undefined" && !loading && branches.length > 0 && services.length > 0) {
-      const params = new URLSearchParams(window.location.search);
-      const isPromo = params.get("promo");
-      const phoneParam = params.get("phone");
-      
-      if (isPromo === "true" && phoneParam) {
-        setIsFormOpen(true);
-        const patient = patients.find(p => p.phone === phoneParam);
-        const jatiasih = branches.find(b => b.name.toLowerCase().includes("jatiasih"));
-        
-        // Find a specific "Bekam Gratis" service, or fallback to any "Bekam" service
-        const bekamGratisService = services.find(s => s.name.toLowerCase().includes("bekam gratis"));
-        const bekamService = bekamGratisService || services.find(s => s.name.toLowerCase().includes("bekam"));
-        
-        setFormData(prev => ({
-          ...prev,
-          phone: phoneParam,
-          name: patient ? patient.name : "",
-          gender: patient ? (patient.gender || "L") : "L",
-          address: patient ? (patient.address || "") : "",
-          branchId: jatiasih ? jatiasih.id : prev.branchId,
-        }));
-        
-        if (bekamService) {
-          setSelectedServices([bekamService.id]);
-        }
-        
-        // Remove params from URL to prevent reopening on refresh
-        const url = new URL(window.location.href);
-        url.searchParams.delete("promo");
-        url.searchParams.delete("phone");
-        window.history.replaceState({}, "", url.toString());
-      }
-    }
-  }, [loading, branches, services, patients]);
-
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (typeof window !== "undefined") {
@@ -697,6 +653,17 @@ export default function AdminVisitsPage() {
       }
     }
   }, [activeTab, recapSubTab, recapDate, recapMonth, fetchRecap, fetchMonthlyRecap]);
+
+  const handleOpenNewVisit = () => {
+    setFormData(prev => ({
+      ...prev,
+      visitDate: new Date().toISOString().split('T')[0],
+      visitTime: getFormattedTime(),
+      checkInTime: getFormattedTime(),
+    }));
+    setIsFormOpen(true);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -823,25 +790,10 @@ export default function AdminVisitsPage() {
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [visitToDelete, setVisitToDelete] = useState<string | string[] | null>(null);
+  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleCompleteVisit = async (visitId: string | string[]) => {
-    try {
-      const ids = Array.isArray(visitId) ? visitId : [visitId];
-      await Promise.all(ids.map(id => 
-        fetch(`/api/patient-visits/${id}/complete`, {
-          method: "PATCH",
-        })
-      ));
-      fetchData();
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan jaringan");
-    }
-  };
-
-  const handleDeleteVisit = (visitId: string | string[]) => {
+  const handleDeleteVisit = (visitId: string) => {
     setVisitToDelete(visitId);
     setDeleteModalOpen(true);
   };
@@ -850,15 +802,17 @@ export default function AdminVisitsPage() {
     if (!visitToDelete) return;
     setIsDeleting(true);
     try {
-      const ids = Array.isArray(visitToDelete) ? visitToDelete : [visitToDelete];
-      await Promise.all(ids.map(id => 
-        fetch(`/api/patient-visits/${id}`, {
-          method: "DELETE",
-        })
-      ));
-      setDeleteModalOpen(false);
-      setVisitToDelete(null);
-      fetchData();
+      const res = await fetch(`/api/patient-visits/${visitToDelete}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeleteModalOpen(false);
+        setVisitToDelete(null);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menghapus data kunjungan");
+      }
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan");
@@ -869,66 +823,49 @@ export default function AdminVisitsPage() {
 
   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
     const patientVisits = visits.filter(v => v.patientId === patientId);
-    const arrivals = Array.from(new Set(patientVisits.map(v => `${v.visitDate}T${v.visitTime}`)))
-      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-    
-    const visit = patientVisits.find(v => v.id === visitId);
-    if (!visit) return 1;
-    const key = `${visit.visitDate}T${visit.visitTime}`;
-    return arrivals.indexOf(key) + 1;
+    const groups: { [key: string]: typeof patientVisits } = {};
+    for (const v of patientVisits) {
+      const key = `${v.visitDate}_${v.visitTime}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    }
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+      const dateA = new Date(`${a[0].visitDate}T${(a[0].visitTime || '00:00').replace('.', ':')}:00`).getTime();
+      const dateB = new Date(`${b[0].visitDate}T${(b[0].visitTime || '00:00').replace('.', ':')}:00`).getTime();
+      return dateB - dateA;
+    });
+    const groupIndex = sortedGroups.findIndex(g => g.some(v => v.id === visitId));
+    return groupIndex >= 0 ? sortedGroups.length - groupIndex : 1;
   };
 
-  let rawFinalVisits = visits.filter(v => {
-    const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
+  let finalVisits = visits.filter(v => {
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchBranch && matchDate && matchSearch;
+    return matchDate && matchSearch;
   }).sort((a, b) => {
-    // Sort by visitDate descending, then visitTime descending
-    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`);
-    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`);
-    return dateB.getTime() - dateA.getTime();
+    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+    return dateB - dateA;
   });
 
-  const groupedMap = new Map<string, any>();
-  rawFinalVisits.forEach(v => {
-    const key = `${v.patientId}-${v.visitDate}-${v.visitTime}`;
-    if (!groupedMap.has(key)) {
-      groupedMap.set(key, { 
-        ...v, 
-        groupedServiceIds: [v.serviceId], 
-        groupedTherapistIds: [v.therapistId],
-        groupedIds: [v.id]
-      });
-    } else {
-      const group = groupedMap.get(key);
-      group.groupedServiceIds.push(v.serviceId);
-      group.groupedTherapistIds.push(v.therapistId);
-      group.groupedIds.push(v.id);
-      
-      if (v.status === "in_progress") group.status = "in_progress";
-      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
-      if (!v.checkOutTime) group.checkOutTime = null;
-    }
-  });
-
-  const finalVisits = Array.from(groupedMap.values());
-
-  // KPI Calculations (Actual Data)
+  // Hitung KPI menggunakan data asli (bukan paginated)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
   
-  const branchVisits = visits.filter(v => selectedBranchId === "ALL" || v.branchId === selectedBranchId);
-  const kpiVisitsToday = branchVisits.filter(v => v.visitDate === todayDateString).length;
-  const kpiRevenueToday = branchVisits
-    .filter(v => v.visitDate === todayDateString && v.paymentStatus === "PAID")
-    .reduce((sum, v) => {
-      const service = services.find(s => s.id === v.serviceId);
-      return sum + (service?.price || 0);
-    }, 0);
-  const kpiNewPatientsToday = branchVisits
-    .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
-    .length;
+  const branchVisits = visits;
+  
+  const kpiVisitsToday = Array.from(new Set(
+    branchVisits.filter(v => v.visitDate === todayDateString).map(v => `${v.patientId}_${v.visitTime}`)
+  )).length;
+  
+  const kpiRevenueToday = todayInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+    
+  const kpiNewPatientsToday = Array.from(new Set(
+    branchVisits
+      .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
+      .map(v => v.patientId)
+  )).length;
+  
   const kpiRetention = kpiVisitsToday > 0 
     ? Math.round(((kpiVisitsToday - kpiNewPatientsToday) / kpiVisitsToday) * 100)
     : 0;
@@ -937,8 +874,18 @@ export default function AdminVisitsPage() {
     ? `Rp ${(kpiRevenueToday / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Juta`
     : formatRupiah(kpiRevenueToday);
 
-  const totalPages = Math.ceil(finalVisits.length / itemsPerPage);
-  const paginatedVisits = finalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const groupedFinalVisits = (() => {
+    const groups: { [key: string]: typeof finalVisits } = {};
+    for (const v of finalVisits) {
+      const key = `${v.patientId}_${v.visitDate}_${v.visitTime}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    }
+    return Object.values(groups);
+  })();
+
+  const totalPages = Math.ceil(groupedFinalVisits.length / itemsPerPage);
+  const paginatedGroups = groupedFinalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const renderPOSFormContent = () => (
     <>
@@ -969,9 +916,26 @@ export default function AdminVisitsPage() {
                             placeholder="08123..."
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                           />
+                          {showPosPatientDropdown && posMatchingPatients.length > 1 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                              <div className="px-3 py-2 bg-amber-50 text-amber-700 text-xs font-bold border-b border-amber-100 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> Pilih Pasien:
+                              </div>
+                              {posMatchingPatients.map(patient => (
+                                <button
+                                  key={patient.id}
+                                  type="button"
+                                  onClick={() => handleSelectPosPatient(patient)}
+                                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-50 last:border-0 transition-colors flex flex-col"
+                                >
+                                  <span className="font-bold text-gray-800 text-sm">{patient.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {patients.find(p => p.phone === posPhone) && (
-                          <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
+                        {patients.find(p => p.phone === posPhone) && !showPosPatientDropdown && (
+                          <p className="text-xs text-blue-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
                         )}
                       </div>
                       <div className="space-y-1.5">
@@ -1008,7 +972,7 @@ export default function AdminVisitsPage() {
                           <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <select
                             required
-                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN"}
+                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER"}
                             value={posBranchId}
                             onChange={e => setPosBranchId(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
@@ -1041,9 +1005,9 @@ export default function AdminVisitsPage() {
 
                 {/* Service Selection Card */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-gradient-to-r from-emerald-50 to-emerald-50 border-b border-gray-100">
+                  <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-50 border-b border-gray-100">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-emerald-600" /> Pilih Layanan
+                      <Activity className="w-5 h-5 text-blue-600" /> Pilih Layanan
                     </h3>
                   </div>
                   <div className="p-6">
@@ -1051,10 +1015,10 @@ export default function AdminVisitsPage() {
                       <select
                         onChange={e => { addPOSItem(e.target.value); e.target.value = ""; }}
                         value=""
-                        className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none cursor-pointer hover:bg-emerald-100"
+                        className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 font-semibold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer hover:bg-blue-100"
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
-                        {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"].map(cat => {
+                        {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On"].map(cat => {
                           const catServices = services.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
                           if (catServices.length === 0) return null;
                           return (
@@ -1150,7 +1114,7 @@ export default function AdminVisitsPage() {
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-extrabold text-gray-900">TOTAL</span>
-                        <span className="text-2xl font-extrabold text-emerald-600">{formatRupiah(posGrandTotal)}</span>
+                        <span className="text-2xl font-extrabold text-blue-600">{formatRupiah(posGrandTotal)}</span>
                       </div>
                     </div>
 
@@ -1163,7 +1127,7 @@ export default function AdminVisitsPage() {
                             type="checkbox" 
                             checked={posIsSplitPayment}
                             onChange={(e) => setPosIsSplitPayment(e.target.checked)}
-                            className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 rounded border-gray-300"
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
                           />
                           <span className="font-medium text-gray-600">Split Payment (Ganda)</span>
                         </label>
@@ -1183,7 +1147,7 @@ export default function AdminVisitsPage() {
                               onClick={() => setPosPaymentMethod(m.value)}
                               className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
                                 posPaymentMethod === m.value
-                                  ? "bg-emerald-50 border-emerald-400 text-emerald-700"
+                                  ? "bg-blue-50 border-blue-400 text-blue-700"
                                   : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                               }`}
                             >
@@ -1200,7 +1164,7 @@ export default function AdminVisitsPage() {
                               <select 
                                 value={posSplitMethod1}
                                 onChange={e => setPosSplitMethod1(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               >
                                 <option value="CASH">Cash</option>
                                 <option value="QRIS">QRIS</option>
@@ -1219,7 +1183,7 @@ export default function AdminVisitsPage() {
                                   setPosSplitAmount1(val);
                                   setPosSplitAmount2(Math.max(0, posGrandTotal - val));
                                 }}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               />
                             </div>
                           </div>
@@ -1230,7 +1194,7 @@ export default function AdminVisitsPage() {
                               <select 
                                 value={posSplitMethod2}
                                 onChange={e => setPosSplitMethod2(e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               >
                                 <option value="QRIS">QRIS</option>
                                 <option value="CASH">Cash</option>
@@ -1245,7 +1209,7 @@ export default function AdminVisitsPage() {
                                 min="0" 
                                 value={posSplitAmount2.toString()}
                                 onChange={e => setPosSplitAmount2(e.target.value === "" ? 0 : parseInt(e.target.value))}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                               />
                             </div>
                           </div>
@@ -1264,7 +1228,7 @@ export default function AdminVisitsPage() {
                           value={posAmountPaid.toString()}
                           onChange={e => setPosAmountPaid(e.target.value === "" ? 0 : parseInt(e.target.value))}
                           placeholder="Masukkan nominal..."
-                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                         />
                         {/* Quick amount buttons */}
                         <div className="flex gap-2 flex-wrap">
@@ -1273,7 +1237,7 @@ export default function AdminVisitsPage() {
                               key={amount}
                               type="button"
                               onClick={() => setPosAmountPaid(amount)}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-colors"
                             >
                               {formatRupiah(amount)}
                             </button>
@@ -1284,10 +1248,10 @@ export default function AdminVisitsPage() {
 
                     {/* Change */}
                     {totalPosPaid >= posGrandTotal && totalPosPaid > 0 && (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-emerald-700">Kembalian</span>
-                          <span className="text-xl font-extrabold text-emerald-700">{formatRupiah(posChangeAmount)}</span>
+                          <span className="text-sm font-semibold text-blue-700">Kembalian</span>
+                          <span className="text-xl font-extrabold text-blue-700">{formatRupiah(posChangeAmount)}</span>
                         </div>
                       </div>
                     )}
@@ -1314,7 +1278,7 @@ export default function AdminVisitsPage() {
                     <button
                       type="submit"
                       disabled={posProcessing || posItems.length === 0 || totalPosPaid < posGrandTotal}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       {posProcessing ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1332,15 +1296,15 @@ export default function AdminVisitsPage() {
       ) : (
 <div className="max-w-lg mx-auto animate-in fade-in duration-300">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden text-center">
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 px-8 py-10 text-white">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-8 py-10 text-white">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <Check className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-extrabold">Pembayaran Berhasil!</h3>
-                <p className="text-emerald-100 mt-2 font-medium">{posCreatedInvoice.invoiceNumber}</p>
+                <p className="text-blue-100 mt-2 font-medium">{posCreatedInvoice.invoiceNumber}</p>
                 <p className="text-3xl font-extrabold mt-3">{formatRupiah(posCreatedInvoice.grandTotal)}</p>
                 {posCreatedInvoice.changeAmount > 0 && (
-                  <p className="text-emerald-100 mt-1">Kembalian: {formatRupiah(posCreatedInvoice.changeAmount)}</p>
+                  <p className="text-blue-100 mt-1">Kembalian: {formatRupiah(posCreatedInvoice.changeAmount)}</p>
                 )}
               </div>
 
@@ -1356,7 +1320,7 @@ export default function AdminVisitsPage() {
                     const branch = branches.find(b => b.id === posBranchId);
                     handleSendWA(posCreatedInvoice.id);
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" /> Kirim via WhatsApp
                 </button>
@@ -1391,12 +1355,12 @@ export default function AdminVisitsPage() {
         {/* Mobile-only Seabank-style UI */}
         <div className="md:hidden">
           {/* Header */}
-          <div className="bg-emerald-600 text-white px-4 pt-6 pb-20 relative -mx-4 -mt-8 sm:-mx-6 sm:-mt-8">
+          <div className="bg-blue-600 text-white px-4 pt-6 pb-20 relative -mx-4 -mt-8 sm:-mx-6 sm:-mt-8">
             <div className="flex justify-between items-center mb-2">
               <h1 className="text-xl font-bold tracking-tight">Kunjungan</h1>
-              <div className="relative p-2 bg-emerald-500/50 rounded-full border border-emerald-400">
+              <div className="relative p-2 bg-blue-500/50 rounded-full border border-blue-400">
                 <Bell className="w-5 h-5 text-white" />
-                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-emerald-500"></div>
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-blue-500"></div>
               </div>
             </div>
           </div>
@@ -1406,13 +1370,13 @@ export default function AdminVisitsPage() {
             <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
               <div className="grid grid-cols-4 gap-y-5 gap-x-2">
                 {[
-                  { name: "Tambah", icon: Plus, action: () => setIsFormOpen(true), color: "text-emerald-500", badge: "" },
-                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(new Date().toISOString().split("T")[0]); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
-                  { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-green-500", badge: "" },
+                  { name: "Tambah", icon: Plus, action: handleOpenNewVisit, color: "text-blue-500", badge: "" },
+                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(getLocalDateString()); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
+                  { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-blue-500", badge: "" },
                   { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
                   { name: "Laporan", icon: FileText, action: () => handleTabChange("recap"), color: "text-orange-500", badge: "" },
                   { name: "Pasien", icon: Users, action: () => handleTabChange("retention"), color: "text-purple-500", badge: "" },
-                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-emerald-500", badge: "" },
+                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-blue-500", badge: "" },
                   { name: "POS", icon: Store, action: () => handleTabChange("pos"), color: "text-rose-500", badge: "" },
                 ].map((item, idx) => (
                   <button key={idx} onClick={item.action} className="flex flex-col items-center justify-start gap-1.5 relative group">
@@ -1434,14 +1398,14 @@ export default function AdminVisitsPage() {
           {/* Mobile Tabs */}
           <div className="flex bg-white px-2 border-b border-gray-100 rounded-t-2xl">
             <button 
-              onClick={() => { setActiveTab("list"); setFilterDate(new Date().toISOString().split("T")[0]); }}
-              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === new Date().toISOString().split("T")[0] && activeTab === "list" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-500"}`}
+              onClick={() => { setActiveTab("list"); setFilterDate(getLocalDateString()); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === getLocalDateString() && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
             >
               Hari Ini
             </button>
             <button 
               onClick={() => { setActiveTab("list"); setFilterDate(""); }}
-              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === "" && activeTab === "list" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-500"}`}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === "" && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
             >
               Semua Data
             </button>
@@ -1456,7 +1420,7 @@ export default function AdminVisitsPage() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Cari pasien di sini"
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-transparent rounded-full text-[13px] font-semibold text-gray-700 focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-transparent rounded-full text-[13px] font-semibold text-gray-700 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
               />
             </div>
           </div>
@@ -1469,7 +1433,7 @@ export default function AdminVisitsPage() {
             description="Catat dan pantau seluruh riwayat kunjungan pasien."
             icon={CalendarCheck}
             rightContent={
-              <button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+              <button onClick={handleOpenNewVisit} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
                 <Plus className="h-5 w-5" /> Catat Kunjungan
               </button>
             }
@@ -1512,9 +1476,9 @@ export default function AdminVisitsPage() {
           >
             <MessageCircle className="w-4 h-4" />
             Follow-up & Retensi
-            {retentionBadgeCount > 0 && (
+            {retentionPatients.length > 0 && (
               <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full ml-1">
-                {retentionBadgeCount}
+                {retentionPatients.length}
               </span>
             )}
           </button>
@@ -1524,7 +1488,7 @@ export default function AdminVisitsPage() {
         {isFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-5xl max-h-[90vh] overflow-y-auto relative transform transition-all animate-in zoom-in-95 duration-300">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-emerald-500 z-10"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-blue-500 z-10"></div>
               
               <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-20">
               <div>
@@ -1542,7 +1506,7 @@ export default function AdminVisitsPage() {
                 {/* Kolom Kiri: Data Pasien */}
                 <div className="lg:col-span-5 space-y-5">
                   <div className="flex justify-between items-center mb-4">
-                    <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
                       <User className="w-4 h-4"/> Data Pasien
                     </h4>
                     <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
@@ -1555,15 +1519,35 @@ export default function AdminVisitsPage() {
                       Nomor Telepon/WA <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative group">
-                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-emerald-500' : 'text-gray-400 group-focus-within:text-emerald-500'}`} />
-                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-emerald-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-emerald-400 focus:border-emerald-500 text-emerald-900' : 'border-gray-300 focus:border-emerald-500 text-gray-900'}`} />
-                      {patients.find(p => p.phone === formData.phone) && (
-                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-blue-400 focus:border-blue-500 text-blue-900' : 'border-gray-300 focus:border-blue-500 text-gray-900'}`} />
+                      {patients.find(p => p.phone === formData.phone) && !showPatientDropdown && (
+                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                      )}
+                      
+                      {/* Dropdown untuk memilih pasien jika ada nomor WA ganda */}
+                      {showPatientDropdown && matchingPatients.length > 1 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                          <div className="px-3 py-2 bg-amber-50 text-amber-700 text-xs font-bold border-b border-amber-100 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5" /> Ditemukan {matchingPatients.length} pasien. Pilih salah satu:
+                          </div>
+                          {matchingPatients.map(patient => (
+                            <button
+                              key={patient.id}
+                              type="button"
+                              onClick={() => handleSelectPatient(patient)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-50 last:border-0 transition-colors flex flex-col"
+                            >
+                              <span className="font-bold text-gray-800">{patient.name}</span>
+                              <span className="text-[10px] text-gray-500">{patient.gender === 'L' ? 'Laki-laki' : 'Perempuan'} {patient.address ? `- ${patient.address}` : ''}</span>
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
-                    {patients.find(p => p.phone === formData.phone) ? (
-                      <p className="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-md w-max border border-emerald-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
-                    ) : formData.phone.length > 8 ? (
+                    {patients.find(p => p.phone === formData.phone) && !showPatientDropdown ? (
+                      <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
+                    ) : formData.phone.length > 8 && !showPatientDropdown ? (
                       <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><Plus className="w-3.5 h-3.5"/> + Pasien baru</p>
                     ) : null}
                   </div>
@@ -1571,8 +1555,8 @@ export default function AdminVisitsPage() {
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Nama Lengkap <span className="text-red-500 font-bold">*</span></label>
                     <div className="relative">
-                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
-                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500" />}
+                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
+                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-blue-500" />}
                     </div>
                   </div>
 
@@ -1594,7 +1578,7 @@ export default function AdminVisitsPage() {
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-1">Alamat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
                     <div className="relative">
                       <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-300" />
-                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
+                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
                     </div>
                   </div>
                 </div>
@@ -1605,7 +1589,7 @@ export default function AdminVisitsPage() {
 
                 {/* Kolom Kanan: Rincian Layanan */}
                 <div className="lg:col-span-6 space-y-5">
-                  <h4 className="text-sm font-bold text-emerald-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Activity className="w-4 h-4"/> Rincian Layanan
                   </h4>
 
@@ -1639,14 +1623,14 @@ export default function AdminVisitsPage() {
                                     placeholder="Cari layanan..."
                                     value={serviceSearch}
                                     onChange={(e) => setServiceSearch(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-sm transition-all"
+                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-all"
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                 </div>
                               </div>
                               
                               <div className="max-h-64 overflow-y-auto p-2 space-y-2">
-                                {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
+                                {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
                                   const catServices = services.filter(s => {
                                     if (cat === "Lainnya") return !s.category;
                                     return (s.category === cat || (!s.category && cat === "Paket Treatment")) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
@@ -1669,10 +1653,10 @@ export default function AdminVisitsPage() {
                                                 setSelectedServices([...selectedServices, s.id]);
                                               }
                                             }}
-                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-emerald-600'}`}
+                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}
                                           >
                                             <div className="flex items-center gap-3">
-                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300'}`}>
+                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300'}`}>
                                                 {isSelected && <Check className="w-3 h-3" />}
                                               </div>
                                               <span className="text-sm font-medium">{s.name}</span>
@@ -1696,15 +1680,15 @@ export default function AdminVisitsPage() {
                         <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <select 
                           required 
-                          disabled={session?.role === "BRANCH_ADMIN"}
+                          disabled={session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER"}
                           value={formData.branchId} 
                           onChange={e => setFormData({ ...formData, branchId: e.target.value })} 
-                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none disabled:opacity-70 font-medium"
+                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none disabled:opacity-70 font-medium"
                         >
                           <option value="">Pilih Cabang</option>
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
-                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-emerald-500" />}
+                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-blue-500" />}
                       </div>
                     </div>
                   </div>
@@ -1712,7 +1696,7 @@ export default function AdminVisitsPage() {
                   {/* Terapis Penanggung Jawab — Premium Card Picker */}
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                      <UserCheck className="w-4 h-4 text-emerald-600" />
+                      <UserCheck className="w-4 h-4 text-blue-600" />
                       Terapis Penanggung Jawab
                       <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span>
                     </label>
@@ -1730,12 +1714,12 @@ export default function AdminVisitsPage() {
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tanggal <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
                         <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" />
+                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium" />
                       </div>
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
-                        <Clock className="w-4 h-4 text-emerald-600" />
+                        <Clock className="w-4 h-4 text-blue-600" />
                         Jam Masuk <span className="text-red-500 font-bold">*</span>
                       </label>
                       <div className="relative">
@@ -1744,7 +1728,7 @@ export default function AdminVisitsPage() {
                           required
                           value={formData.checkInTime} 
                           onChange={e => setFormData({ ...formData, checkInTime: e.target.value })} 
-                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium" 
+                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium" 
                         />
                       </div>
                     </div>
@@ -1762,7 +1746,7 @@ export default function AdminVisitsPage() {
                         />
                       </div>
                       {formData.checkOutTime && formData.checkInTime && (
-                        <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                        <p className="text-[10px] text-blue-600 font-bold flex items-center gap-1">
                           ⏱ Durasi: {(() => {
                             const [h1, m1] = formData.checkInTime.split(":").map(Number);
                             const [h2, m2] = formData.checkOutTime.split(":").map(Number);
@@ -1782,7 +1766,7 @@ export default function AdminVisitsPage() {
                       <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tensi Darah <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
                       <div className="relative">
                         <Activity className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all font-medium" />
+                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all font-medium" />
                         {!formData.bloodPressure && <span title="Tensi belum diisi" className="absolute right-3 top-1/2 -translate-y-1/2"><AlertCircle className="w-4 h-4 text-amber-400" /></span>}
                       </div>
                     </div>
@@ -1790,13 +1774,13 @@ export default function AdminVisitsPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-500 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
-                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
+                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
                   </div>
                   
                   {/* Summary Ringkasan */}
                   {selectedServices.length > 0 && (
-                    <div className="mt-6 bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
-                      <h5 className="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
+                    <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
+                      <h5 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
                       <div className="space-y-2">
                         {selectedServices.map(id => {
                           const s = services.find(srv => srv.id === id);
@@ -1807,9 +1791,9 @@ export default function AdminVisitsPage() {
                             </div>
                           );
                         })}
-                        <div className="border-t border-emerald-200/50 pt-2 mt-2 flex justify-between font-bold">
-                          <span className="text-emerald-900">Estimasi Total</span>
-                          <span className="text-emerald-700">
+                        <div className="border-t border-blue-200/50 pt-2 mt-2 flex justify-between font-bold">
+                          <span className="text-blue-900">Estimasi Total</span>
+                          <span className="text-blue-700">
                             {formatRupiah(selectedServices.reduce((sum, id) => sum + (services.find(s => s.id === id)?.price || 0), 0))}
                           </span>
                         </div>
@@ -1822,7 +1806,7 @@ export default function AdminVisitsPage() {
               
               <div className="sticky bottom-0 bg-white z-20 pb-6 pt-4 border-t border-gray-100 mt-8 flex gap-3 justify-end shadow-[0_-10px_20px_rgba(255,255,255,1)]">
                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm">Batalkan</button>
-                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
+                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
                   {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5"/>}
                   {saving ? "Memproses..." : "Simpan Kunjungan"}
                 </button>
@@ -1832,67 +1816,14 @@ export default function AdminVisitsPage() {
           </div>
         )}
 
-        {/* Edit Therapist Modal */}
-        {editTherapistModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-lg overflow-hidden transform transition-all animate-in zoom-in-95 duration-300">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-white">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">Tambahkan Terapis</h3>
-                  <p className="text-sm text-gray-500 mt-1">Pilih terapis untuk kunjungan ini agar komisi dicatat otomatis.</p>
-                </div>
-                <button onClick={() => setEditTherapistModalOpen(false)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  <TherapistPicker
-                    branchId={editTherapistBranchId}
-                    selectedTherapistId={newTherapistId}
-                    onSelect={(id) => setNewTherapistId(id)}
-                    pollInterval={5000}
-                  />
-                  <div className="flex gap-3 justify-end pt-4 border-t border-gray-100 mt-6">
-                    <button type="button" onClick={() => setEditTherapistModalOpen(false)} className="px-4 py-2 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200">Batal</button>
-                    <button type="button" onClick={handleAssignTherapist} disabled={isSavingTherapist || !newTherapistId} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white px-6 py-2 rounded-xl font-semibold transition-colors flex items-center gap-2">
-                      {isSavingTherapist ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-4 h-4"/>}
-                      {isSavingTherapist ? "Menyimpan..." : "Simpan Terapis"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {activeTab === "list" && (
           <>
-            {/* Branch Filter Dropdown - Only show if Super Admin */}
-            {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-              <div className="mb-4">
-                <div className="relative w-full sm:w-72">
-                  <Store className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none shadow-sm text-gray-700 font-medium hover:border-gray-300 cursor-pointer"
-                  >
-                    <option value="ALL">Semua Cabang</option>
-                    {branches.map(branch => (
-                      <option key={branch.id} value={branch.id}>{branch.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-            )}
 
             {/* Insight Panel KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
                 { label: "Kunjungan Hari Ini", value: kpiVisitsToday.toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-                { label: "Pendapatan Hari Ini", value: kpiRevenueFormatted, icon: Wallet, color: "text-emerald-600", bg: "bg-emerald-50" },
+                { label: "Pendapatan Hari Ini", value: kpiRevenueFormatted, icon: Wallet, color: "text-blue-600", bg: "bg-blue-50" },
                 { label: "Pasien Baru", value: kpiNewPatientsToday.toString(), icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-50" },
                 { label: "Retensi", value: `${kpiRetention}%`, icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
               ].map((kpi, idx) => (
@@ -1936,8 +1867,8 @@ export default function AdminVisitsPage() {
                       <button onClick={() => setTableDensity("large")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "large" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Large</button>
                     </div>
                     <div className="relative group">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
-                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors w-full sm:w-64" />
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors w-full sm:w-64" />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-60 group-focus-within:opacity-0 transition-opacity">
                         <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">⌘</kbd>
                         <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">K</kbd>
@@ -1952,7 +1883,7 @@ export default function AdminVisitsPage() {
               <div className="md:hidden bg-white min-h-[50vh]">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                     <span className="text-sm font-medium">Memuat data...</span>
                   </div>
                 ) : finalVisits.length === 0 ? (
@@ -1965,60 +1896,56 @@ export default function AdminVisitsPage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {paginatedVisits.map(v => {
+                    {paginatedGroups.map(group => {
+                      const v = group[0];
                       const patientName = getPatientName(v.patientId);
                       const initial = patientName.charAt(0).toUpperCase();
-                      const isCompleted = v.status === "completed";
-                      const isPaid = v.paymentStatus === "PAID";
+                      const isPaid = group.every(g => g.paymentStatus === "PAID");
                       
                       return (
-                        <div key={v.id} className="p-4 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600">
-                              {initial}
+                        <div key={v.id} className="p-4 flex flex-col gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600 shrink-0">
+                                {initial}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
+                                <span className="text-[11px] text-gray-500 font-medium mb-1">
+                                  {v.visitDate.split('-').reverse().join('/')} &bull; {v.visitTime}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
-                              <span className="text-[11px] text-gray-500 font-medium mb-1 flex items-center gap-1 flex-wrap">
-                                {v.visitDate.split('-').reverse().join('/')} &bull; {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
-                                <span className="flex items-center gap-1 mx-1">|</span>
-                                <span className="flex items-center gap-1"><User className="w-3 h-3"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}</span>
-                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && isCompleted && isPaid && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
-                                      setEditTherapistBranchId(v.branchId);
-                                      setNewTherapistId("");
-                                      setEditTherapistModalOpen(true);
-                                    }}
-                                    className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded ml-1 transition-colors flex items-center"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </button>
-                                )}
-                              </span>
-                              <div>{renderTherapyStatus(v)}</div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-col items-end gap-1">
-                            {isPaid ? (
-                              <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
-                                <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
-                              </button>
-                            ) : (
-                              <>
-                                <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform" title="Ke Kasir">
+                            <div className="flex flex-col items-end gap-1">
+                              {isPaid ? (
+                                <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
+                                  <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
+                                </button>
+                              ) : (
+                                <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, ""); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
                                   <Wallet className="w-5 h-5" />
                                 </button>
-                                {v.status === "in_progress" && (
-                                  <button onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }} className="p-1.5 text-emerald-500 hover:scale-110 transition-transform" title="Selesaikan">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                  </button>
-                                )}
-                              </>
-                            )}
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 pl-[54px]">
+                            <div className="bg-white border border-gray-100 p-2.5 rounded-lg flex items-center justify-between shadow-sm">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-semibold text-xs text-gray-800 flex items-center gap-1.5">
+                                  <Activity className="w-3 h-3 text-blue-500"/> {getServiceName(v.serviceId)}
+                                  {group.length > 1 && (
+                                    <span 
+                                      className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1 cursor-help"
+                                      title={`Layanan lainnya:\n${group.slice(1).map(g => `• ${getServiceName(g.serviceId)}`).join('\n')}`}
+                                    >
+                                      +{group.length - 1} lainnya
+                                    </span>
+                                  )}
+                                </span>
+                                <span className="text-[10px] text-gray-500 flex items-center gap-1.5"><User className="w-3 h-3"/> {getTherapistName(v.therapistId)}</span>
+                              </div>
+                              <div>{renderTherapyStatus(v)}</div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -2033,7 +1960,7 @@ export default function AdminVisitsPage() {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       onPageChange={setCurrentPage}
-                      totalItems={finalVisits.length}
+                      totalItems={groupedFinalVisits.length}
                       itemsPerPage={itemsPerPage}
                     />
                   </div>
@@ -2049,9 +1976,7 @@ export default function AdminVisitsPage() {
                       <th className="px-6 py-4">Waktu & Tgl</th>
                       <th className="px-6 py-4 font-semibold">Profil Pasien</th>
                       <th className="px-6 py-4 font-semibold">Info Layanan</th>
-                      {selectedBranchId === "ALL" && (
-                        <th className="px-6 py-4 font-semibold">Cabang</th>
-                      )}
+
                       <th className="px-6 py-4">Status Pembayaran</th>
                       <th className="px-6 py-4 w-1/4">Catatan Medis</th>
                     </tr>
@@ -2067,16 +1992,17 @@ export default function AdminVisitsPage() {
                     ) : finalVisits.length === 0 ? (
                       <tr><td colSpan={6} className="px-6 py-20 text-center">
                         <div className="bg-[#F8FAFC] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border border-gray-100 shadow-sm">
-                          <Calendar className="h-10 w-10 text-emerald-500/70" />
+                          <Calendar className="h-10 w-10 text-blue-500/70" />
                         </div>
                         <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada kunjungan hari ini</h3>
                         <p className="text-sm text-gray-500 mb-6">Klik "Catat Kunjungan" untuk mulai mencatat pasien.</p>
-                        <button onClick={() => setIsFormOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-500/20 transition-all flex items-center gap-2 mx-auto">
+                        <button onClick={() => setIsFormOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 mx-auto">
                           <Plus className="w-4 h-4" /> Catat Kunjungan
                         </button>
                       </td></tr>
                     ) : (
-                      paginatedVisits.map(v => {
+                      paginatedGroups.map(group => {
+                        const v = group[0];
                         const visitNumber = getVisitSequenceNumber(v.patientId, v.id);
                         const isNewPatient = visitNumber === 1;
                         
@@ -2101,7 +2027,7 @@ export default function AdminVisitsPage() {
                               </div>
                               <div className="mt-1.5">
                                 {isNewPatient ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-blue-100 text-blue-700 border border-blue-200">
                                     Pasien Baru
                                   </span>
                                 ) : (
@@ -2112,40 +2038,33 @@ export default function AdminVisitsPage() {
                               </div>
                             </td>
                             <td className={tdClass}>
-                              <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-emerald-500"/> {((v as any).groupedServiceIds || [v.serviceId]).map((id: string) => getServiceName(id)).join(", ")}
-                              </div>
-                              <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
-                                <User className="w-3.5 h-3.5"/> {Array.from(new Set(((v as any).groupedTherapistIds || [v.therapistId]).filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
-                                {!((v as any).groupedTherapistIds || [v.therapistId]).some(Boolean) && v.paymentStatus === "PAID" && (
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditTherapistVisitId((v as any).groupedIds || v.id);
-                                      setEditTherapistBranchId(v.branchId);
-                                      setNewTherapistId("");
-                                      setEditTherapistModalOpen(true);
-                                    }}
-                                    className="p-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded ml-1 transition-colors flex items-center"
-                                    title="Tambahkan Terapis"
-                                  >
-                                    <Plus className="w-3 h-3" /> Terapis
-                                  </button>
-                                )}
-                              </div>
-                              {renderTherapyStatus(v)}
-                            </td>
-                            {selectedBranchId === "ALL" && (
-                              <td className={tdClass}>
-                                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
-                                  <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <span className="text-[13px] font-bold text-gray-800 flex items-center gap-1.5">
+                                    <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(v.serviceId)}
+                                    {group.length > 1 && (
+                                      <span 
+                                        className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1 cursor-help"
+                                        title={`Layanan lainnya:\n${group.slice(1).map(g => `• ${getServiceName(g.serviceId)}`).join('\n')}`}
+                                      >
+                                        +{group.length - 1} lainnya
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="text-[11px] text-gray-500 flex items-center gap-1 border-l border-gray-200 pl-2">
+                                    <User className="w-3 h-3"/> {getTherapistName(v.therapistId)}
+                                  </span>
+                                  <div className="pl-1">
+                                    {renderTherapyStatus(v)}
+                                  </div>
                                 </div>
-                              </td>
-                            )}
+                              </div>
+                            </td>
+
                             <td className={tdClass}>
-                              {v.paymentStatus === "PAID" ? (
+                              {group.every(g => g.paymentStatus === "PAID") ? (
                                 <div className="flex flex-col items-start gap-1">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200 w-full justify-center group-hover:shadow-sm transition-shadow">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200 w-full justify-center group-hover:shadow-sm transition-shadow">
                                     <Check className="w-3 h-3" /> Lunas
                                   </span>
                                   <div className="flex items-center gap-1 w-full">
@@ -2155,45 +2074,41 @@ export default function AdminVisitsPage() {
                                     >
                                       <Plus className="w-3 h-3"/> Tambah Layanan
                                     </button>
-                                    <button
-                                      onClick={() => handleDeleteVisit((v as any).groupedIds || v.id)}
-                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                                      title="Hapus Data Kunjungan"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex flex-col">
+                                <div className="flex flex-col items-start gap-1">
                                   <button 
-                                    onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }}
+                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                                   >
-                                    <Wallet className="w-3.5 h-3.5" /> Ke Kasir
-                                  </button>
-                                  {v.status === "in_progress" && (
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); handleCompleteVisit((v as any).groupedIds || v.id); }}
-                                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 border border-emerald-200 transition-colors mt-1"
-                                    >
-                                      <CheckCircle2 className="w-3.5 h-3.5" /> Selesaikan
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteVisit((v as any).groupedIds || v.id); }}
-                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium mt-1"
-                                    title="Hapus Data Kunjungan"
-                                  >
-                                    <Trash2 className="w-3 h-3" /> Hapus
+                                    Ke Kasir
                                   </button>
                                 </div>
                               )}
+                              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-1 w-full">
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Hapus seluruh kunjungan ini?')) {
+                                      group.forEach(g => handleDeleteVisit(g.id));
+                                    }
+                                  }}
+                                  className="w-full text-left inline-flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors text-[10px] font-medium"
+                                  title="Hapus Kunjungan"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Hapus Kunjungan
+                                </button>
+                              </div>
                             </td>
                             <td className={tdClass}>
-                              <p className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={v.notes || ""}>
-                                {v.notes || <span className="text-gray-400 italic">Tidak ada catatan</span>}
-                              </p>
+                              <div className="flex flex-col gap-2">
+                                {Array.from(new Set(group.map(g => g.notes).filter(Boolean))).map((note, i) => (
+                                  <p key={i} className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={note || ""}>
+                                    {note}
+                                  </p>
+                                ))}
+                                {group.every(g => !g.notes) && <span className="text-gray-400 italic text-sm">Tidak ada catatan</span>}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -2212,7 +2127,7 @@ export default function AdminVisitsPage() {
                     currentPage={currentPage} 
                     totalPages={totalPages} 
                     onPageChange={setCurrentPage} 
-                    totalItems={finalVisits.length} 
+                    totalItems={groupedFinalVisits.length} 
                     itemsPerPage={itemsPerPage} 
                   />
                 )}
@@ -2287,12 +2202,12 @@ export default function AdminVisitsPage() {
                       </div>
 
                       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                           <TrendingUp className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Omset (Lunas)</p>
-                          <h4 className="text-2xl font-black text-green-600 mt-1">{formatRupiah(recapData.summary.totalRevenue)}</h4>
+                          <h4 className="text-2xl font-black text-blue-600 mt-1">{formatRupiah(recapData.summary.totalRevenue)}</h4>
                         </div>
                       </div>
 
@@ -2302,7 +2217,7 @@ export default function AdminVisitsPage() {
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Pembayaran</p>
-                          <h4 className="text-sm font-bold text-gray-900 mt-1">Lunas: <span className="text-green-600 font-extrabold">{recapData.summary.totalPaid}</span></h4>
+                          <h4 className="text-sm font-bold text-gray-900 mt-1">Lunas: <span className="text-blue-600 font-extrabold">{recapData.summary.totalPaid}</span></h4>
                           <p className="text-xs text-gray-500">Belum: <span className="text-red-500 font-extrabold">{recapData.summary.totalUnpaid}</span></p>
                         </div>
                       </div>
@@ -2336,7 +2251,7 @@ export default function AdminVisitsPage() {
                                   <div className="font-bold text-gray-900">{getTherapistName(stat.therapistId)}</div>
                                 </td>
                                 <td className="px-6 py-4 text-gray-700">{stat.visitCount}</td>
-                                <td className="px-6 py-4 font-bold text-emerald-600">{formatRupiah(stat.revenue)}</td>
+                                <td className="px-6 py-4 font-bold text-blue-600">{formatRupiah(stat.revenue)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -2358,7 +2273,7 @@ export default function AdminVisitsPage() {
                       <tr className="bg-gray-50/80 border-b border-gray-100">
                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal</th>
                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Total Kunjungan</th>
-                        <th className="px-6 py-4 text-xs font-bold text-emerald-600 uppercase tracking-wider text-center">Lunas</th>
+                        <th className="px-6 py-4 text-xs font-bold text-blue-600 uppercase tracking-wider text-center">Lunas</th>
                         <th className="px-6 py-4 text-xs font-bold text-red-500 uppercase tracking-wider text-center">Belum Lunas</th>
                         <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Omset (Lunas)</th>
                       </tr>
@@ -2372,9 +2287,9 @@ export default function AdminVisitsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-gray-700 font-medium text-center">{stat.totalVisits}</td>
-                          <td className="px-6 py-4 font-bold text-emerald-600 text-center">{stat.totalPaid}</td>
+                          <td className="px-6 py-4 font-bold text-blue-600 text-center">{stat.totalPaid}</td>
                           <td className="px-6 py-4 font-bold text-red-500 text-center">{stat.totalUnpaid}</td>
-                          <td className="px-6 py-4 font-bold text-emerald-600 text-right">{formatRupiah(stat.totalRevenue)}</td>
+                          <td className="px-6 py-4 font-bold text-blue-600 text-right">{formatRupiah(stat.totalRevenue)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2382,9 +2297,9 @@ export default function AdminVisitsPage() {
                       <tr>
                         <td className="px-6 py-4 font-bold text-gray-900 text-right">TOTAL BULAN INI</td>
                         <td className="px-6 py-4 font-black text-gray-900 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalVisits, 0)}</td>
-                        <td className="px-6 py-4 font-black text-emerald-600 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalPaid, 0)}</td>
+                        <td className="px-6 py-4 font-black text-blue-600 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalPaid, 0)}</td>
                         <td className="px-6 py-4 font-black text-red-500 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalUnpaid, 0)}</td>
-                        <td className="px-6 py-4 font-black text-emerald-600 text-right">{formatRupiah(monthlyData.reduce((acc, curr) => acc + curr.totalRevenue, 0))}</td>
+                        <td className="px-6 py-4 font-black text-blue-600 text-right">{formatRupiah(monthlyData.reduce((acc, curr) => acc + curr.totalRevenue, 0))}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -2412,13 +2327,13 @@ export default function AdminVisitsPage() {
                     type="date"
                     value={historyDate}
                     onChange={e => setHistoryDate(e.target.value)}
-                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium cursor-pointer"
+                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-medium cursor-pointer"
                   />
                 </div>
                 <select
                   value={historyPaymentFilter}
                   onChange={e => setHistoryPaymentFilter(e.target.value)}
-                  className="px-4 py-2.5 bg-white border border-gray-200 shadow-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-medium text-sm transition-all cursor-pointer"
+                  className="px-4 py-2.5 bg-white border border-gray-200 shadow-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-medium text-sm transition-all cursor-pointer"
                 >
                   <option value="ALL">Semua Pembayaran</option>
                   <option value="CASH">Cash</option>
@@ -2430,7 +2345,7 @@ export default function AdminVisitsPage() {
               </div>
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
               >
                 <Download className="w-4 h-4" /> Export CSV
               </button>
@@ -2445,7 +2360,7 @@ export default function AdminVisitsPage() {
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Total Pendapatan</p>
-                  <p className="text-2xl font-extrabold text-emerald-600 mt-1">
+                  <p className="text-2xl font-extrabold text-blue-600 mt-1">
                     {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => sum + inv.grandTotal, 0))}
                   </p>
                 </div>
@@ -2491,7 +2406,7 @@ export default function AdminVisitsPage() {
             {/* Invoice List */}
             {historyLoading ? (
               <div className="flex justify-center py-12">
-                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : filteredInvoiceHistory.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
@@ -2542,7 +2457,7 @@ export default function AdminVisitsPage() {
                                       const splits = JSON.parse(inv.splitPayments);
                                       return splits.map((sp: any, idx: number) => (
                                         <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded border whitespace-nowrap ${
-                                          sp.method === "CASH" ? "border-green-200 bg-green-50 text-green-700" :
+                                          sp.method === "CASH" ? "border-blue-200 bg-blue-50 text-blue-700" :
                                           sp.method === "DEBIT" ? "border-blue-200 bg-blue-50 text-blue-700" :
                                           "border-purple-200 bg-purple-50 text-purple-700"
                                         }`}>
@@ -2556,7 +2471,7 @@ export default function AdminVisitsPage() {
                                 </div>
                               ) : (
                                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                  inv.paymentMethod === "CASH" ? "bg-green-50 text-green-700" :
+                                  inv.paymentMethod === "CASH" ? "bg-blue-50 text-blue-700" :
                                   inv.paymentMethod === "DEBIT" ? "bg-blue-50 text-blue-700" :
                                   "bg-purple-50 text-purple-700"
                                 }`}>
@@ -2576,7 +2491,7 @@ export default function AdminVisitsPage() {
                                 <button
                                   onClick={() => handleSendWA(inv.id)}
                                   title="Kirim WA"
-                                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 >
                                   <MessageCircle className="w-4 h-4" />
                                 </button>
@@ -2610,22 +2525,8 @@ export default function AdminVisitsPage() {
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Daftar pasien yang belum berkunjung kembali selama lebih dari 14 hari.</p>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleExportExcel}
-                  className="bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-green-200 flex items-center gap-2 transition-colors"
-                >
-                  <Download className="w-4 h-4" /> Excel
-                </button>
-                <button
-                  onClick={handleExportPDF}
-                  className="bg-red-100 text-red-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm hover:bg-red-200 flex items-center gap-2 transition-colors"
-                >
-                  <Download className="w-4 h-4" /> PDF
-                </button>
-                <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm flex items-center">
-                  Total: {retentionBadgeCount} Pasien
-                </div>
+              <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm">
+                Total: {retentionPatients.length} Pasien
               </div>
             </div>
             
@@ -2640,27 +2541,18 @@ export default function AdminVisitsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {retentionLoading ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-12 text-center text-gray-400">
-                        <div className="flex flex-col items-center">
-                          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                          Sedang memuat data...
-                        </div>
-                      </td>
-                    </tr>
-                  ) : retentionData.length === 0 ? (
+                  {retentionPatients.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center">
                         <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                          <CheckCircle2 className="h-8 w-8 text-green-500" />
+                          <CheckCircle2 className="h-8 w-8 text-blue-500" />
                         </div>
                         <p className="text-gray-600 font-medium">Bagus Sekali!</p>
                         <p className="text-sm text-gray-400 mt-1">Tidak ada pasien yang absen lebih dari 14 hari.</p>
                       </td>
                     </tr>
                   ) : (
-                    retentionData.map((rp, idx) => (
+                    retentionPatients.map((rp, idx) => (
                       <tr key={idx} className="hover:bg-orange-50/20 transition-colors">
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900">{rp.patient.name}</div>
@@ -2669,7 +2561,7 @@ export default function AdminVisitsPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-gray-700">
-                          {new Date(rp.lastVisitDate).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {rp.lastVisitDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${
@@ -2679,14 +2571,15 @@ export default function AdminVisitsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <a
-                            href={`https://wa.me/${rp.patient.phone.replace(/^0/, '62').replace(/^\+62/, '62')}?text=${encodeURIComponent(`Halo Kak ${rp.patient.name},\nApa kabar? Semoga selalu sehat ya.\n\nKami dari Navara Reflexology menyadari sudah ${rp.daysSinceLastVisit} hari sejak kunjungan terakhir Kakak. Yuk jaga kesehatan dengan rutinitas terapi bersama kami lagi. Ada promo khusus menanti Kakak!\n\nSilakan balas pesan ini untuk reservasi.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                          <button
+                            onClick={() => {
+                              const msg = encodeURIComponent(`Halo Kak ${rp.patient.name},\nApa kabar? Semoga selalu sehat ya.\n\nKami dari Radja Bekam menyadari sudah ${rp.daysSinceLastVisit} hari sejak kunjungan terakhir Kakak. Yuk jaga kesehatan dengan rutinitas terapi bersama kami lagi. Ada promo khusus menanti Kakak!\n\nSilakan balas pesan ini untuk reservasi.`);
+                              window.open(`https://wa.me/${rp.patient.phone.replace(/^0/, '62')}?text=${msg}`, "_blank");
+                            }}
+                            className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                           >
                             <MessageCircle className="w-4 h-4" /> Kirim Pengingat
-                          </a>
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -2694,18 +2587,6 @@ export default function AdminVisitsPage() {
                 </tbody>
               </table>
             </div>
-
-            {!retentionLoading && retentionTotalPages > 1 && (
-              <div className="p-6 border-t border-gray-100 flex justify-center bg-gray-50/50">
-                <Pagination
-                  currentPage={retentionPage}
-                  totalPages={retentionTotalPages}
-                  onPageChange={setRetentionPage}
-                  totalItems={retentionBadgeCount}
-                  itemsPerPage={retentionItemsPerPage}
-                />
-              </div>
-            )}
           </div>
         )}
            {posModalOpen && (
@@ -2754,90 +2635,110 @@ export default function AdminVisitsPage() {
 
             <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
               <div className="space-y-4">
-               {(() => {
-                  const patientVisits = visits.filter(v => v.patientId === selectedPatientHistoryId);
-                  
-                  const groupedMap = new Map<string, any>();
-                  patientVisits.forEach(v => {
-                    const key = `${v.visitDate}-${v.visitTime}`;
-                    if (!groupedMap.has(key)) {
-                      groupedMap.set(key, { 
-                        ...v, 
-                        groupedServiceIds: [v.serviceId], 
-                        groupedTherapistIds: [v.therapistId]
-                      });
-                    } else {
-                      const group = groupedMap.get(key);
-                      group.groupedServiceIds.push(v.serviceId);
-                      group.groupedTherapistIds.push(v.therapistId);
-                      
-                      if (v.notes && !group.notes?.includes(v.notes)) {
-                        group.notes = group.notes ? `${group.notes}\n${v.notes}` : v.notes;
-                      }
-                      
-                      if (v.paymentStatus === "UNPAID") group.paymentStatus = "UNPAID";
+                {(() => {
+                  const patientVisits = visits
+                    .filter(v => v.patientId === selectedPatientHistoryId)
+                    .sort((a, b) => {
+                      const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+                      const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+                      return dateB - dateA;
+                    });
+
+                  const groupedVisits = patientVisits.reduce((acc, visit) => {
+                    const key = `${visit.visitDate}_${visit.visitTime}`;
+                    if (!acc[key]) {
+                      acc[key] = [];
                     }
-                  });
+                    acc[key].push(visit);
+                    return acc;
+                  }, {} as Record<string, typeof patientVisits>);
 
-                  const groupedVisits = Array.from(groupedMap.values()).sort((a, b) => {
-                    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
-                    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
-                    return dateB - dateA;
-                  });
+                  const groupedArray = Object.entries(groupedVisits).map(([key, groupVisits]) => ({
+                    key,
+                    visits: groupVisits,
+                    sortTime: new Date(`${groupVisits[0].visitDate}T${(groupVisits[0].visitTime || '00:00').replace('.', ':')}:00`).getTime()
+                  })).sort((a, b) => b.sortTime - a.sortTime);
 
-                  return groupedVisits.map((visit) => (
-                    <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
-                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
-                        <div className="space-y-3 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-gray-900 text-lg">{visit.visitDate.split('-').reverse().join('/')}</span>
-                            <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
-                              <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
-                            </span>
-                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
-                              Kunjungan #{getVisitSequenceNumber(visit.patientId, visit.id)}
-                            </span>
-                            {visit.paymentStatus === "PAID" && (
-                              <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 uppercase tracking-wide flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                  return groupedArray.map((group, idx, arr) => {
+                    const firstVisit = group.visits[0];
+                    const uniqueTherapists = Array.from(new Set(group.visits.map(v => v.therapistId)));
+                    const uniqueBranches = Array.from(new Set(group.visits.map(v => v.branchId)));
+                    const uniqueNotes = Array.from(new Set(group.visits.map(v => v.notes).filter(Boolean)));
+                    
+                    return (
+                      <div key={group.key} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
+                          <div className="space-y-3 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-gray-900 text-lg">{firstVisit.visitDate.split('-').reverse().join('/')}</span>
+                              <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
+                                <Clock className="w-3.5 h-3.5"/> {firstVisit.visitTime}
                               </span>
-                            )}
+                              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
+                                Kunjungan #{arr.length - idx}
+                              </span>
+                              {firstVisit.paymentStatus === "PAID" && (
+                                <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 uppercase tracking-wide flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {group.visits.map(v => (
+                                    <div key={v.id} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <Activity className="w-4 h-4 text-blue-500"/> {getServiceName(v.serviceId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {uniqueTherapists.map(tId => (
+                                    <div key={tId} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(tId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {uniqueBranches.map(bId => (
+                                    <div key={bId} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <Store className="w-4 h-4 text-amber-500"/> {getBranchName(bId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           
-                          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Activity className="w-4 h-4 text-emerald-500"/> {visit.groupedServiceIds.map((id: string) => getServiceName(id)).join(", ")}
-                              </div>
+                          <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
+                            <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
+                              <FileText className="w-3.5 h-3.5" /> Catatan Medis
                             </div>
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <User className="w-4 h-4 text-indigo-400"/> {Array.from(new Set(visit.groupedTherapistIds.filter(Boolean).map((id: string) => getTherapistName(id)))).join(", ") || "-"}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Store className="w-4 h-4 text-amber-500"/> {getBranchName(visit.branchId)}
-                              </div>
+                            <div className="flex flex-col gap-2">
+                              {uniqueNotes.length > 0 ? uniqueNotes.map((note, idx) => (
+                                <p key={idx} className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                  {note}
+                                </p>
+                              )) : (
+                                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap italic text-gray-400">
+                                  Tidak ada catatan medis untuk kunjungan ini.
+                                </p>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
-                          <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
-                            <FileText className="w-3.5 h-3.5" /> Catatan Medis
-                          </div>
-                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-                            {visit.notes || <span className="italic text-gray-400">Tidak ada catatan medis untuk kunjungan ini.</span>}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ));
+                    );
+                  });
                 })()}
               </div>
             </div>
@@ -2864,6 +2765,23 @@ export default function AdminVisitsPage() {
           setVisitToDelete(null);
         }}
         isLoading={isDeleting}
+        variant="danger"
+      />
+      
+      {/* Finish Confirmation Modal */}
+      <ConfirmModal
+        isOpen={finishModalOpen}
+        title="Selesaikan Kunjungan?"
+        message="Apakah Anda yakin ingin menandai layanan kunjungan ini sebagai selesai sekarang?"
+        confirmText="Ya, Selesai"
+        cancelText="Batal"
+        onConfirm={confirmFinishVisit}
+        onCancel={() => {
+          setFinishModalOpen(false);
+          setVisitToFinish(null);
+        }}
+        isLoading={isFinishing}
+        variant="info"
       />
 
       </div>

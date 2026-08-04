@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const startDate = `${monthStr}-01`;
     const endDate = `${monthStr}-${String(numDays).padStart(2, '0')}`;
 
-    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    let branchFilter = await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
     // 1. Fetch Target

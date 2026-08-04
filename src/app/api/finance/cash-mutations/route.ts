@@ -14,7 +14,6 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const branchFilter = await getActiveBranchFilter();
-    const branch = branchFilter || searchParams.get("branchId");
 
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -24,8 +23,8 @@ export async function GET(request: Request) {
       eq(financeTransactions.paymentMethod, "CASH"),
       ne(financeTransactions.category, "Bagi Hasil Terapis")
     ];
-    if (branch) {
-      conditions.push(eq(financeTransactions.branchId, branch));
+    if (branchFilter) {
+      conditions.push(eq(financeTransactions.branchId, branchFilter));
     }
     if (startDate) {
       const startObj = new Date(startDate);

@@ -18,8 +18,6 @@ export default function AdminStaffPayrollPage() {
   const [generateModalOpen, setGenerateModalOpen] = useState(false);
   const [selectedStaffForPayroll, setSelectedStaffForPayroll] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
   
   const [payrollForm, setPayrollForm] = useState({
     attendancePresent: 20,
@@ -35,10 +33,9 @@ export default function AdminStaffPayrollPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resStaff, resPayrolls, branchRes, sessionRes] = await Promise.all([
+      const [resStaff, resPayrolls, sessionRes] = await Promise.all([
         fetch("/api/staff"),
         fetch(`/api/staff-payroll?month=${selectedMonth}`),
-        fetch("/api/branches"),
         fetch("/api/auth/session")
       ]);
       if (resStaff.ok) {
@@ -48,10 +45,6 @@ export default function AdminStaffPayrollPage() {
       if (resPayrolls.ok) {
         const payrollData = await resPayrolls.json();
         setPayrolls(payrollData.data || []);
-      }
-      if (branchRes.ok) {
-        const bJson = await branchRes.json();
-        setBranches(bJson.data || []);
       }
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
@@ -221,7 +214,7 @@ export default function AdminStaffPayrollPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {staffList.filter(s => s.isActive && (filterBranch === "ALL" || s.branchId === filterBranch)).map(staff => {
+                  {staffList.filter(s => s.isActive).map(staff => {
                     const reportData = getStaffPayrollReport(staff.id);
                     
                     return (

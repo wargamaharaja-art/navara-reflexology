@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoices, branches, patients, therapists, services, patientVisits } from "@/lib/db/schema";
-import { eq, and, like, desc } from "drizzle-orm";
+import {
+  invoices,
+  branches,
+  patients,
+  therapists,
+  services,
+  patientVisits,
+} from "@/lib/db/schema";
+import { eq, and, like, desc, inArray, gte, lte } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
@@ -50,13 +57,27 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date"); // YYYY-MM-DD
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const branchFilter = await getActiveBranchFilter();
 
     const conditions = [];
     if (branchFilter) {
       conditions.push(eq(invoices.branchId, branchFilter));
     }
-    if (dateParam) {
+    
+    if (startDate) {
+      const startObj = new Date(startDate);
+      startObj.setHours(0, 0, 0, 0);
+      conditions.push(gte(invoices.createdAt, startObj.toISOString()));
+    }
+    if (endDate) {
+      const endObj = new Date(endDate);
+      endObj.setHours(23, 59, 59, 999);
+      conditions.push(lte(invoices.createdAt, endObj.toISOString()));
+    }
+    
+    if (!startDate && !endDate && dateParam) {
       // Match invoices created on this date (createdAt starts with dateParam)
       conditions.push(like(invoices.createdAt, `${dateParam}%`));
     }

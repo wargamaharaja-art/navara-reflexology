@@ -11,12 +11,13 @@ type Service = {
   price: number;
   durationMinutes: number;
   category: string;
+  globalCommission: number;
   isActive: boolean;
 };
 
 const CATEGORIES = [
   "Paket Treatment",
-  "Full Body Massages",
+  "Mcu",
   "Refleksi",
   "Bekam",
   "Adds On"
@@ -33,14 +34,13 @@ export default function AdminServicesPage() {
 
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
-  const [showInactive, setShowInactive] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     price: "",
     durationMinutes: "",
+    globalCommission: "",
     category: "Paket Treatment",
     branchId: "ALL",
     isActive: true,
@@ -50,7 +50,7 @@ export default function AdminServicesPage() {
     setLoading(true);
     try {
       const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/services?${showInactive ? 'all=true&' : ''}branchId=${filterBranch}`),
+        fetch(`/api/services?all=false`),
         fetch("/api/branches"),
         fetch("/api/auth/session")
       ]);
@@ -78,7 +78,7 @@ export default function AdminServicesPage() {
 
   useEffect(() => {
     fetchData();
-  }, [filterBranch, showInactive]);
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -86,8 +86,9 @@ export default function AdminServicesPage() {
       description: "",
       price: "",
       durationMinutes: "",
+      globalCommission: "",
       category: "Paket Treatment",
-      branchId: filterBranch !== "ALL" ? filterBranch : (branches.length > 0 ? branches[0].id : "ALL"),
+      branchId: branches.length > 0 ? branches[0].id : "ALL",
       isActive: true,
     });
     setEditingId(null);
@@ -105,6 +106,7 @@ export default function AdminServicesPage() {
       description: s.description,
       price: s.price.toString(),
       durationMinutes: s.durationMinutes.toString(),
+      globalCommission: s.globalCommission?.toString() || "0",
       category: s.category || "Paket Treatment",
       branchId: s.branchId || "ALL",
       isActive: s.isActive,
@@ -130,6 +132,7 @@ export default function AdminServicesPage() {
           description: formData.description,
           price: Number(formData.price),
           durationMinutes: Number(formData.durationMinutes),
+          globalCommission: Number(formData.globalCommission),
           category: formData.category,
           branchId: formData.branchId === "ALL" ? null : formData.branchId,
           isActive: formData.isActive,
@@ -152,7 +155,7 @@ export default function AdminServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menonaktifkan layanan ini?")) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus layanan ini secara permanen?")) return;
 
     try {
       const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
@@ -177,23 +180,12 @@ export default function AdminServicesPage() {
           description="Kelola data layanan terapi yang ditawarkan klinik Anda."
           icon={Activity}
           rightContent={
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
-                />
-                Tampilkan Nonaktif
-              </label>
-              <button
-                onClick={openAddModal}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white text-sm font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 active:scale-95"
-              >
-                <Plus className="w-4 h-4" /> Tambah Layanan
-              </button>
-            </div>
+            <button
+              onClick={openAddModal}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 active:scale-95"
+            >
+              <Plus className="w-4 h-4" /> Tambah Layanan
+            </button>
           }
         />
 
@@ -204,26 +196,26 @@ export default function AdminServicesPage() {
             const isOpen = openCategory === cat;
 
             return (
-              <div key={cat} className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${isOpen ? 'border-emerald-200' : 'border-gray-100 hover:border-gray-200'}`} style={{ animationDelay: `${catIndex * 100}ms` }}>
+              <div key={cat} className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 ${isOpen ? 'border-blue-200' : 'border-gray-100 hover:border-gray-200'}`} style={{ animationDelay: `${catIndex * 100}ms` }}>
                 <button
                   onClick={() => setOpenCategory(isOpen ? null : cat)}
-                  className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-emerald-50/80' : 'bg-white hover:bg-gray-50'}`}
+                  className={`w-full px-6 py-4 flex items-center justify-between transition-colors ${isOpen ? 'bg-blue-50/80' : 'bg-white hover:bg-gray-50'}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${isOpen ? 'bg-emerald-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${isOpen ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600'}`}>
                       {filteredServices.length}
                     </div>
-                    <h3 className={`font-bold text-lg ${isOpen ? 'text-emerald-900' : 'text-gray-700'}`}>
+                    <h3 className={`font-bold text-lg ${isOpen ? 'text-blue-900' : 'text-gray-700'}`}>
                       {cat}
                     </h3>
                   </div>
-                  <div className={`p-2 rounded-full transition-colors ${isOpen ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <div className={`p-2 rounded-full transition-colors ${isOpen ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'}`}>
                     {isOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                   </div>
                 </button>
 
                 {/* Accordion Content */}
-                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 border-t border-emerald-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100 border-t border-blue-100' : 'max-h-0 opacity-0'}`}>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse whitespace-nowrap">
                       <thead>
@@ -231,6 +223,7 @@ export default function AdminServicesPage() {
                           <th className="px-6 py-4 font-semibold">Nama Layanan</th>
                           <th className="px-6 py-4 font-semibold">Harga</th>
                           <th className="px-6 py-4 font-semibold">Durasi</th>
+                          <th className="px-6 py-4 font-semibold">Komisi (Rp)</th>
                           <th className="px-6 py-4 font-semibold">Status</th>
                           <th className="px-6 py-4 font-semibold text-right">Aksi</th>
                         </tr>
@@ -242,7 +235,7 @@ export default function AdminServicesPage() {
                           <tr><td colSpan={5} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
                         ) : (
                           filteredServices.map(s => (
-                            <tr key={s.id} className="hover:bg-emerald-50/30 transition-colors">
+                            <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
                               <td className="px-6 py-4">
                                 <div className="font-bold text-gray-900">{s.name}</div>
                                 <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
@@ -253,15 +246,18 @@ export default function AdminServicesPage() {
                               <td className="px-6 py-4 text-sm text-gray-600">
                                 {s.durationMinutes} Menit
                               </td>
+                              <td className="px-6 py-4 font-medium text-blue-700">
+                                Rp {(s.globalCommission || 0).toLocaleString('id-ID')}
+                              </td>
                               <td className="px-6 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
                                   {s.isActive ? 'Aktif' : 'Nonaktif'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-right">
                                 <button
                                   onClick={() => openEditModal(s)}
-                                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors mr-2"
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-2"
                                   title="Edit"
                                 >
                                   <Edit2 className="w-4 h-4" />
@@ -269,7 +265,7 @@ export default function AdminServicesPage() {
                                 <button
                                   onClick={() => handleDelete(s.id)}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Nonaktifkan"
+                                  title="Hapus Layanan"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -313,7 +309,7 @@ export default function AdminServicesPage() {
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       >
                         {CATEGORIES.map(cat => (
                           <option key={cat} value={cat}>{cat}</option>
@@ -327,7 +323,7 @@ export default function AdminServicesPage() {
                         type="text"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         placeholder="e.g. Pijat Refleksi"
                       />
                     </div>
@@ -339,7 +335,7 @@ export default function AdminServicesPage() {
                       rows={3}
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       placeholder="Penjelasan singkat layanan..."
                     />
                   </div>
@@ -352,7 +348,7 @@ export default function AdminServicesPage() {
                         min="0"
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         placeholder="150000"
                       />
                     </div>
@@ -364,8 +360,20 @@ export default function AdminServicesPage() {
                         min="1"
                         value={formData.durationMinutes}
                         onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         placeholder="60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Komisi Terapis (Rp)</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={formData.globalCommission}
+                        onChange={(e) => setFormData({ ...formData, globalCommission: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        placeholder="25000"
                       />
                     </div>
                   </div>
@@ -375,7 +383,7 @@ export default function AdminServicesPage() {
                         type="checkbox"
                         checked={formData.isActive}
                         onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
                       />
                       <span className="text-sm font-medium text-gray-700">Layanan Aktif</span>
                     </label>
@@ -395,7 +403,7 @@ export default function AdminServicesPage() {
                   type="submit"
                   form="serviceForm"
                   disabled={saving}
-                  className="px-5 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 disabled:opacity-50 flex items-center"
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center"
                 >
                   {saving ? 'Menyimpan...' : 'Simpan'}
                 </button>

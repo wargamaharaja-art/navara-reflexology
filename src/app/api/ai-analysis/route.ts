@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       );
     }
 
-    let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
+    let branchFilter = await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
     // 1. Ambil Data Finansial Bulan Ini

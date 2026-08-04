@@ -41,7 +41,6 @@ export default function AdminTherapistsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null);
   const [saving, setSaving] = useState(false);
-  const [filterBranch, setFilterBranch] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   
@@ -139,19 +138,10 @@ export default function AdminTherapistsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus terapis ini secara permanen?")) return;
     try {
-      const res = await fetch(`/api/therapists/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        let errorMessage = "Gagal menghapus terapis";
-        try {
-          const data = await res.json();
-          if (data.error) errorMessage = data.error;
-        } catch (e) {}
-        alert(errorMessage);
-      }
+      await fetch(`/api/therapists/${id}`, { method: "DELETE" });
       fetchTherapists();
     } catch (err) {
       console.error(err);
-      alert("Terjadi kesalahan jaringan/server saat menghapus terapis.");
     }
   };
 
@@ -214,10 +204,9 @@ export default function AdminTherapistsPage() {
   };
 
   const filteredTherapists = therapists.filter(t => {
-    const matchesBranch = filterBranch === "all" || t.branchId === filterBranch;
     const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.specialization.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesBranch && matchesSearch;
+    return matchesSearch;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
   const getContractStatus = (endDate?: string | null) => {
@@ -230,7 +219,7 @@ export default function AdminTherapistsPage() {
     
     if (diffDays < 0) return { status: 'expired', label: 'Expired', days: diffDays, color: 'bg-red-100 text-red-700' };
     if (diffDays <= 30) return { status: 'warning', label: `Sisa ${diffDays} Hari`, days: diffDays, color: 'bg-orange-100 text-orange-700 border border-orange-200' };
-    return { status: 'safe', label: 'Aman', days: diffDays, color: 'bg-green-100 text-green-700' };
+    return { status: 'safe', label: 'Aman', days: diffDays, color: 'bg-blue-100 text-blue-700' };
   };
 
   const expiringContracts = therapists.filter(t => {
@@ -240,7 +229,7 @@ export default function AdminTherapistsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterBranch]);
+  }, [searchQuery]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -252,37 +241,25 @@ export default function AdminTherapistsPage() {
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
               <div className="relative w-full sm:w-auto group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 <input 
                   type="text" 
                   placeholder="Cari nama/spesialisasi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-14 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 placeholder-gray-400 text-sm transition-all"
+                  className="w-full pl-9 pr-14 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-gray-900 placeholder-gray-400 text-sm transition-all"
                 />
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 opacity-60">
                   <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-[10px] font-bold text-gray-500">⌘</kbd>
                   <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-[10px] font-bold text-gray-500">K</kbd>
                 </div>
               </div>
-              {session?.role === "SUPER_ADMIN" && (
-                <select 
-                  value={filterBranch} 
-                  onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer"
-                >
-                  <option value="all">Semua Cabang</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              )}
               <button 
                 onClick={() => {
                   setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
                   setIsFormOpen(true);
                 }}
-                className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-500 ease-in-out" />
                 <Plus className="h-5 w-5 relative z-10" /> 
@@ -299,14 +276,14 @@ export default function AdminTherapistsPage() {
               onClick={e => e.stopPropagation()}
             >
               {/* Header Form */}
-              <div className="shrink-0 bg-gradient-to-r from-emerald-800 to-emerald-950 p-5 sm:p-6 text-white flex justify-between items-center shadow-md relative z-10">
+              <div className="shrink-0 bg-gradient-to-r from-blue-800 to-blue-950 p-5 sm:p-6 text-white flex justify-between items-center shadow-md relative z-10">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <div className="p-2 sm:p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner hidden sm:block">
-                    {formData.id ? <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-200" /> : <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-200" />}
+                    {formData.id ? <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-blue-200" /> : <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-200" />}
                   </div>
                   <div>
                     <h3 className="text-lg sm:text-xl font-extrabold tracking-tight">{formData.id ? "Edit Data Terapis" : "Tambah Terapis Baru"}</h3>
-                    <p className="text-emerald-200 text-xs mt-0.5 sm:mt-1 font-medium">Lengkapi formulir di bawah ini</p>
+                    <p className="text-blue-200 text-xs mt-0.5 sm:mt-1 font-medium">Lengkapi formulir di bawah ini</p>
                   </div>
                 </div>
                 <button 
@@ -511,7 +488,7 @@ export default function AdminTherapistsPage() {
                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-3 rounded-xl text-gray-600 hover:bg-gray-100 font-bold transition-colors">
                   Batal
                 </button>
-                <button type="submit" disabled={saving} className="bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all">
+                <button type="submit" disabled={saving} className="bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:-translate-y-0.5 transition-all">
                   {saving ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -560,11 +537,11 @@ export default function AdminTherapistsPage() {
               {filteredTherapists.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((therapist) => (
                 <div 
                   key={therapist.id} 
-                  className={`bg-white rounded-2xl border ${therapist.isActive ? 'border-gray-200' : 'border-gray-200 opacity-80'} shadow-sm flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-emerald-400 hover:-translate-y-1.5 group relative overflow-hidden`}
+                  className={`bg-white rounded-2xl border ${therapist.isActive ? 'border-gray-200' : 'border-gray-200 opacity-80'} shadow-sm flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer hover:border-blue-400 hover:-translate-y-1.5 group relative overflow-hidden`}
                   onClick={() => setSelectedTherapist(therapist)}
                 >
                   {therapist.isActive && (
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   )}
                   
                   <div className="p-5 flex-grow">
@@ -573,16 +550,16 @@ export default function AdminTherapistsPage() {
                         {therapist.photoUrl ? (
                           <img src={therapist.photoUrl} alt={therapist.name} className="h-14 w-14 rounded-2xl object-cover border border-gray-100 shadow-sm shrink-0" />
                         ) : (
-                          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-black border border-emerald-100/50 shadow-sm shrink-0">
+                          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600 flex items-center justify-center text-xl font-black border border-blue-100/50 shadow-sm shrink-0">
                             {therapist.name.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="font-bold text-[17px] text-gray-900 leading-tight group-hover:text-emerald-700 transition-colors line-clamp-1">{therapist.name}</h4>
+                            <h4 className="font-bold text-[17px] text-gray-900 leading-tight group-hover:text-blue-700 transition-colors line-clamp-1">{therapist.name}</h4>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${therapist.isActive ? 'bg-emerald-100/80 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${therapist.isActive ? 'bg-blue-100/80 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                               {therapist.isActive ? "Aktif" : "Nonaktif"}
                             </span>
                             <span className="font-medium bg-gray-100 px-2 py-0.5 rounded-md text-[10px] text-gray-600 truncate max-w-[100px]">{therapist.specialization}</span>
@@ -634,7 +611,7 @@ export default function AdminTherapistsPage() {
                     <div className="w-[1px] bg-gray-200"></div>
                     <div className="flex-1">
                       <div className="text-[10px] text-gray-500 mb-0.5 font-bold uppercase tracking-widest">Komisi bln ini</div>
-                      <div className="font-black text-emerald-600 text-[15px] mt-1 line-clamp-1">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(therapist.totalCommission || 0)}</div>
+                      <div className="font-black text-blue-600 text-[15px] mt-1 line-clamp-1">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(therapist.totalCommission || 0)}</div>
                     </div>
                   </div>
                 </div>
@@ -661,8 +638,8 @@ export default function AdminTherapistsPage() {
             {/* Header with Logo */}
             <div className="relative h-24 bg-slate-50 flex items-center justify-center border-b border-gray-100 shrink-0">
               <img 
-                src="/navara-logo.png" 
-                alt="Navara Logo" 
+                src="/logo.png" 
+                alt="Radja Bekam Logo" 
                 className="h-16 w-auto object-contain" 
               />
               <button 
@@ -679,7 +656,7 @@ export default function AdminTherapistsPage() {
                 {selectedTherapist.photoUrl ? (
                   <img src={selectedTherapist.photoUrl} alt={selectedTherapist.name} className="h-20 w-20 rounded-full object-cover border-4 border-white shadow-md bg-white relative z-10" />
                 ) : (
-                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-md relative z-10">
+                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-3xl font-black border-4 border-white shadow-md relative z-10">
                     {selectedTherapist.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -687,11 +664,11 @@ export default function AdminTherapistsPage() {
                 <div className="mt-3 text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <h3 className="text-xl font-extrabold text-gray-900 leading-tight">{selectedTherapist.name}</h3>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${selectedTherapist.isActive ? 'bg-emerald-100/80 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${selectedTherapist.isActive ? 'bg-blue-100/80 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                       {selectedTherapist.isActive ? "Aktif" : "Nonaktif"}
                     </span>
                   </div>
-                  <p className="text-emerald-600 font-semibold text-sm">{selectedTherapist.specialization}</p>
+                  <p className="text-blue-600 font-semibold text-sm">{selectedTherapist.specialization}</p>
                 </div>
               </div>
             </div>
@@ -707,7 +684,7 @@ export default function AdminTherapistsPage() {
                 <div className="w-[1px] h-8 bg-gray-200"></div>
                 <div className="text-center flex-1">
                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Komisi</p>
-                  <p className="text-lg font-black text-emerald-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(selectedTherapist.totalCommission || 0)}</p>
+                  <p className="text-lg font-black text-blue-600">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(selectedTherapist.totalCommission || 0)}</p>
                 </div>
                 <div className="w-[1px] h-8 bg-gray-200"></div>
                 <div className="text-center flex-1">
@@ -783,7 +760,7 @@ export default function AdminTherapistsPage() {
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Keuangan</h4>
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                       <Briefcase className="w-4 h-4" />
                     </div>
                     <div>
@@ -811,7 +788,7 @@ export default function AdminTherapistsPage() {
                   href={`https://wa.me/${selectedTherapist.phone.replace(/^0/, '62')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-[2] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-emerald-500/20 text-sm"
+                  className="flex-[2] bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-blue-500/20 text-sm"
                 >
                   <MessageCircle className="h-4 w-4" /> Hubungi WhatsApp
                 </a>

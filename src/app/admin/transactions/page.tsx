@@ -60,14 +60,14 @@ interface Invoice {
 // ─────────────────────────────────────────────
 const PAYMENT_METHODS = [
   { key: "ALL", label: "Semua", icon: Receipt, color: "bg-gray-100 text-gray-700 border-gray-200", activeColor: "bg-gray-800 text-white border-gray-800" },
-  { key: "CASH", label: "Cash", icon: Banknote, color: "bg-emerald-50 text-emerald-700 border-emerald-200", activeColor: "bg-emerald-600 text-white border-emerald-600" },
+  { key: "CASH", label: "Cash", icon: Banknote, color: "bg-blue-50 text-blue-700 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
   { key: "QRIS", label: "QRIS", icon: Smartphone, color: "bg-purple-50 text-purple-700 border-purple-200", activeColor: "bg-purple-600 text-white border-purple-600" },
   { key: "TRANSFER BANK", label: "Transfer Bank", icon: Building2, color: "bg-blue-50 text-blue-700 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
   { key: "DEBIT", label: "Debit", icon: CreditCard, color: "bg-orange-50 text-orange-700 border-orange-200", activeColor: "bg-orange-500 text-white border-orange-500" },
 ];
 
 const PAYMENT_BADGE: Record<string, { label: string; cls: string }> = {
-  CASH:     { label: "Cash",          cls: "bg-emerald-100 text-emerald-700 border border-emerald-200" },
+  CASH:     { label: "Cash",          cls: "bg-blue-100 text-blue-700 border border-blue-200" },
   QRIS:     { label: "QRIS",          cls: "bg-purple-100 text-purple-700 border border-purple-200" },
   "TRANSFER BANK": { label: "Transfer Bank", cls: "bg-blue-100 text-blue-700 border border-blue-200" },
   DEBIT:    { label: "Debit",         cls: "bg-orange-100 text-orange-700 border border-orange-200" },
@@ -161,7 +161,7 @@ function EditModal({
             </div>
             <div className="flex justify-between text-gray-500">
               <span>Kembalian</span>
-              <span className="font-medium text-emerald-600">{fmtRp(changeAmount)}</span>
+              <span className="font-medium text-blue-600">{fmtRp(changeAmount)}</span>
             </div>
           </div>
 
@@ -173,7 +173,7 @@ function EditModal({
                 type="text"
                 value={form.patientName}
                 onChange={e => setForm(f => ({ ...f, patientName: e.target.value }))}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ function EditModal({
                 type="text"
                 value={form.patientPhone}
                 onChange={e => setForm(f => ({ ...f, patientPhone: e.target.value }))}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
               />
             </div>
           </div>
@@ -195,7 +195,7 @@ function EditModal({
               value={form.therapistName}
               onChange={e => setForm(f => ({ ...f, therapistName: e.target.value }))}
               placeholder="Kosongkan jika tidak ada"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
             />
           </div>
 
@@ -208,7 +208,7 @@ function EditModal({
                 min="0"
                 value={form.discount}
                 onChange={e => setForm(f => ({ ...f, discount: Number(e.target.value) }))}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
               />
             </div>
             <div>
@@ -218,7 +218,7 @@ function EditModal({
                 min="0"
                 value={form.tax}
                 onChange={e => setForm(f => ({ ...f, tax: Number(e.target.value) }))}
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
               />
             </div>
           </div>
@@ -255,7 +255,7 @@ function EditModal({
               min="0"
               value={form.amountPaid}
               onChange={e => setForm(f => ({ ...f, amountPaid: Number(e.target.value) }))}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
             />
           </div>
 
@@ -267,7 +267,7 @@ function EditModal({
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               rows={2}
               placeholder="Tambahkan catatan..."
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition resize-none"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition resize-none"
             />
           </div>
 
@@ -290,7 +290,7 @@ function EditModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2 disabled:opacity-60"
+            className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {saving ? (
               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -315,11 +315,11 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
   return (
     <>
       <tr
-        className="border-b border-gray-100 hover:bg-emerald-50/30 transition-colors cursor-pointer"
+        className="border-b border-gray-100 hover:bg-blue-50/30 transition-colors cursor-pointer"
         onClick={() => setExpanded(e => !e)}
       >
         <td className="px-4 py-3">
-          <div className="text-xs font-mono font-semibold text-emerald-700">{invoice.invoiceNumber}</div>
+          <div className="text-xs font-mono font-semibold text-blue-700">{invoice.invoiceNumber}</div>
           <div className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {fmtTime(invoice.createdAt)}
@@ -357,7 +357,7 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
           <div className="flex items-center gap-1">
             <button
               onClick={e => { e.stopPropagation(); onEdit(); }}
-              className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors"
               title="Edit transaksi"
             >
               <Edit2 className="w-4 h-4" />
@@ -382,7 +382,7 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
 
       {/* Expanded detail row */}
       {expanded && (
-        <tr className="bg-emerald-50/40 border-b border-emerald-100">
+        <tr className="bg-blue-50/40 border-b border-blue-100">
           <td colSpan={7} className="px-4 py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Items */}
@@ -443,7 +443,7 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Kembalian</span>
-                  <span className="text-emerald-600 font-semibold">{fmtRp(invoice.changeAmount)}</span>
+                  <span className="text-blue-600 font-semibold">{fmtRp(invoice.changeAmount)}</span>
                 </div>
                 {invoice.notes && (
                   <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700">
@@ -465,7 +465,12 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
 export default function TransaksiPelangganPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(todayStr());
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+  });
+  const [endDate, setEndDate] = useState<string>(todayStr());
   const [activeMethod, setActiveMethod] = useState("ALL");
   const [search, setSearch] = useState("");
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
@@ -473,15 +478,12 @@ export default function TransaksiPelangganPage() {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [session, setSession] = useState<any>(null);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/invoices?date=${date}`),
-        fetch("/api/branches"),
+      const [res, sessionRes] = await Promise.all([
+        fetch(`/api/invoices?startDate=${startDate}&endDate=${endDate}`),
         fetch("/api/auth/session")
       ]);
       const json = await res.json();
@@ -493,10 +495,6 @@ export default function TransaksiPelangganPage() {
         }));
         setInvoices(data);
       }
-      if (branchRes.ok) {
-        const bJson = await branchRes.json();
-        setBranches(bJson.data || []);
-      }
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
         setSession(sJson.session);
@@ -504,7 +502,7 @@ export default function TransaksiPelangganPage() {
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -540,15 +538,14 @@ export default function TransaksiPelangganPage() {
   const filtered = invoices.filter(inv => {
     const isSplitMatch = inv.paymentMethod === "SPLIT" && inv.splitPayments?.some(sp => sp.method === activeMethod);
     const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod || isSplitMatch;
-    const matchBranch = filterBranch === "ALL" || inv.branchId === filterBranch;
     const q = search.toLowerCase();
     const matchSearch = !q ||
       inv.patientName.toLowerCase().includes(q) ||
       inv.patientPhone.includes(q) ||
       inv.invoiceNumber.toLowerCase().includes(q) ||
       (inv.therapistName || "").toLowerCase().includes(q);
-    return matchMethod && matchSearch && matchBranch;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return matchMethod && matchSearch;
+  });
 
   // Summary per method
   const summary = PAYMENT_METHODS.filter(m => m.key !== "ALL").map(m => {
@@ -583,11 +580,11 @@ export default function TransaksiPelangganPage() {
   const grandTotalAll = filtered.reduce((s, inv) => s + inv.grandTotal, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-slate-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4 md:p-8">
       {/* Toast */}
       {toast && (
         <div className={`fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold animate-in slide-in-from-top-2 duration-200 ${
-          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+          toast.type === "success" ? "bg-blue-600 text-white" : "bg-red-600 text-white"
         }`}>
           {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {toast.msg}
@@ -597,7 +594,7 @@ export default function TransaksiPelangganPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-1">
-          <div className="p-2.5 bg-emerald-600 rounded-xl shadow-md">
+          <div className="p-2.5 bg-blue-600 rounded-xl shadow-md">
             <Receipt className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -609,33 +606,28 @@ export default function TransaksiPelangganPage() {
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        {/* Date */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition cursor-pointer"
-          />
-        </div>
-
-        {/* Branch Filter Dropdown - Only show if Super Admin */}
-        {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-          <div className="relative w-full sm:w-64">
-            <select
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
-            >
-              <option value="ALL">Semua Cabang</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        {/* Date Filters */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition cursor-pointer w-full sm:w-auto"
+            />
           </div>
-        )}
+          <span className="text-gray-400 text-sm font-medium">-</span>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition cursor-pointer w-full sm:w-auto"
+            />
+          </div>
+        </div>
 
         {/* Search */}
         <div className="relative flex-1 min-w-0">
@@ -645,7 +637,7 @@ export default function TransaksiPelangganPage() {
             placeholder="Cari nama pasien, no. HP, atau no. invoice..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 transition"
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
           />
         </div>
 
@@ -724,7 +716,7 @@ export default function TransaksiPelangganPage() {
             <div>
               <span className="text-sm font-bold text-gray-700">{filtered.length} transaksi</span>
               <span className="text-gray-400 text-sm ml-2">
-                — {new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                — {new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} - {new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
             <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
@@ -739,21 +731,21 @@ export default function TransaksiPelangganPage() {
           </div>
           <div className="text-right">
             <div className="text-xs text-gray-400">Total</div>
-            <div className="text-lg font-extrabold text-emerald-700">{fmtRp(grandTotalAll)}</div>
+            <div className="text-lg font-extrabold text-blue-700">{fmtRp(grandTotalAll)}</div>
           </div>
         </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mb-3" />
+            <div className="w-10 h-10 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mb-3" />
             <p className="text-sm">Memuat data transaksi...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Receipt className="w-12 h-12 text-gray-200 mb-3" />
             <p className="font-semibold text-gray-500">Tidak ada transaksi</p>
-            <p className="text-sm mt-1">
-              {search ? "Coba kata kunci lain" : `Belum ada transaksi pada ${new Date(date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`}
+            <p className="text-sm mt-1 text-center">
+              {search ? "Coba kata kunci lain" : `Belum ada transaksi dari tanggal ${new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} hingga ${new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`}
             </p>
           </div>
         ) : (

@@ -32,7 +32,6 @@ export default function AdminStaffPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [saving, setSaving] = useState(false);
-  const [filterBranch, setFilterBranch] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   
   // Pagination
@@ -142,15 +141,14 @@ export default function AdminStaffPage() {
   };
 
   const filteredStaff = staff.filter(s => {
-    const matchesBranch = filterBranch === "all" || s.branchId === filterBranch;
     const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           s.role.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesBranch && matchesSearch;
+    return matchesSearch;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterBranch]);
+  }, [searchQuery]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -168,21 +166,9 @@ export default function AdminStaffPage() {
                   placeholder="Cari nama/posisi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-gray-900 placeholder-gray-400 text-sm transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 placeholder-gray-400 text-sm transition-all"
                 />
               </div>
-              {session?.role === "SUPER_ADMIN" && (
-                <select 
-                  value={filterBranch} 
-                  onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-gray-900 text-sm appearance-none transition-all cursor-pointer"
-                >
-                  <option value="all">Semua Cabang</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              )}
               <button 
                 onClick={() => {
                   setFormData({ id: "", name: "", role: "Admin", phone: "", baseSalary: 0, dailyAllowance: 0, isActive: true, branchId: "" });
@@ -300,7 +286,7 @@ export default function AdminStaffPage() {
                         </div>
                         <div>
                           <h4 className="font-bold text-lg text-gray-900 leading-tight">{s.name}</h4>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${s.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${s.isActive ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
                             {s.role}
                           </span>
                         </div>
