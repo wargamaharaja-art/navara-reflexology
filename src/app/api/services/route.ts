@@ -45,12 +45,12 @@ export async function POST(request: Request) {
       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
     }
     
+    const session = await getSession();
     let targetBranch = branchId;
-    if (!targetBranch) {
-      const session = await getSession();
-      if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
-        targetBranch = session.branchId;
-      }
+    if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
+      targetBranch = session.branchId; // Force branch to user's branch
+    } else if (targetBranch === "ALL" || !targetBranch) {
+      targetBranch = null;
     }
 
     const newId = `SRV-${Date.now()}`;

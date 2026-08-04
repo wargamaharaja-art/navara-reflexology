@@ -26,6 +26,13 @@ export async function PUT(
     }
     const oldPrice = existing[0].price;
 
+    let targetBranch = branchId;
+    if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
+      targetBranch = existing[0].branchId; // Retain existing branchId, don't allow changing
+    } else if (targetBranch === "ALL") {
+      targetBranch = null;
+    }
+
     const result = await db.update(services).set({
       name,
       description,
@@ -33,7 +40,7 @@ export async function PUT(
       durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,
       globalCommission: globalCommission !== undefined ? Number(globalCommission) : undefined,
       category: category !== undefined ? category : undefined,
-      branchId: branchId !== undefined ? branchId : undefined,
+      branchId: targetBranch !== undefined ? targetBranch : undefined,
       isActive: isActive !== undefined ? isActive : undefined,
     }).where(eq(services.id, id)).returning();
 
