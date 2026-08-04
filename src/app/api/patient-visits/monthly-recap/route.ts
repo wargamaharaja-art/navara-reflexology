@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { patientVisits, services, financeTransactions } from "@/lib/db/schema";
+import { patientVisits, services, invoices } from "@/lib/db/schema";
 import { eq, and, like, desc, sql } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { type NextRequest, NextResponse } from "next/server";
@@ -38,25 +38,24 @@ export async function GET(request: NextRequest) {
       .where(and(...visitConditions))
       .orderBy(desc(patientVisits.visitDate));
 
-    // Get actual revenue from Finance Transactions (Source of Truth)
-    const financeConditions = [
-      eq(financeTransactions.type, "INCOME"),
-      like(financeTransactions.date, `${targetMonth}-%`)
+    // Get actual revenue from Invoices (Single Source of Truth — same as Transaksi Pelanggan)
+    const invoiceConditions = [
+      like(invoices.createdAt, `${targetMonth}-%`)
     ];
     if (branchFilter) {
-      financeConditions.push(eq(financeTransactions.branchId, branchFilter));
+      invoiceConditions.push(eq(invoices.branchId, branchFilter));
     }
-    const financeResult = await db
+    const invoiceResult = await db
       .select({
-        date: sql<string>`substring(CAST(${financeTransactions.date} AS text) from 1 for 10)`,
-        amount: sql<number>`SUM(${financeTransactions.amount})`
+        date: sql<string>`substring(${invoices.createdAt} from 1 for 10)`,
+        amount: sql<number>`SUM(${invoices.grandTotal})`
       })
-      .from(financeTransactions)
-      .where(and(...financeConditions))
-      .groupBy(sql`substring(CAST(${financeTransactions.date} AS text) from 1 for 10)`);
+      .from(invoices)
+      .where(and(...invoiceConditions))
+      .groupBy(sql`substring(${invoices.createdAt} from 1 for 10)`);
       
     const revenueMap: Record<string, number> = {};
-    financeResult.forEach(f => {
+    invoiceResult.forEach(f => {
       if (f.date) revenueMap[f.date] = Number(f.amount);
     });
 

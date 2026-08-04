@@ -226,14 +226,31 @@ export async function POST(request: Request) {
   
       // 7. Create finance transaction (INCOME)
       if (splitPayments && splitPayments.length > 1) {
+        let remainingChange = Math.max(0, (amountPaid || grandTotal) - grandTotal);
+        
         for (const sp of splitPayments) {
           if (sp.amount <= 0) continue;
+          
+          let actualAmount = sp.amount;
+          if (remainingChange > 0) {
+             if (sp.method === 'CASH') {
+                const deduct = Math.min(actualAmount, remainingChange);
+                actualAmount -= deduct;
+                remainingChange -= deduct;
+             } else if (sp === splitPayments[splitPayments.length - 1]) {
+                // If it's the last item and still have change (e.g. no CASH method), just deduct from here to balance it
+                actualAmount -= remainingChange;
+                remainingChange = 0;
+             }
+          }
+          if (actualAmount <= 0) continue;
+
           const finTrxId = crypto.randomUUID();
           await tx.insert(financeTransactions).values({
             id: finTrxId,
             type: "INCOME",
             category: "Pendapatan Layanan",
-            amount: sp.amount,
+            amount: actualAmount,
             description: `Struk ${invoiceNumber} - ${patientName} (${sp.method})`,
             referenceId: invoiceId,
             branchId: finalBranchId,
@@ -248,7 +265,7 @@ export async function POST(request: Request) {
             referenceId: finTrxId,
             debitAccountId: COA.KAS,
             creditAccountId: COA.PENDAPATAN_LAYANAN,
-            amount: sp.amount,
+            amount: actualAmount,
           tx});
         }
       } else {

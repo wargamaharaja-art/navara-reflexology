@@ -104,7 +104,7 @@ export async function PUT(
       await db
         .update(financeTransactions)
         .set(finUpdateData)
-        .where(eq(financeTransactions.referenceId, current.visitId || ""));
+        .where(eq(financeTransactions.referenceId, current.id));
     }
 
     // Fetch updated invoice
@@ -145,7 +145,7 @@ export async function DELETE(
     // Delete linked journal entries and lines first
     const relatedFinTxs = await db.select({ id: financeTransactions.id })
       .from(financeTransactions)
-      .where(eq(financeTransactions.referenceId, existing[0].visitId || ""));
+      .where(eq(financeTransactions.referenceId, existing[0].id));
     const finTxIds = relatedFinTxs.map(tx => tx.id);
 
     if (finTxIds.length > 0) {

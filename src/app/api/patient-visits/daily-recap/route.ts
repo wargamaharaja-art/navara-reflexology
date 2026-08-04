@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { patientVisits, patients, services, branches, therapists, invoices, financeTransactions } from "@/lib/db/schema";
+import { patientVisits, patients, services, branches, therapists, invoices } from "@/lib/db/schema";
 import { eq, and, desc, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { type NextRequest, NextResponse } from "next/server";
@@ -130,25 +130,24 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // 4. Get actual revenue from Finance Transactions
-    const financeConditions = [
-      eq(financeTransactions.type, "INCOME"),
-      like(financeTransactions.date, `${targetDate}%`)
+    // 4. Get actual revenue from Invoices (Single Source of Truth — same as Transaksi Pelanggan)
+    const invoiceRevenueConditions = [
+      like(invoices.createdAt, `${targetDate}%`)
     ];
     if (branchFilter) {
-      financeConditions.push(eq(financeTransactions.branchId, branchFilter));
+      invoiceRevenueConditions.push(eq(invoices.branchId, branchFilter));
     }
     
-    const financeResult = await db
+    const invoiceRevenueResult = await db
       .select({
-        branchId: financeTransactions.branchId,
-        amount: financeTransactions.amount,
+        branchId: invoices.branchId,
+        amount: invoices.grandTotal,
       })
-      .from(financeTransactions)
-      .where(and(...financeConditions));
+      .from(invoices)
+      .where(and(...invoiceRevenueConditions));
       
     totalRevenue = 0;
-    financeResult.forEach(f => {
+    invoiceRevenueResult.forEach(f => {
       totalRevenue += f.amount;
       if (f.branchId && branchBreakdown[f.branchId]) {
         branchBreakdown[f.branchId].totalRevenue += f.amount;
