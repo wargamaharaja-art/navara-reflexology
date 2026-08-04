@@ -172,22 +172,7 @@ export default function AdminStaffPayrollPage() {
           icon={Receipt}
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
-              {/* Branch Filter Dropdown - Only show if Super Admin */}
-              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-                <div className="relative w-full sm:w-auto">
-                  <select
-                    value={filterBranch}
-                    onChange={(e) => setFilterBranch(e.target.value)}
-                    className="pl-4 pr-8 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md transition-all appearance-none cursor-pointer w-full"
-                  >
-                    <option value="ALL" className="text-gray-900">Semua Cabang</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id} className="text-gray-900">{b.name}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/50 font-bold text-[10px]">▼</div>
-                </div>
-              )}
+
 
               <input 
                 type="month" 

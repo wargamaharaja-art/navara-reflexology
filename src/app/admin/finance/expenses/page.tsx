@@ -50,6 +50,7 @@ export default function AdminExpensesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
+  const [session, setSession] = useState<any>(null);
   
   // Filters
   const [startDate, setStartDate] = useState<string>(() => {
@@ -146,8 +147,21 @@ export default function AdminExpensesPage() {
       }
     };
     
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          setSession(data.session);
+        }
+      } catch (err) {
+        console.error("Failed to fetch session", err);
+      }
+    };
+    
     fetchCategories();
     fetchBranches();
+    fetchSession();
   }, []);
 
   const fetchTransactions = async () => {

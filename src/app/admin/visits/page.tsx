@@ -2765,7 +2765,6 @@ export default function AdminVisitsPage() {
           setVisitToDelete(null);
         }}
         isLoading={isDeleting}
-        variant="danger"
       />
       
       {/* Finish Confirmation Modal */}
@@ -2781,7 +2780,6 @@ export default function AdminVisitsPage() {
           setVisitToFinish(null);
         }}
         isLoading={isFinishing}
-        variant="info"
       />
 
       </div>
