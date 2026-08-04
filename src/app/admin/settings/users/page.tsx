@@ -22,8 +22,11 @@ const AVAILABLE_PERMISSIONS = [
   },
   { 
     id: "RESERVASI", 
-    label: "Akses Reservasi Online", 
-    submenus: [{ id: "RESERVASI_ONLINE", label: "Kelola Reservasi via Web" }] 
+    label: "Reservasi & Promo", 
+    submenus: [
+      { id: "RESERVASI_ONLINE", label: "Kelola Reservasi via Web" },
+      { id: "PROMO_BEKAM", label: "Promo Bekam Gratis" }
+    ] 
   },
   { 
     id: "BUKUPASIEN", 
@@ -37,7 +40,8 @@ const AVAILABLE_PERMISSIONS = [
       { id: "PEGAWAI_TERAPIS", label: "Data Terapis" },
       { id: "PEGAWAI_STAFF", label: "Data Staff" },
       { id: "PEGAWAI_ABSENSI", label: "Absensi Pegawai" },
-      { id: "PEGAWAI_SLIP", label: "Slip Gaji" }
+      { id: "PEGAWAI_SLIP", label: "Slip Gaji" },
+      { id: "PEGAWAI_MUTASI", label: "Surat Mutasi" }
     ] 
   },
   { 
@@ -60,8 +64,10 @@ const AVAILABLE_PERMISSIONS = [
     label: "Pengaturan Sistem", 
     submenus: [
       { id: "PENGATURAN_CABANG", label: "Data Cabang" },
+      { id: "LAYANAN_TERAPI", label: "Layanan Terapi" },
       { id: "PENGATURAN_PENGGUNA", label: "Pengguna Sistem" },
-      { id: "PENGATURAN_KOMISI", label: "Sinkronisasi Komisi" }
+      { id: "PENGATURAN_KOMISI", label: "Sinkronisasi Komisi" },
+      { id: "SYSTEM_LOGS", label: "System Logs" }
     ] 
   },
 ];
@@ -69,12 +75,12 @@ const AVAILABLE_PERMISSIONS = [
 export function getDefaultPermissions(role: string): string[] {
   const superAdminPerms = [
     "DASHBOARD_ANALITIK",
-    "RESERVASI_ONLINE",
+    "RESERVASI_ONLINE", "PROMO_BEKAM",
     "BUKUPASIEN_REKAMMEDIS",
-    "PEGAWAI_TERAPIS", "PEGAWAI_STAFF", "PEGAWAI_ABSENSI", "PEGAWAI_SLIP",
+    "PEGAWAI_TERAPIS", "PEGAWAI_STAFF", "PEGAWAI_ABSENSI", "PEGAWAI_SLIP", "PEGAWAI_MUTASI",
     "INVENTARIS_BARANG",
     "KEUANGAN_PEMASUKAN", "KEUANGAN_PENGELUARAN", "KEUANGAN_MUTASI", "KEUANGAN_LABARUGI",
-    "PENGATURAN_CABANG", "PENGATURAN_PENGGUNA", "PENGATURAN_KOMISI"
+    "PENGATURAN_CABANG", "PENGATURAN_PENGGUNA", "PENGATURAN_KOMISI", "LAYANAN_TERAPI", "SYSTEM_LOGS"
   ];
 
   switch (role) {

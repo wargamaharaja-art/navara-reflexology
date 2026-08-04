@@ -4,15 +4,17 @@ import type { NextRequest } from 'next/server';
 // Route to Permission Mapping
 // Diurutkan dari path terdalam ke terluar (untuk pencocokan startsWith yang aman)
 const rbacMap = [
+  { route: '/admin/promo', permission: 'PROMO_BEKAM' },
   { route: '/admin/settings/users', permission: 'PENGATURAN_PENGGUNA' },
   { route: '/admin/settings/commissions', permission: 'PENGATURAN_KOMISI' },
-  { route: '/admin/system-logs', permission: 'SUPER_ADMIN_ONLY' },
+  { route: '/admin/system-logs', permission: 'SYSTEM_LOGS' },
   { route: '/admin/settings', permission: 'SUPER_ADMIN_ONLY' }, // Special marker
   { route: '/admin/finance/expenses', permission: 'KEUANGAN_PENGELUARAN' },
   { route: '/admin/finance/cash-mutations', permission: 'KEUANGAN_MUTASI' },
   { route: '/admin/finance/laba-rugi', permission: 'KEUANGAN_LABARUGI' },
   { route: '/admin/finance/buku-besar', permission: 'KEUANGAN_LABARUGI' },
   { route: '/admin/finance', permission: 'KEUANGAN_PEMASUKAN' },
+  { route: '/admin/therapists/mutations', permission: 'PEGAWAI_MUTASI' },
   { route: '/admin/therapists/reports', permission: 'PEGAWAI_SLIP' },
   { route: '/admin/therapists', permission: 'PEGAWAI_TERAPIS' },
   { route: '/admin/staff/payroll', permission: 'PEGAWAI_SLIP' },
@@ -21,7 +23,7 @@ const rbacMap = [
   { route: '/admin/attendance', permission: 'PEGAWAI_ABSENSI' },
   { route: '/admin/inventory', permission: 'INVENTARIS_BARANG' },
   { route: '/admin/branches', permission: 'PENGATURAN_CABANG' },
-  { route: '/admin/services', permission: 'PENGATURAN_CABANG' },
+  { route: '/admin/services', permission: 'LAYANAN_TERAPI' },
 ];
 
 export default async function proxy(request: NextRequest) {

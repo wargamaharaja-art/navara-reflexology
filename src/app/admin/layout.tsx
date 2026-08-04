@@ -366,12 +366,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 href: "/admin/settings",
                 icon: Settings,
                 subItems: [
-                  ...(session?.role === "SUPER_ADMIN" ? [
-                    { name: "Info Perusahaan", href: "/admin/settings", icon: Store },
-                    { name: "Cabang", href: "/admin/branches", icon: MapPin },
-                    { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users },
-                    { name: "System Logs", href: "/admin/system-logs", icon: Activity }
-                  ] : []),
+                  { name: "Info Perusahaan", href: "/admin/settings", icon: Store },
+                  { name: "Cabang", href: "/admin/branches", icon: MapPin },
+                  { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users },
+                  { name: "System Logs", href: "/admin/system-logs", icon: Activity },
                   { name: "Sinkronisasi Komisi", href: "/admin/settings/commissions", icon: Award }
                 ]
               },
@@ -386,7 +384,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               if (link.name === "Reservasi Online") return isSuperAdmin || perms.includes("RESERVASI_ONLINE");
               
               if (link.name === "Promo Bekam Gratis") {
-                const hasPermission = isSuperAdmin || perms.includes("RESERVASI_ONLINE");
+                const hasPermission = isSuperAdmin || perms.includes("PROMO_BEKAM");
                 if (!hasPermission) return false;
                 
                 const activeBranchId = (isSuperAdmin || session?.role === "INVESTOR") ? selectedBranch : session?.branchId;
@@ -396,7 +394,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Buku Pasien") return isSuperAdmin || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER" || perms.includes("PENGATURAN_CABANG"); // Menampilkan untuk semua admin cabang & kasir
+              if (link.name === "Layanan Terapi") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER" || perms.includes("LAYANAN_TERAPI"); // Menampilkan untuk semua admin cabang & kasir
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
@@ -404,7 +402,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Data Staff") return isSuperAdmin || perms.includes("PEGAWAI_STAFF");
                   if (sub.name === "Absensi Pegawai") return isSuperAdmin || perms.includes("PEGAWAI_ABSENSI");
                   if (sub.name === "Surat Mutasi") {
-                    return isSuperAdmin && selectedBranch === "ALL";
+                    return isSuperAdmin || perms.includes("PEGAWAI_MUTASI");
                   }
                   if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return isSuperAdmin || perms.includes("PEGAWAI_SLIP");
                   return false;
@@ -431,6 +429,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Info Perusahaan") return isSuperAdmin;
                   if (sub.name === "Cabang") return isSuperAdmin || perms.includes("PENGATURAN_CABANG");
                   if (sub.name === "Pengguna Sistem") return isSuperAdmin || perms.includes("PENGATURAN_PENGGUNA");
+                  if (sub.name === "System Logs") return isSuperAdmin || perms.includes("SYSTEM_LOGS");
                   if (sub.name === "Sinkronisasi Komisi") return isSuperAdmin || perms.includes("PENGATURAN_KOMISI");
                   return false;
                 });

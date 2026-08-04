@@ -7,8 +7,8 @@ import { desc } from "drizzle-orm";
 export async function GET(request: Request) {
   try {
     const session = await getSession();
-    // Only SUPER_ADMIN can view system logs
-    if (!session || session.role !== "SUPER_ADMIN") {
+    // Allow SUPER_ADMIN or those with SYSTEM_LOGS permission
+    if (!session || (!session.permissions.includes("SYSTEM_LOGS") && session.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
