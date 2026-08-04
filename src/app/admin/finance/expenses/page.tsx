@@ -407,12 +407,12 @@ export default function AdminExpensesPage() {
                   <label className="text-sm font-semibold text-gray-700">Kategori Pengeluaran</label>
                   <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors capitalize">
                     <optgroup label="Operasional">
-                      {expenseCategories.filter(cat => !(cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan"))).map(cat => (
+                      {expenseCategories.filter(cat => !(cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan") || cat.toLowerCase().includes("bonus karyawan"))).map(cat => (
                         <option key={cat} value={cat} className="capitalize">{cat}</option>
                       ))}
                     </optgroup>
                     <optgroup label="Gaji">
-                      {expenseCategories.filter(cat => cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan")).map(cat => (
+                      {expenseCategories.filter(cat => cat.toLowerCase().includes("gaji") || cat.toLowerCase().includes("lembur") || cat.toLowerCase().includes("uang makan") || cat.toLowerCase().includes("kontrakan") || cat.toLowerCase().includes("bonus karyawan")).map(cat => (
                         <option key={cat} value={cat} className="capitalize">{cat}</option>
                       ))}
                     </optgroup>
