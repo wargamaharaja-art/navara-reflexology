@@ -8,7 +8,8 @@ export async function GET(request: Request) {
   try {
     const session = await getSession();
     // Allow SUPER_ADMIN or those with SYSTEM_LOGS permission
-    if (!session || (!session.permissions.includes("SYSTEM_LOGS") && session.role !== "SUPER_ADMIN")) {
+    const perms = session?.permissions || [];
+    if (!session || (!perms.includes("SYSTEM_LOGS") && session.role !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

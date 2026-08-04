@@ -11,7 +11,8 @@ export async function PUT(
 ) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "BRANCH_ADMIN" && session.role !== "CASHIER" && !session.permissions.includes("LAYANAN_TERAPI"))) {
+    const perms = session?.permissions || [];
+    if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "BRANCH_ADMIN" && session.role !== "CASHIER" && !perms.includes("LAYANAN_TERAPI"))) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,7 +58,8 @@ export async function DELETE(
 ) {
   try {
     const session = await getSession();
-    if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "BRANCH_ADMIN" && session.role !== "CASHIER" && !session.permissions.includes("LAYANAN_TERAPI"))) {
+    const perms = session?.permissions || [];
+    if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "BRANCH_ADMIN" && session.role !== "CASHIER" && !perms.includes("LAYANAN_TERAPI"))) {
       return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -87,8 +89,9 @@ export async function DELETE(
         throw dbError;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("DELETE /api/services/[id] error:", error);
-    return Response.json({ error: "Gagal menghapus layanan" }, { status: 500 });
+    // Return the actual error message to help debug
+    return Response.json({ error: "Gagal menghapus layanan: " + (error?.message || String(error)) }, { status: 500 });
   }
 }
