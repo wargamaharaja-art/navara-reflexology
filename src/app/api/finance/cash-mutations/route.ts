@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { financeTransactions } from "@/lib/db/schema";
-import { desc, eq, and, ne } from "drizzle-orm";
+import { desc, eq, and, ne, gte, lte } from "drizzle-orm";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
@@ -16,12 +16,26 @@ export async function GET(request: Request) {
     const branchFilter = await getActiveBranchFilter();
     const branch = branchFilter || searchParams.get("branchId");
 
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conditions: any[] = [
       eq(financeTransactions.paymentMethod, "CASH"),
       ne(financeTransactions.category, "Bagi Hasil Terapis")
     ];
     if (branch) {
       conditions.push(eq(financeTransactions.branchId, branch));
+    }
+    if (startDate) {
+      const startObj = new Date(startDate);
+      startObj.setHours(0, 0, 0, 0);
+      conditions.push(gte(financeTransactions.date, startObj.toISOString()));
+    }
+    if (endDate) {
+      const endObj = new Date(endDate);
+      endObj.setHours(23, 59, 59, 999);
+      conditions.push(lte(financeTransactions.date, endObj.toISOString()));
     }
 
     const result = await db

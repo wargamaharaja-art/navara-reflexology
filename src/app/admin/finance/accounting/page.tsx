@@ -11,13 +11,21 @@ const formatRupiah = (amount: number) => {
 export default function AccountingDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
-  const [month, setMonth] = useState(""); // "" means all time
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
   const [activeTab, setActiveTab] = useState<"ringkasan" | "jurnal" | "labarugi" | "neraca" | "aruskas">("ringkasan");
 
   const fetchAccounting = async () => {
     setLoading(true);
     try {
-      const url = month ? `/api/finance/accounting?month=${month}` : "/api/finance/accounting";
+      const url = (startDate && endDate) ? `/api/finance/accounting?startDate=${startDate}&endDate=${endDate}` : "/api/finance/accounting";
       const res = await fetch(url);
       const json = await res.json();
       if (json.success) {
@@ -31,8 +39,8 @@ export default function AccountingDashboard() {
   };
 
   useEffect(() => {
-    fetchAccounting();
-  }, [month]);
+    if (startDate && endDate) fetchAccounting();
+  }, [startDate, endDate]);
 
   if (loading && !data) {
     return (
@@ -63,17 +71,20 @@ export default function AccountingDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-gray-400" />
-            <input 
-              type="month" 
-              value={month} 
-              onChange={e => setMonth(e.target.value)}
-              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none"
+          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-2 py-1.5 hover:border-emerald-200 transition-colors">
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
             />
-            {month && (
-              <button onClick={() => setMonth("")} className="text-xs text-red-500 hover:underline">Reset</button>
-            )}
+            <span className="text-gray-400 font-bold px-1">s/d</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+            />
           </div>
         </div>
 
@@ -159,7 +170,7 @@ export default function AccountingDashboard() {
             <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-gray-900">LAPORAN LABA RUGI</h2>
-                <p className="text-gray-500">Periode: {month ? month : "Semua Waktu"}</p>
+                <p className="text-gray-500">Periode: {startDate} s/d {endDate}</p>
               </div>
 
               <div className="space-y-6 text-sm sm:text-base">
@@ -299,7 +310,7 @@ export default function AccountingDashboard() {
             <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-black text-gray-900">LAPORAN ARUS KAS (CASH FLOW)</h2>
-                <p className="text-gray-500">Periode: {month ? month : "Semua Waktu"}</p>
+                <p className="text-gray-500">Periode: {startDate} s/d {endDate}</p>
               </div>
 
               <div className="space-y-6 text-sm sm:text-base">

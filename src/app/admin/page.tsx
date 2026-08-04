@@ -129,6 +129,8 @@ export default function AdminDashboard() {
     pendapatanHarian: 0,
     transaksiHarian: 0,
     pendapatanKemarin: 0,
+    pengeluaranOperasionalHarian: 0,
+    pengeluaranOperasionalKemarin: 0,
     reservationsBaru: 0,
     topServicesToday: [],
   });
@@ -449,25 +451,25 @@ export default function AdminDashboard() {
                   {/* Terapis Hari Ini — Live Status */}
                   <TherapistStatusWidget showBalance={showBalance} filterBranch={filterBranch} />
 
-                  {/* Total Persediaan */}
-                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">
+                  {/* Pengeluaran Operasional Hari Ini */}
+                  <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-orange-400 hover:-translate-y-1.5 transition-all duration-300 group">
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 rounded-[12px] bg-amber-50 border border-amber-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Package className="w-5 h-5 text-amber-700" />
+                      <div className="w-10 h-10 rounded-[12px] bg-orange-50 border border-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                        <TrendingDown className="w-5 h-5 text-orange-700" />
                       </div>
-                      <span className="text-[11px] font-black text-amber-800 uppercase tracking-wider leading-tight">Total<br/>Persediaan</span>
+                      <span className="text-[11px] font-black text-orange-800 uppercase tracking-wider leading-tight">Pengeluaran<br/>Operasional</span>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 font-medium mb-1">Stok Barang Klinik</p>
-                      <div className="flex items-baseline gap-1.5">
-                        <p className="text-3xl xl:text-4xl font-black text-amber-600 tracking-tighter leading-none"><AnimatedNumber value={summaryData.persediaan || 0} isCurrency={false}/></p>
-                        <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">Item</span>
-                      </div>
+                      <p className="text-[10px] text-gray-500 font-medium mb-1">Pengeluaran Hari Ini</p>
+                      <p className="text-xl xl:text-2xl font-black text-orange-600 tracking-tighter">{showBalance ? <AnimatedNumber value={summaryData.pengeluaranOperasionalHarian} /> : <span className="tracking-wider">Rp ••••••</span>}</p>
                       <div className="flex items-center gap-1 mt-1.5">
-                        <span className="flex items-center text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
-                          📦 Tersedia
+                        <span className={`flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded border ${Number(summaryData.pengeluaranOperasionalHarian) <= Number(summaryData.pengeluaranOperasionalKemarin || 0) ? 'text-blue-600 bg-blue-50 border-blue-100' : 'text-rose-600 bg-rose-50 border-rose-100'}`}>
+                          {Number(summaryData.pengeluaranOperasionalHarian) <= Number(summaryData.pengeluaranOperasionalKemarin || 0) ? '🟢 ↓' : '🔴 ↑'} 
+                          {Number(summaryData.pengeluaranOperasionalKemarin) > 0 
+                            ? ` ${(Number(summaryData.pengeluaranOperasionalHarian) >= Number(summaryData.pengeluaranOperasionalKemarin) ? '+' : '')}${Math.round((Number(summaryData.pengeluaranOperasionalHarian) - Number(summaryData.pengeluaranOperasionalKemarin)) / Number(summaryData.pengeluaranOperasionalKemarin) * 100)}%` 
+                            : (Number(summaryData.pengeluaranOperasionalHarian) > 0 ? ' +100%' : ' 0%')}
                         </span>
-                        <span className="text-[9px] text-amber-600/70 font-medium">dalam sistem</span>
+                        <span className="text-[9px] text-gray-500 font-medium">vs kemarin</span>
                       </div>
                     </div>
                   </div>

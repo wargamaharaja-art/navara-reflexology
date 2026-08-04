@@ -51,9 +51,15 @@ export default function AdminFinancePage() {
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
-  const [dateFilter, setDateFilter] = useState("thisMonth");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,44 +93,9 @@ export default function AdminFinancePage() {
     }
   }, [formData.type, incomeCategories, expenseCategories]);
 
-  const getDateRange = () => {
-    const today = new Date();
-    let startDate = "";
-    let endDate = "";
-
-    if (dateFilter === "today") {
-      startDate = today.toISOString().split("T")[0];
-      endDate = startDate;
-    } else if (dateFilter === "thisWeek") {
-      const firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1));
-      const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 7));
-      startDate = firstDay.toISOString().split("T")[0];
-      endDate = lastDay.toISOString().split("T")[0];
-    } else if (dateFilter === "thisMonth") {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      const startObj = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000));
-      const endObj = new Date(lastDay.getTime() - (lastDay.getTimezoneOffset() * 60000));
-      startDate = startObj.toISOString().split("T")[0];
-      endDate = endObj.toISOString().split("T")[0];
-    } else if (dateFilter === "thisYear") {
-      const firstDay = new Date(today.getFullYear(), 0, 1);
-      const lastDay = new Date(today.getFullYear(), 11, 31);
-      const startObj = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000));
-      const endObj = new Date(lastDay.getTime() - (lastDay.getTimezoneOffset() * 60000));
-      startDate = startObj.toISOString().split("T")[0];
-      endDate = endObj.toISOString().split("T")[0];
-    } else if (dateFilter === "custom") {
-      startDate = customStartDate;
-      endDate = customEndDate;
-    }
-    return { startDate, endDate };
-  };
-
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const { startDate, endDate } = getDateRange();
       const params = new URLSearchParams();
       if (filterBranch) params.append("branch", filterBranch);
       if (startDate) params.append("startDate", startDate);
@@ -202,10 +173,9 @@ export default function AdminFinancePage() {
   }, []);
 
   useEffect(() => {
-    if (dateFilter === "custom" && (!customStartDate || !customEndDate)) return; 
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
-  }, [filterBranch, dateFilter, customStartDate, customEndDate]);
+  }, [filterBranch, startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus catatan kas ini? Tindakan ini tidak bisa dibatalkan.")) return;
@@ -300,6 +270,7 @@ export default function AdminFinancePage() {
 
   const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
+  const operationalExpense = transactions.filter(t => t.type === "EXPENSE" && t.category.toLowerCase() !== "bagi hasil terapis").reduce((sum, t) => sum + t.amount, 0);
   const netProfit = totalIncome - totalExpense;
 
   const formatRupiah = (amount: number) => {
@@ -362,35 +333,21 @@ export default function AdminFinancePage() {
               ))}
             </select>
             
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="today">Hari Ini</option>
-              <option value="thisWeek">Minggu Ini</option>
-              <option value="thisMonth">Bulan Ini</option>
-              <option value="thisYear">Tahun Ini</option>
-              <option value="custom">Kustom Rentang</option>
-            </select>
-
-            {dateFilter === "custom" && (
-              <div className="flex items-center gap-2">
-                <input 
-                  type="date" 
-                  value={customStartDate} 
-                  onChange={e => setCustomStartDate(e.target.value)} 
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                />
-                <span className="text-gray-500">-</span>
-                <input 
-                  type="date" 
-                  value={customEndDate} 
-                  onChange={e => setCustomEndDate(e.target.value)} 
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-                />
-              </div>
-            )}
+            <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-sm rounded-lg px-2 py-1.5">
+              <input
+                type="date"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+              />
+              <span className="text-gray-400 font-bold px-1">s/d</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+              />
+            </div>
 
             <button 
               onClick={() => setIsCategoryModalOpen(true)}
@@ -417,40 +374,55 @@ export default function AdminFinancePage() {
         </div>
 
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
-              <TrendingUp className="h-24 w-24" />
+        {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp className="h-5 w-5" /></div>
+                  Pemasukan
+                </div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
+              </div>
+              
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <TrendingDown className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><TrendingDown className="h-5 w-5" /></div>
+                  Pengeluaran Operasional
+                </div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(operationalExpense)}</div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <TrendingDown className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="h-5 w-5" /></div>
+                  Total Pengeluaran
+                </div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
+                <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-32 w-32" />
+                </div>
+                <div className="flex items-center gap-2 text-blue-100 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm"><Wallet className="h-5 w-5" /></div>
+                  Laba Bersih
+                </div>
+                <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-green-100 rounded-lg text-green-600"><TrendingUp className="h-5 w-5" /></div>
-              Pemasukan
-            </div>
-            <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
-              <TrendingDown className="h-24 w-24" />
-            </div>
-            <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="h-5 w-5" /></div>
-              Total Pengeluaran
-            </div>
-            <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-primary to-emerald-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
-            <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
-              <DollarSign className="h-32 w-32" />
-            </div>
-            <div className="flex items-center gap-2 text-emerald-100 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm"><Wallet className="h-5 w-5" /></div>
-              Laba Bersih
-            </div>
-            <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
-          </div>
-        </div>
+          </>
+        )}
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

@@ -53,9 +53,15 @@ export default function AdminExpensesPage() {
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
-  const [dateFilter, setDateFilter] = useState("thisMonth");
-  const [customStartDate, setCustomStartDate] = useState("");
-  const [customEndDate, setCustomEndDate] = useState("");
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,44 +151,9 @@ export default function AdminExpensesPage() {
     fetchBranches();
   }, []);
 
-  const getDateRange = () => {
-    const today = new Date();
-    let startDate = "";
-    let endDate = "";
-
-    if (dateFilter === "today") {
-      startDate = today.toISOString().split("T")[0];
-      endDate = startDate;
-    } else if (dateFilter === "thisWeek") {
-      const firstDay = new Date(today.setDate(today.getDate() - today.getDay() + 1));
-      const lastDay = new Date(today.setDate(today.getDate() - today.getDay() + 7));
-      startDate = firstDay.toISOString().split("T")[0];
-      endDate = lastDay.toISOString().split("T")[0];
-    } else if (dateFilter === "thisMonth") {
-      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-      const startObj = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000));
-      const endObj = new Date(lastDay.getTime() - (lastDay.getTimezoneOffset() * 60000));
-      startDate = startObj.toISOString().split("T")[0];
-      endDate = endObj.toISOString().split("T")[0];
-    } else if (dateFilter === "thisYear") {
-      const firstDay = new Date(today.getFullYear(), 0, 1);
-      const lastDay = new Date(today.getFullYear(), 11, 31);
-      const startObj = new Date(firstDay.getTime() - (firstDay.getTimezoneOffset() * 60000));
-      const endObj = new Date(lastDay.getTime() - (lastDay.getTimezoneOffset() * 60000));
-      startDate = startObj.toISOString().split("T")[0];
-      endDate = endObj.toISOString().split("T")[0];
-    } else if (dateFilter === "custom") {
-      startDate = customStartDate;
-      endDate = customEndDate;
-    }
-    return { startDate, endDate };
-  };
-
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const { startDate, endDate } = getDateRange();
       const params = new URLSearchParams();
       if (filterBranch) params.append("branch", filterBranch);
       if (startDate) params.append("startDate", startDate);
@@ -207,10 +178,9 @@ export default function AdminExpensesPage() {
   };
 
   useEffect(() => {
-    if (dateFilter === "custom" && (!customStartDate || !customEndDate)) return; 
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
-  }, [filterBranch, dateFilter, customStartDate, customEndDate]);
+  }, [filterBranch, startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus catatan kas ini? Tindakan ini tidak bisa dibatalkan.")) return;
@@ -316,35 +286,21 @@ export default function AdminExpensesPage() {
                 ))}
               </select>
               
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
-              >
-                <option value="today">Hari Ini</option>
-                <option value="thisWeek">Minggu Ini</option>
-                <option value="thisMonth">Bulan Ini</option>
-                <option value="thisYear">Tahun Ini</option>
-                <option value="custom">Kustom Rentang</option>
-              </select>
-
-              {dateFilter === "custom" && (
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="date" 
-                    value={customStartDate} 
-                    onChange={e => setCustomStartDate(e.target.value)} 
-                    className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-all hover:bg-gray-50"
-                  />
-                  <span className="text-gray-400 font-bold">-</span>
-                  <input 
-                    type="date" 
-                    value={customEndDate} 
-                    onChange={e => setCustomEndDate(e.target.value)} 
-                    className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none shadow-sm transition-all hover:bg-gray-50"
-                  />
-                </div>
-              )}
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-2 py-1.5 hover:border-emerald-200 transition-colors">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
+                <span className="text-gray-400 font-bold px-1">s/d</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
+              </div>
 
               <button 
                 onClick={handleExportCSV}

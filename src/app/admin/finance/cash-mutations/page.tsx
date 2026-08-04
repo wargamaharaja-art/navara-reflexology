@@ -21,6 +21,15 @@ export default function CashMutationsPage() {
   const [formData, setFormData] = useState({ amount: "", description: "" });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -33,7 +42,7 @@ export default function CashMutationsPage() {
   const fetchMutations = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/finance/cash-mutations");
+      const res = await fetch(`/api/finance/cash-mutations?startDate=${startDate}&endDate=${endDate}`);
       if (res.ok) {
         const json = await res.json();
         setMutations(json.data || []);
@@ -43,7 +52,7 @@ export default function CashMutationsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [startDate, endDate]);
 
   useEffect(() => {
     fetchMutations();
@@ -109,7 +118,22 @@ export default function CashMutationsPage() {
           description="Kelola saldo fisik kasir harian (tambah & kurang saldo)."
           icon={Wallet}
           rightContent={
-            <div className="flex gap-3 mt-4 md:mt-0">
+            <div className="flex gap-3 mt-4 md:mt-0 flex-wrap items-center justify-end">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-2 py-1.5 hover:border-blue-200 transition-colors">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
+                <span className="text-gray-400 font-bold px-1">s/d</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
+              </div>
               <button
                 id="btn-tambah-kas"
                 onClick={() => handleOpenModal("INCOME")}

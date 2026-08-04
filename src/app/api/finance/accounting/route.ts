@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { accounts, journalEntries, journalLines } from "@/lib/db/schema";
-import { eq, sum, desc, sql } from "drizzle-orm";
+import { eq, sum, desc, sql, gte, lte, and } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
     const searchParams = new URL(request.url).searchParams;
-    const month = searchParams.get("month"); // Format: YYYY-MM
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     
     // 1. Fetch all accounts
     const allAccounts = await db.select().from(accounts);
@@ -21,8 +22,20 @@ export async function GET(request: Request) {
     .from(journalLines)
     .innerJoin(journalEntries, eq(journalLines.entryId, journalEntries.id));
 
-    if (month) {
-      query = query.where(sql`to_char(${journalEntries.date}::timestamp, 'YYYY-MM') = ${month}`) as any;
+    const conditions = [];
+    if (startDate) {
+      const startObj = new Date(startDate);
+      startObj.setHours(0, 0, 0, 0);
+      conditions.push(gte(journalEntries.date, startObj.toISOString()));
+    }
+    if (endDate) {
+      const endObj = new Date(endDate);
+      endObj.setHours(23, 59, 59, 999);
+      conditions.push(lte(journalEntries.date, endObj.toISOString()));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
 
     const lines = await query;
@@ -83,8 +96,13 @@ export async function GET(request: Request) {
     const currentEquity = totalEquity + netIncome;
 
     // 3. Fetch recent journal entries for Jurnal Umum
-    const recentJournalsRaw = await db.select()
-      .from(journalEntries)
+    let journalsQuery = db.select().from(journalEntries);
+    
+    if (conditions.length > 0) {
+      journalsQuery = journalsQuery.where(and(...conditions)) as any;
+    }
+    
+    const recentJournalsRaw = await journalsQuery
       .orderBy(desc(journalEntries.date))
       .limit(50);
       

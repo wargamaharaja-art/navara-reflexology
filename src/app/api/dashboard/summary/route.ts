@@ -195,6 +195,54 @@ export async function GET(request: Request) {
     const yesterdayIncomeResult = await yesterdayIncomeQuery;
     const pendapatanKemarin = yesterdayIncomeResult[0]?.totalAmount || 0;
 
+    // Pengeluaran Operasional Hari Ini & Kemarin
+    let dailyOpExpenseQuery = db
+      .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
+      .from(financeTransactions)
+      .where(and(
+        sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
+        eq(financeTransactions.type, "EXPENSE"),
+        sql`lower(${financeTransactions.category}) != 'bagi hasil terapis'`
+      ));
+
+    if (branchFilter) {
+      dailyOpExpenseQuery = db
+        .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
+        .from(financeTransactions)
+        .where(and(
+          sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
+          eq(financeTransactions.type, "EXPENSE"),
+          sql`lower(${financeTransactions.category}) != 'bagi hasil terapis'`,
+          eq(financeTransactions.branchId, branchFilter)
+        ));
+    }
+    const dailyOpExpenseResult = await dailyOpExpenseQuery;
+    const pengeluaranOperasionalHarian = dailyOpExpenseResult[0]?.totalAmount || 0;
+
+    let yesterdayOpExpenseQuery = db
+      .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
+      .from(financeTransactions)
+      .where(and(
+        sql`date(${financeTransactions.date}::timestamp) = ${yesterdayStr}`,
+        eq(financeTransactions.type, "EXPENSE"),
+        sql`lower(${financeTransactions.category}) != 'bagi hasil terapis'`
+      ));
+
+    if (branchFilter) {
+      yesterdayOpExpenseQuery = db
+        .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
+        .from(financeTransactions)
+        .where(and(
+          sql`date(${financeTransactions.date}::timestamp) = ${yesterdayStr}`,
+          eq(financeTransactions.type, "EXPENSE"),
+          sql`lower(${financeTransactions.category}) != 'bagi hasil terapis'`,
+          eq(financeTransactions.branchId, branchFilter)
+        ));
+    }
+    const yesterdayOpExpenseResult = await yesterdayOpExpenseQuery;
+    const pengeluaranOperasionalKemarin = yesterdayOpExpenseResult[0]?.totalAmount || 0;
+
+
     // 5.5 Terapis Bertugas Hari Ini (Berdasarkan Absensi)
     let dailyTherapistsQuery = db
       .select({ count: sql<number>`count(distinct ${attendance.therapistId})` })
@@ -332,6 +380,8 @@ export async function GET(request: Request) {
         pendapatanHarian: pendapatanHarian,
         transaksiHarian: transaksiHarian,
         pendapatanKemarin: pendapatanKemarin,
+        pengeluaranOperasionalHarian: pengeluaranOperasionalHarian,
+        pengeluaranOperasionalKemarin: pengeluaranOperasionalKemarin,
         reservationsBaru: reservationsBaru,
         terapisHarian: terapisHarian,
         topServicesToday: topServicesToday,
