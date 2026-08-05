@@ -374,7 +374,7 @@ export default function AdminVisitsPage() {
         fetch("/api/patients"),
         fetch("/api/therapists"),
         fetch("/api/branches"),
-        fetch("/api/services"),
+        fetch("/api/services?all=true"),
         fetch("/api/auth/session"),
         fetch(`/api/invoices?date=${today}`)
       ]);
