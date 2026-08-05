@@ -75,6 +75,7 @@ export async function GET(
     const visitsRaw = await db
       .select({
         id: patientVisits.id,
+        patientId: patientVisits.patientId,
         visitDate: patientVisits.visitDate,
         visitTime: patientVisits.visitTime,
         status: patientVisits.status,
@@ -103,7 +104,7 @@ export async function GET(
         )
       );
 
-    // Group by visitId to avoid duplicates from multiple commissions per visit
+    // Group by patientId, date, and time to avoid duplicates from multiple services taken at the same time
     const visitsMap = new Map<string, any>();
 
     for (const row of visitsRaw) {
@@ -112,45 +113,69 @@ export async function GET(
         continue;
       }
 
-      if (!visitsMap.has(row.id)) {
-        let finalServiceName = row.serviceName;
-        let finalServicePrice = row.servicePrice;
+      const groupKey = `${row.patientId}_${row.visitDate}_${row.visitTime}`;
 
-        if (row.invoiceItems) {
-          try {
-            const items = JSON.parse(row.invoiceItems);
-            if (Array.isArray(items) && items.length > 0) {
-              finalServiceName = items.map((i: any) => {
-                if (i.qty && i.qty > 1) return `${i.name} (x${i.qty})`;
-                return i.name;
-              }).join(" + ");
-              finalServicePrice = row.invoiceTotal || items.reduce((sum: number, i: any) => sum + (i.subtotal || (i.price * (i.qty || 1))), 0);
-            }
-          } catch (e) {}
-        }
-
-        visitsMap.set(row.id, {
+      if (!visitsMap.has(groupKey)) {
+        visitsMap.set(groupKey, {
           id: row.id,
           visitDate: row.visitDate,
           visitTime: row.visitTime,
           status: row.status,
           patientName: row.patientName,
-          serviceName: finalServiceName,
-          servicePrice: finalServicePrice,
+          serviceName: row.serviceName,
+          servicePrice: row.servicePrice,
           commissionAmount: 0,
           commissionStatus: null,
+          _services: [row.serviceName],
+          _prices: [row.servicePrice],
+          _invoiceFound: false,
+          _processedCommissionVisitIds: new Set<string>(),
         });
       }
 
-      const visit = visitsMap.get(row.id);
+      const visit = visitsMap.get(groupKey);
 
-      // Add commission ONLY if it belongs to THIS therapist
-      if (row.commissionTherapistId === id) {
+      if (visit.id !== row.id && !visit._services.includes(row.serviceName)) {
+        visit._services.push(row.serviceName);
+        visit._prices.push(row.servicePrice);
+      }
+
+      if (row.invoiceItems && !visit._invoiceFound) {
+        try {
+          const items = JSON.parse(row.invoiceItems);
+          if (Array.isArray(items) && items.length > 0) {
+            visit.serviceName = items.map((i: any) => {
+              if (i.qty && i.qty > 1) return `${i.name} (x${i.qty})`;
+              return i.name;
+            }).join(" + ");
+            visit.servicePrice = row.invoiceTotal || items.reduce((sum: number, i: any) => sum + (i.subtotal || (i.price * (i.qty || 1))), 0);
+            visit._invoiceFound = true;
+          }
+        } catch (e) {}
+      }
+
+      // Add commission ONLY if it belongs to THIS therapist and we haven't processed this specific visit's commission yet
+      if (row.commissionTherapistId === id && !visit._processedCommissionVisitIds.has(row.id)) {
         visit.commissionAmount += (row.commissionAmount || 0);
         if (row.commissionStatus) {
           visit.commissionStatus = row.commissionStatus;
         }
+        visit._processedCommissionVisitIds.add(row.id);
       }
+    }
+
+    // Format service names for visits without invoices
+    for (const visit of visitsMap.values()) {
+      if (!visit._invoiceFound && visit._services.length > 1) {
+        visit.serviceName = visit._services.join(" + ");
+        visit.servicePrice = visit._prices.reduce((sum: number, p: number) => sum + (p || 0), 0);
+      }
+      
+      // Clean up internal properties
+      delete visit._services;
+      delete visit._prices;
+      delete visit._invoiceFound;
+      delete visit._processedCommissionVisitIds;
     }
 
     const visits = Array.from(visitsMap.values());
