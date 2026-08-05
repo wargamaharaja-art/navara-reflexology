@@ -234,10 +234,10 @@ export default function AdminDashboard() {
 
         {/* Mobile Header (Seabank Style) - Only visible on Mobile */}
         <div className="md:hidden flex flex-col gap-3 mb-4 mt-2">
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden p-1.5">
-                <Image src="/logo.png" alt="Radja Bekam Logo" width={36} height={36} className="object-contain" />
+                <Image src="/logo.png" alt="Navara Reflexology Logo" width={36} height={36} className="object-contain" />
               </div>
               <div>
                 <h2 className="font-bold text-gray-900 text-[15px] leading-tight truncate max-w-[150px]">{session?.name || "Memuat..."}</h2>
@@ -276,13 +276,13 @@ export default function AdminDashboard() {
           <div className="hidden md:flex flex-col mb-8">
             {/* Laba Bersih Highlight Card */}
             {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
-              <div className="bg-gradient-to-br from-blue-600 via-blue-600 to-blue-800 rounded-[28px] p-8 shadow-sm border border-blue-500/30 relative overflow-hidden mb-6 flex justify-between items-center group">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
+              <div className="bg-gradient-to-br from-primary via-primary to-emerald-800 rounded-[28px] p-8 shadow-sm border border-primary/30 relative overflow-hidden mb-6 flex justify-between items-center group">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none transition-transform group-hover:scale-110 duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
                 
                 <div className="relative z-10 w-1/2">
-                  <p className="text-blue-100 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-blue-300" />
+                  <p className="text-emerald-100 font-bold text-[11px] md:text-xs uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-300" />
                     Laba Bersih <span className="bg-white/20 text-white px-2 py-0.5 rounded-md text-[9px] ml-1">Bulan Ini</span>
                     <button onClick={() => setShowBalance(!showBalance)} className="ml-2 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors border border-white/10" title={showBalance ? 'Sembunyikan nominal' : 'Tampilkan nominal'}>
                       {showBalance ? <Eye className="w-4 h-4 text-white/80" /> : <EyeOff className="w-4 h-4 text-white/80" />}
@@ -291,8 +291,8 @@ export default function AdminDashboard() {
                   <h2 className="text-5xl xl:text-6xl font-black text-white tracking-tighter drop-shadow-md pb-1">
                     {showBalance ? <AnimatedNumber value={summaryData.labaBersih} /> : <span className="tracking-wider">Rp ••••••••</span>}
                   </h2>
-                  <div className="flex items-center gap-2 mt-2 text-blue-50 text-sm font-medium">
-                    <span className={`bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1 ${Number(summaryData.labaBersih) >= Number(summaryData.labaBersihBulanLalu || 0) ? 'text-blue-100' : 'text-rose-200'}`}>
+                  <div className="flex items-center gap-2 mt-2 text-emerald-50 text-sm font-medium">
+                    <span className={`bg-white/20 px-2 py-1 rounded text-white font-bold flex items-center gap-1 ${Number(summaryData.labaBersih) >= Number(summaryData.labaBersihBulanLalu || 0) ? 'text-emerald-100' : 'text-rose-200'}`}>
                       {Number(summaryData.labaBersih) >= Number(summaryData.labaBersihBulanLalu || 0) ? '↑' : '↓'} 
                       {Number(summaryData.labaBersihBulanLalu) > 0 
                         ? `${Math.abs(Math.round((Number(summaryData.labaBersih) - Number(summaryData.labaBersihBulanLalu)) / Number(summaryData.labaBersihBulanLalu) * 100))}%` 
@@ -305,10 +305,10 @@ export default function AdminDashboard() {
                 {/* Right Side Summary */}
                 <div className="relative z-10 w-[45%] bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 shadow-inner flex flex-col gap-4">
                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <span className="text-blue-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
+                      <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Package className="w-4 h-4" /> Omzet Bulan Ini</span>
                       <div className="text-right">
                         <span className="text-white font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pendapatan} /> : <span>Rp ••••••</span>}</span>
-                        {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pendapatan) >= Number(summaryData.pendapatanBulanLalu || 0) ? 'text-blue-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
+                        {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pendapatan) >= Number(summaryData.pendapatanBulanLalu || 0) ? 'text-emerald-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
                           {Number(summaryData.pendapatan) >= Number(summaryData.pendapatanBulanLalu || 0) ? '↑' : '↓'}
                           {Number(summaryData.pendapatanBulanLalu) > 0 
                             ? ` ${Math.abs(Math.round((Number(summaryData.pendapatan) - Number(summaryData.pendapatanBulanLalu)) / Number(summaryData.pendapatanBulanLalu) * 100))}%` 
@@ -318,10 +318,10 @@ export default function AdminDashboard() {
                       </div>
                    </div>
                    <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                      <span className="text-blue-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
+                      <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Receipt className="w-4 h-4" /> Pengeluaran</span>
                       <div className="text-right">
                         <span className="text-rose-200 font-bold text-lg">{showBalance ? <AnimatedNumber value={summaryData.pengeluaran} /> : <span>Rp ••••••</span>}</span>
-                        {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pengeluaran) <= Number(summaryData.pengeluaranBulanLalu || 0) ? 'text-blue-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
+                        {showBalance && <div className={`text-[10px] font-bold ${Number(summaryData.pengeluaran) <= Number(summaryData.pengeluaranBulanLalu || 0) ? 'text-emerald-300' : 'text-rose-300'} flex items-center justify-end gap-1 mt-0.5`}>
                           {Number(summaryData.pengeluaran) >= Number(summaryData.pengeluaranBulanLalu || 0) ? '↑' : '↓'}
                           {Number(summaryData.pengeluaranBulanLalu) > 0 
                             ? ` ${Math.abs(Math.round((Number(summaryData.pengeluaran) - Number(summaryData.pengeluaranBulanLalu)) / Number(summaryData.pengeluaranBulanLalu) * 100))}%` 
@@ -331,8 +331,8 @@ export default function AdminDashboard() {
                       </div>
                    </div>
                    <div className="flex justify-between items-center">
-                      <span className="text-blue-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
-                      <span className="text-blue-300 font-black text-lg">{showBalance ? (incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`) : "••%"}</span>
+                      <span className="text-emerald-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
+                      <span className="text-emerald-300 font-black text-lg">{showBalance ? (incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`) : "••%"}</span>
                    </div>
                 </div>
               </div>

@@ -66,21 +66,11 @@ async function runFix() {
     const commissions = commMap.get(visit.id) || [];
     const financeTxs = txMap.get(visit.id) || [];
 
-    let itemsToProcess = [];
-    const invoice = invoiceMap.get(visit.id);
-    if (invoice && invoice.items) {
-      try {
-        const parsed = JSON.parse(invoice.items);
-        if (Array.isArray(parsed)) itemsToProcess = parsed;
-      } catch (e) {}
-    }
-
-    if (itemsToProcess.length === 0) {
-      itemsToProcess = [{
-        serviceId: visit.serviceId,
-        qty: 1
-      }];
-    }
+    // Always use the visit's own serviceId to prevent double-counting when multiple visits share an invoice
+    let itemsToProcess = [{
+      serviceId: visit.serviceId,
+      qty: 1
+    }];
 
     let expectedTotalCommission = 0;
     
@@ -96,16 +86,17 @@ async function runFix() {
         overrideCommission,
         serviceGlobalCommission,
         therapistCommissionRate,
+        serviceCategory: svcMap.get(serviceId)?.category,
         qty: item.qty || 1
       });
       
       expectedTotalCommission += expectedCommission;
     }
 
-    if (expectedTotalCommission <= 0) continue;
-
     // Rule 1: Missing Commission
     if (commissions.length === 0) {
+      if (expectedTotalCommission <= 0) continue;
+
       console.log(`Fixing Missing Commission for Visit: ${visit.id} -> Expected: ${expectedTotalCommission}`);
       
       const commId = `C-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -154,6 +145,9 @@ async function runFix() {
         }
 
         fixedIncorrect++;
+      } else {
+        // debug
+        // console.log(`Commission match for ${visit.id}: ${comm.amount}`);
       }
     }
   }

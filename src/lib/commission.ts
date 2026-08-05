@@ -22,6 +22,7 @@ export function calculateCommissionAmount(params: {
   overrideCommission?: number | null;
   serviceGlobalCommission?: number | null;
   therapistCommissionRate?: number | null;
+  serviceCategory?: string | null;
   qty: number;
 }): number {
   const qty = params.qty || 0;
@@ -30,8 +31,20 @@ export function calculateCommissionAmount(params: {
     return params.overrideCommission * qty;
   }
 
+  // Explicit bypass: if global commission is set to -1, it means strictly NO commission.
+  if (params.serviceGlobalCommission === -1) {
+    return 0;
+  }
+
   if (params.serviceGlobalCommission != null && params.serviceGlobalCommission > 0) {
     return params.serviceGlobalCommission * qty;
+  }
+
+  // Do not fallback to therapist's flat rate if it's an Adds On or Mcu and its commission is 0.
+  // Therapist's flat rate (e.g. 20000 or 35000) is meant for main treatments, not for selling member cards or water.
+  const isNonTreatment = params.serviceCategory === "Adds On" || params.serviceCategory === "Mcu";
+  if (isNonTreatment && (params.serviceGlobalCommission === 0 || params.serviceGlobalCommission == null)) {
+    return 0;
   }
 
   if (params.therapistCommissionRate != null && params.therapistCommissionRate > 0) {
@@ -64,12 +77,13 @@ export async function calculateTherapistCommission(
 
   // 2. Global
   const svcRow = await dbInstance
-    .select({ gc: services.globalCommission })
+    .select({ gc: services.globalCommission, category: services.category })
     .from(services)
     .where(eq(services.id, serviceId))
     .limit(1);
 
   const serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
+  const serviceCategory = svcRow.length > 0 ? svcRow[0].category : null;
 
   // 3. Flat Rate
   const thRow = await dbInstance
@@ -84,6 +98,7 @@ export async function calculateTherapistCommission(
     overrideCommission,
     serviceGlobalCommission,
     therapistCommissionRate,
+    serviceCategory,
     qty
   });
 }
