@@ -33,8 +33,8 @@ type PatientVisit = {
 
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
-type Branch = { id: string; name: string; address?: string; phone?: string };
-type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null; effectivePrice?: number; effectiveCommission?: number };
+type Branch = { id: string; name: string; address?: string; phone?: string; brand?: string };
+type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null; effectivePrice?: number; effectiveCommission?: number; isActive?: boolean; brand?: string };
 
 type InvoiceItem = {
   serviceId: string;
@@ -99,14 +99,28 @@ export default function AdminVisitsPage() {
   // Helper to deduplicate services and filter for selected branch
   const getValidServicesForBranch = useCallback((branchId: string) => {
     const map = new Map<string, Service>();
+    // Only active services for dropdowns
+    const activeServices = services.filter(s => s.isActive !== false);
+    
     // Global services first
-    services.filter(s => !s.branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
+    activeServices.filter(s => !s.branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
     // Branch-specific override
     if (branchId) {
-      services.filter(s => s.branchId === branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
+      activeServices.filter(s => s.branchId === branchId).forEach(s => map.set(s.name.toLowerCase().trim(), s));
     }
-    return Array.from(map.values());
-  }, [services]);
+    
+    let result = Array.from(map.values());
+    
+    // Filter by branch brand if applicable (especially important for Super Admin)
+    if (branchId) {
+      const selectedBranch = branches.find(b => b.id === branchId);
+      if (selectedBranch && selectedBranch.brand) {
+        result = result.filter(s => !s.brand || s.brand === selectedBranch.brand);
+      }
+    }
+    
+    return result;
+  }, [services, branches]);
 
   // Custom Dropdown states
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
