@@ -200,10 +200,13 @@ export default function AdminVisitsPage() {
   // Patient History Modal State
   const [selectedPatientHistoryId, setSelectedPatientHistoryId] = useState<string | null>(null);
 
+  // Payment Status Filter State
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL");
+
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, activeTab, filterDate]);
+  }, [searchQuery, activeTab, filterDate, paymentStatusFilter]);
 
   // POS (Kasir) Tab States
   const [posPhone, setPosPhone] = useState("");
@@ -854,7 +857,8 @@ export default function AdminVisitsPage() {
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchDate && matchSearch;
+    const matchPayment = paymentStatusFilter === "ALL" || v.paymentStatus === paymentStatusFilter;
+    return matchDate && matchSearch && matchPayment;
   }).sort((a, b) => {
     const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
     const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
@@ -1873,6 +1877,18 @@ export default function AdminVisitsPage() {
                       onChange={(e) => setFilterDate(e.target.value)} 
                       className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-auto text-gray-600" 
                     />
+                  </div>
+                  <div className="relative">
+                    <select
+                      value={paymentStatusFilter}
+                      onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                      className="pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors w-full sm:w-auto text-gray-600 appearance-none font-medium"
+                    >
+                      <option value="ALL">Semua Pembayaran</option>
+                      <option value="PAID">LUNAS</option>
+                      <option value="UNPAID">BELUM LUNAS</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="hidden lg:flex bg-gray-100 p-1 rounded-lg">
