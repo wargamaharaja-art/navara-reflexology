@@ -22,6 +22,13 @@
       "when": 1785935364783,
       "tag": "0002_minor_proemial_gods",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785936504884,
+      "tag": "0003_curvy_apocalypse",
+      "breakpoints": true
     }
   ]
 }

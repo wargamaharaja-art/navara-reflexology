@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { services, serviceBranchPrices } from "@/lib/db/schema";
+import { services, serviceBranchPrices, branches } from "@/lib/db/schema";
 import { eq, or, isNull, and } from "drizzle-orm";
 
 import { getActiveBranchFilter, getSession } from "@/lib/auth";
@@ -13,14 +13,30 @@ export async function GET(request: Request) {
     let branchFilter = searchParams.get("branchId") || await getActiveBranchFilter();
     if (branchFilter === "ALL") branchFilter = null;
 
+    let targetBrand: string | null = null;
+    if (branchFilter) {
+      // Find the brand of the selected branch
+      const branchData = await db.select({ brand: branches.brand }).from(branches).where(eq(branches.id, branchFilter)).limit(1);
+      if (branchData.length > 0) {
+        targetBrand = branchData[0].brand;
+      }
+    }
+
     let query = db.select().from(services);
     
     const conditions = [];
     if (!all) {
       conditions.push(eq(services.isActive, true));
     }
+    
+    // 1. Filter by branchId (Specific to branch OR global)
     if (branchFilter) {
       conditions.push(or(eq(services.branchId, branchFilter), isNull(services.branchId)));
+    }
+    
+    // 2. Filter by BRAND (To separate Navara vs Radja Bekam)
+    if (targetBrand) {
+      conditions.push(eq(services.brand, targetBrand));
     }
 
     if (conditions.length > 0) {
@@ -72,7 +88,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, price, durationMinutes, globalCommission, category, isActive, branchId } = body;
+    const { name, description, price, durationMinutes, globalCommission, category, isActive, branchId, brand } = body;
 
     if (!name || !description || price === undefined || !durationMinutes) {
       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
@@ -80,8 +96,13 @@ export async function POST(request: Request) {
     
     const session = await getSession();
     let targetBranch = branchId;
+    let targetBrand = brand || "NAVARA";
+
     if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
       targetBranch = session.branchId; // Force branch to user's branch
+      // Fetch branch brand
+      const bData = await db.select({ brand: branches.brand }).from(branches).where(eq(branches.id, session.branchId)).limit(1);
+      if (bData.length > 0) targetBrand = bData[0].brand;
     } else if (targetBranch === "ALL" || !targetBranch) {
       targetBranch = null;
     }
@@ -90,6 +111,7 @@ export async function POST(request: Request) {
     const result = await db.insert(services).values({
       id: newId,
       name,
+      brand: targetBrand,
       description,
       price: Number(price),
       durationMinutes: Number(durationMinutes),

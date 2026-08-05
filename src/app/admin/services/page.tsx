@@ -11,6 +11,7 @@ type Service = {
   price: number;
   durationMinutes: number;
   category: string;
+  brand: string;
   globalCommission: number;
   isActive: boolean;
   effectivePrice?: number;
@@ -62,6 +63,7 @@ export default function AdminServicesPage() {
     durationMinutes: "",
     globalCommission: "",
     category: "Paket Treatment",
+    brand: "NAVARA",
     branchId: "ALL",
     isActive: true,
   });
@@ -108,6 +110,7 @@ export default function AdminServicesPage() {
       durationMinutes: "",
       globalCommission: "",
       category: "Paket Treatment",
+      brand: "NAVARA",
       branchId: branches.length > 0 ? branches[0].id : "ALL",
       isActive: true,
     });
@@ -128,6 +131,7 @@ export default function AdminServicesPage() {
       durationMinutes: s.durationMinutes.toString(),
       globalCommission: s.globalCommission?.toString() || "0",
       category: s.category || "Paket Treatment",
+      brand: s.brand || "NAVARA",
       branchId: s.branchId || "ALL",
       isActive: s.isActive,
     });
@@ -154,6 +158,7 @@ export default function AdminServicesPage() {
           durationMinutes: Number(formData.durationMinutes),
           globalCommission: Number(formData.globalCommission),
           category: formData.category,
+          brand: formData.brand,
           branchId: formData.branchId === "ALL" ? null : formData.branchId,
           isActive: formData.isActive,
         }),
@@ -339,6 +344,7 @@ export default function AdminServicesPage() {
                               <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
                                 <td className="px-6 py-4">
                                   <div className="font-bold text-gray-900">{s.name}</div>
+                                  <div className="text-[10px] uppercase font-bold text-gray-500 mt-1">{s.brand === 'RADJA_BEKAM' ? 'Radja Bekam' : 'Navara'}</div>
                                   <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
                                 </td>
                                 <td className="px-6 py-4">
@@ -454,7 +460,20 @@ export default function AdminServicesPage() {
                         ))}
                       </select>
                     </div>
-                    <div>
+                    {isSuperAdmin && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">Brand</label>
+                        <select
+                          value={formData.brand}
+                          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-amber-50"
+                        >
+                          <option value="NAVARA">Navara Reflexology</option>
+                          <option value="RADJA_BEKAM">Radja Bekam</option>
+                        </select>
+                      </div>
+                    )}
+                    <div className={isSuperAdmin ? "col-span-2" : "col-span-1"}>
                       <label className="block text-sm font-semibold text-gray-700 mb-1.5">Nama Layanan</label>
                       <input
                         required

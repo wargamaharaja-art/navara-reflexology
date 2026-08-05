@@ -18,7 +18,7 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
-    const { name, description, price, durationMinutes, globalCommission, category, isActive, branchId } = body;
+    const { name, description, price, durationMinutes, globalCommission, category, isActive, branchId, brand } = body;
 
     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
     if (existing.length === 0) {
@@ -27,14 +27,18 @@ export async function PUT(
     const oldPrice = existing[0].price;
 
     let targetBranch = branchId;
+    let targetBrand = brand;
+
     if (session?.role !== "SUPER_ADMIN" && session?.branchId) {
       targetBranch = existing[0].branchId; // Retain existing branchId, don't allow changing
+      targetBrand = existing[0].brand; // Retain existing brand, don't allow changing
     } else if (targetBranch === "ALL") {
       targetBranch = null;
     }
 
     const result = await db.update(services).set({
       name,
+      brand: targetBrand !== undefined ? targetBrand : undefined,
       description,
       price: price !== undefined ? Number(price) : undefined,
       durationMinutes: durationMinutes !== undefined ? Number(durationMinutes) : undefined,

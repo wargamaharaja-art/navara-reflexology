@@ -22,6 +22,7 @@ export const branches = pgTable("branches", {
 export const services = pgTable("services", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  brand: text("brand", { enum: ["RADJA_BEKAM", "NAVARA"] }).notNull().default("NAVARA"),
   description: text("description").notNull(),
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),

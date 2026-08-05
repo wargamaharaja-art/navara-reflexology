@@ -1,0 +1,1 @@
+ALTER TABLE "services" ADD COLUMN "brand" text DEFAULT 'NAVARA' NOT NULL;
