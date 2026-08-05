@@ -77,13 +77,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // CARI KUNJUNGAN YANG SUDAH DIBAYAR TAPI TIDAK PUNYA KOMISI (Efek bug POS lama)
+    // CARI KUNJUNGAN YANG SELESAI TAPI TIDAK PUNYA KOMISI (termasuk UNPAID)
     const missingVisits = await db
       .select({
         visitId: patientVisits.id,
         therapistId: patientVisits.therapistId,
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
+        paymentStatus: patientVisits.paymentStatus,
       })
       .from(patientVisits)
       .leftJoin(
@@ -92,7 +93,6 @@ export async function POST(request: Request) {
       )
       .where(
         and(
-          eq(patientVisits.paymentStatus, "PAID"),
           eq(patientVisits.status, "completed"),
           isNotNull(patientVisits.therapistId),
           isNull(therapistCommissions.id),
@@ -116,13 +116,14 @@ export async function POST(request: Request) {
 
           if (commissionAmount > 0) {
             const newId = crypto.randomUUID();
+            const commStatus = v.paymentStatus === "PAID" ? "PAID" : "PENDING";
             await db.insert(therapistCommissions).values({
               id: newId,
               therapistId: v.therapistId,
               visitId: v.visitId,
               amount: commissionAmount,
-              status: "PAID",
-              paidAt: new Date().toISOString(),
+              status: commStatus,
+              paidAt: commStatus === "PAID" ? new Date().toISOString() : null,
             });
             newCount++;
             fixedDetails.push(
