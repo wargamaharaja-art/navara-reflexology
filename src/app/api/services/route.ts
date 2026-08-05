@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     
     // 2. Filter by BRAND (To separate Navara vs Radja Bekam)
     if (targetBrand) {
-      conditions.push(eq(services.brand, targetBrand));
+      conditions.push(eq(services.brand, targetBrand as "RADJA_BEKAM" | "NAVARA"));
     }
 
     if (conditions.length > 0) {
