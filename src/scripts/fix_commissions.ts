@@ -66,11 +66,22 @@ async function runFix() {
     const commissions = commMap.get(visit.id) || [];
     const financeTxs = txMap.get(visit.id) || [];
 
-    // Always use the visit's own serviceId to prevent double-counting when multiple visits share an invoice
-    let itemsToProcess = [{
-      serviceId: visit.serviceId,
-      qty: 1
-    }];
+    // Gunakan items dari invoice jika ada, agar sinkron dengan yang dibayarkan
+    let itemsToProcess: { serviceId: string | null, qty: number }[] = [];
+    const invoice = invoiceMap.get(visit.id);
+    if (invoice && invoice.items) {
+      try {
+        const parsedItems = JSON.parse(invoice.items as string);
+        itemsToProcess = parsedItems.map((item: any) => ({
+          serviceId: item.serviceId,
+          qty: item.qty || 1
+        }));
+      } catch (e) {
+        itemsToProcess = [{ serviceId: visit.serviceId, qty: 1 }];
+      }
+    } else {
+      itemsToProcess = [{ serviceId: visit.serviceId, qty: 1 }];
+    }
 
     let expectedTotalCommission = 0;
     
