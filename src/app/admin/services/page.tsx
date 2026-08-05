@@ -17,6 +17,7 @@ type Service = {
 
 const CATEGORIES = [
   "Paket Treatment",
+  "Full Body Massages",
   "Mcu",
   "Refleksi",
   "Bekam",
