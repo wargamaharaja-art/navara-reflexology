@@ -1,5 +1,5 @@
 import { eq, and } from "drizzle-orm";
-import { services, therapists, therapistServiceCommissions } from "@/lib/db/schema";
+import { services, therapists, therapistServiceCommissions, serviceBranchPrices } from "@/lib/db/schema";
 
 /**
  * ⚠️ WARNING UNTUK AI AGENTS & DEVELOPERS:
@@ -9,8 +9,9 @@ import { services, therapists, therapistServiceCommissions } from "@/lib/db/sche
  * 
  * Hierarki Komisi:
  * 1. Override Commission (therapistServiceCommissions)
- * 2. Global Commission (services.globalCommission)
- * 3. Flat Rate Commission (therapists.commissionRate)
+ * 2. Branch Commission (serviceBranchPrices.commission) — jika ada override harga cabang
+ * 3. Global Commission (services.globalCommission)
+ * 4. Flat Rate Commission (therapists.commissionRate)
  * 
  * @param dbInstance - Instance Drizzle DB (bisa `db` biasa atau `tx` dari transaksi)
  * @param therapistId - ID terapis
@@ -20,6 +21,7 @@ import { services, therapists, therapistServiceCommissions } from "@/lib/db/sche
  */
 export function calculateCommissionAmount(params: {
   overrideCommission?: number | null;
+  branchCommission?: number | null;
   serviceGlobalCommission?: number | null;
   therapistCommissionRate?: number | null;
   serviceCategory?: string | null;
@@ -29,6 +31,12 @@ export function calculateCommissionAmount(params: {
 
   if (params.overrideCommission != null) {
     return params.overrideCommission * qty;
+  }
+
+  // Check branch-specific commission override
+  if (params.branchCommission != null) {
+    if (params.branchCommission === -1) return 0; // Explicit bypass
+    if (params.branchCommission > 0) return params.branchCommission * qty;
   }
 
   // Explicit bypass: if global commission is set to -1, it means strictly NO commission.
@@ -61,7 +69,7 @@ export async function calculateTherapistCommission(
   serviceId: string,
   qty: number = 1
 ): Promise<number> {
-  // 1. Override
+  // 1. Therapist-specific override
   const overrideRow = await dbInstance
     .select({ amount: therapistServiceCommissions.commissionAmount })
     .from(therapistServiceCommissions)
@@ -75,7 +83,7 @@ export async function calculateTherapistCommission(
     
   const overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
 
-  // 2. Global
+  // 2. Get service info (global commission + category)
   const svcRow = await dbInstance
     .select({ gc: services.globalCommission, category: services.category })
     .from(services)
@@ -85,17 +93,37 @@ export async function calculateTherapistCommission(
   const serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
   const serviceCategory = svcRow.length > 0 ? svcRow[0].category : null;
 
-  // 3. Flat Rate
+  // 3. Branch-specific commission (from therapist's branch)
+  let branchCommission: number | null = null;
   const thRow = await dbInstance
-    .select({ cr: therapists.commissionRate })
+    .select({ cr: therapists.commissionRate, branchId: therapists.branchId })
     .from(therapists)
     .where(eq(therapists.id, therapistId))
     .limit(1);
 
   const therapistCommissionRate = thRow.length > 0 ? thRow[0].cr : 0;
+  const therapistBranchId = thRow.length > 0 ? thRow[0].branchId : null;
+
+  if (therapistBranchId) {
+    const branchPriceRow = await dbInstance
+      .select({ commission: serviceBranchPrices.commission })
+      .from(serviceBranchPrices)
+      .where(
+        and(
+          eq(serviceBranchPrices.serviceId, serviceId),
+          eq(serviceBranchPrices.branchId, therapistBranchId)
+        )
+      )
+      .limit(1);
+
+    if (branchPriceRow.length > 0 && branchPriceRow[0].commission != null) {
+      branchCommission = branchPriceRow[0].commission;
+    }
+  }
 
   return calculateCommissionAmount({
     overrideCommission,
+    branchCommission,
     serviceGlobalCommission,
     therapistCommissionRate,
     serviceCategory,

@@ -15,6 +15,13 @@
       "when": 1783560808800,
       "tag": "0001_lying_mentallo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785935364783,
+      "tag": "0002_minor_proemial_gods",
+      "breakpoints": true
     }
   ]
 }

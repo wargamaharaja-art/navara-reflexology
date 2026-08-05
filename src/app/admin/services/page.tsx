@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Activity, Edit2, Trash2, X, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Activity, Edit2, Trash2, X, AlertCircle, ChevronDown, ChevronRight, DollarSign, Building2 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 
 type Service = {
@@ -13,6 +13,17 @@ type Service = {
   category: string;
   globalCommission: number;
   isActive: boolean;
+  effectivePrice?: number;
+  effectiveCommission?: number;
+  hasOverride?: boolean;
+};
+
+type BranchPrice = {
+  id?: string;
+  serviceId: string;
+  branchId: string;
+  price: number | "";
+  commission: number | null | "";
 };
 
 const CATEGORIES = [
@@ -35,6 +46,14 @@ export default function AdminServicesPage() {
 
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
+  
+  // Branch pricing state
+  const [isBranchPriceModalOpen, setIsBranchPriceModalOpen] = useState(false);
+  const [branchPriceServiceId, setBranchPriceServiceId] = useState<string | null>(null);
+  const [branchPriceServiceName, setBranchPriceServiceName] = useState("");
+  const [branchPriceDefaults, setBranchPriceDefaults] = useState<{ price: number; commission: number }>({ price: 0, commission: 0 });
+  const [branchPrices, setBranchPrices] = useState<BranchPrice[]>([]);
+  const [savingBranchPrices, setSavingBranchPrices] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -171,6 +190,82 @@ export default function AdminServicesPage() {
     }
   };
 
+  // ============================================
+  // Branch Price Management
+  // ============================================
+  const openBranchPriceModal = async (s: Service) => {
+    setBranchPriceServiceId(s.id);
+    setBranchPriceServiceName(s.name);
+    setBranchPriceDefaults({ price: s.price, commission: s.globalCommission });
+
+    try {
+      const res = await fetch(`/api/services/${s.id}/branch-prices`);
+      const json = await res.json();
+      const existingPrices: BranchPrice[] = json.data || [];
+
+      // Build full list: one entry per branch
+      const fullList = branches.map(branch => {
+        const existing = existingPrices.find((p: BranchPrice) => p.branchId === branch.id);
+        return {
+          serviceId: s.id,
+          branchId: branch.id,
+          price: existing ? existing.price : ("" as "" | number),
+          commission: existing?.commission ?? ("" as "" | number | null),
+          id: existing?.id,
+        };
+      });
+
+      setBranchPrices(fullList);
+      setIsBranchPriceModalOpen(true);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memuat harga cabang");
+    }
+  };
+
+  const handleBranchPriceChange = (branchId: string, field: "price" | "commission", value: string) => {
+    setBranchPrices(prev =>
+      prev.map(bp =>
+        bp.branchId === branchId
+          ? { ...bp, [field]: value === "" ? "" : Number(value) }
+          : bp
+      )
+    );
+  };
+
+  const handleSaveBranchPrices = async () => {
+    if (!branchPriceServiceId) return;
+    setSavingBranchPrices(true);
+
+    try {
+      const payload = branchPrices.map(bp => ({
+        branchId: bp.branchId,
+        price: bp.price === "" ? null : bp.price,
+        commission: bp.commission === "" ? null : bp.commission,
+      }));
+
+      const res = await fetch(`/api/services/${branchPriceServiceId}/branch-prices`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ branchPrices: payload }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Gagal menyimpan");
+      }
+
+      setIsBranchPriceModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingBranchPrices(false);
+    }
+  };
+
+  const isSuperAdmin = session?.role === "SUPER_ADMIN";
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -231,48 +326,90 @@ export default function AdminServicesPage() {
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {loading ? (
-                          <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">Sedang memuat data...</td></tr>
+                          <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Sedang memuat data...</td></tr>
                         ) : filteredServices.length === 0 ? (
-                          <tr><td colSpan={5} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
+                          <tr><td colSpan={6} className="px-6 py-8 text-center"><p className="text-gray-400 text-sm">Belum ada layanan di kategori ini</p></td></tr>
                         ) : (
-                          filteredServices.map(s => (
-                            <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
-                              <td className="px-6 py-4">
-                                <div className="font-bold text-gray-900">{s.name}</div>
-                                <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
-                              </td>
-                              <td className="px-6 py-4 font-medium text-gray-800">
-                                Rp {s.price.toLocaleString('id-ID')}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-600">
-                                {s.durationMinutes} Menit
-                              </td>
-                              <td className="px-6 py-4 font-medium text-blue-700">
-                                Rp {(s.globalCommission || 0).toLocaleString('id-ID')}
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
-                                  {s.isActive ? 'Aktif' : 'Nonaktif'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <button
-                                  onClick={() => openEditModal(s)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-2"
-                                  title="Edit"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(s.id)}
-                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Hapus Layanan"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
+                          filteredServices.map(s => {
+                            const displayPrice = s.effectivePrice ?? s.price;
+                            const displayCommission = s.effectiveCommission ?? s.globalCommission;
+                            const isOverridden = s.hasOverride;
+
+                            return (
+                              <tr key={s.id} className="hover:bg-blue-50/30 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="font-bold text-gray-900">{s.name}</div>
+                                  <p className="text-xs text-gray-500 truncate max-w-xs">{s.description}</p>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-gray-800">
+                                      Rp {displayPrice.toLocaleString('id-ID')}
+                                    </span>
+                                    {isOverridden && (
+                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200" title={`Harga default: Rp ${s.price.toLocaleString('id-ID')}`}>
+                                        <Building2 className="w-3 h-3" />
+                                        Cabang
+                                      </span>
+                                    )}
+                                  </div>
+                                  {isOverridden && displayPrice !== s.price && (
+                                    <span className="text-[10px] text-gray-400 line-through">
+                                      Rp {s.price.toLocaleString('id-ID')}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-600">
+                                  {s.durationMinutes} Menit
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-blue-700">
+                                      Rp {(displayCommission || 0).toLocaleString('id-ID')}
+                                    </span>
+                                    {isOverridden && displayCommission !== s.globalCommission && (
+                                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                                        <Building2 className="w-3 h-3" />
+                                      </span>
+                                    )}
+                                  </div>
+                                  {isOverridden && displayCommission !== s.globalCommission && (
+                                    <span className="text-[10px] text-gray-400 line-through">
+                                      Rp {(s.globalCommission || 0).toLocaleString('id-ID')}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                                    {s.isActive ? 'Aktif' : 'Nonaktif'}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                  <button
+                                    onClick={() => openBranchPriceModal(s)}
+                                    className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors mr-1"
+                                    title="Atur Harga per Cabang"
+                                  >
+                                    <DollarSign className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => openEditModal(s)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors mr-1"
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(s.id)}
+                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Hapus Layanan"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
                         )}
                       </tbody>
                     </table>
@@ -283,7 +420,7 @@ export default function AdminServicesPage() {
           })}
         </div>
 
-        {/* Modal */}
+        {/* Modal Add/Edit Service */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -342,7 +479,7 @@ export default function AdminServicesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Harga (Rp)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Harga Default (Rp)</label>
                       <input
                         required
                         type="number"
@@ -366,7 +503,7 @@ export default function AdminServicesPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Komisi Terapis (Rp)</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Komisi Default (Rp)</label>
                       <input
                         required
                         type="number"
@@ -407,6 +544,131 @@ export default function AdminServicesPage() {
                   className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center"
                 >
                   {saving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Branch Prices */}
+        {isBranchPriceModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-amber-600" />
+                    Harga per Cabang
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-0.5">{branchPriceServiceName}</p>
+                </div>
+                <button
+                  onClick={() => setIsBranchPriceModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto">
+                {/* Default prices info */}
+                <div className="mb-4 p-4 bg-blue-50/80 border border-blue-100 rounded-xl">
+                  <p className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-2">Harga & Komisi Default</p>
+                  <div className="flex gap-6">
+                    <div>
+                      <span className="text-xs text-blue-600">Harga</span>
+                      <p className="font-bold text-blue-900">Rp {branchPriceDefaults.price.toLocaleString('id-ID')}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-blue-600">Komisi</span>
+                      <p className="font-bold text-blue-900">Rp {branchPriceDefaults.commission.toLocaleString('id-ID')}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    Cabang yang tidak diisi akan menggunakan harga & komisi default di atas.
+                  </p>
+                </div>
+
+                {/* Branch price table */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-200">
+                        <th className="px-4 py-3 font-semibold">Cabang</th>
+                        <th className="px-4 py-3 font-semibold">Harga Override (Rp)</th>
+                        <th className="px-4 py-3 font-semibold">Komisi Override (Rp)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {branchPrices.map(bp => {
+                        const branch = branches.find(b => b.id === bp.branchId);
+                        const isEditable = isSuperAdmin || session?.branchId === bp.branchId;
+                        
+                        return (
+                          <tr key={bp.branchId} className={`${!isEditable ? 'bg-gray-50/50' : 'hover:bg-amber-50/30'} transition-colors`}>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-gray-400" />
+                                <span className="font-medium text-gray-800 text-sm">{branch?.name || bp.branchId}</span>
+                              </div>
+                              {!isEditable && (
+                                <span className="text-[10px] text-gray-400 ml-6">Hanya admin cabang ini yang bisa mengubah</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={bp.price}
+                                onChange={(e) => handleBranchPriceChange(bp.branchId, "price", e.target.value)}
+                                disabled={!isEditable}
+                                className={`w-full px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                                  isEditable
+                                    ? 'border-gray-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500'
+                                    : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                } ${bp.price !== "" ? 'bg-amber-50/50 border-amber-200' : ''}`}
+                                placeholder={branchPriceDefaults.price.toString()}
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                min="0"
+                                value={bp.commission ?? ""}
+                                onChange={(e) => handleBranchPriceChange(bp.branchId, "commission", e.target.value)}
+                                disabled={!isEditable}
+                                className={`w-full px-3 py-1.5 border rounded-lg text-sm transition-colors ${
+                                  isEditable
+                                    ? 'border-gray-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500'
+                                    : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                                } ${bp.commission !== "" && bp.commission !== null ? 'bg-amber-50/50 border-amber-200' : ''}`}
+                                placeholder={branchPriceDefaults.commission.toString()}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsBranchPriceModalOpen(false)}
+                  className="px-5 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveBranchPrices}
+                  disabled={savingBranchPrices}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 rounded-xl hover:bg-amber-700 disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-amber-200 transition-all"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  {savingBranchPrices ? 'Menyimpan...' : 'Simpan Harga Cabang'}
                 </button>
               </div>
             </div>

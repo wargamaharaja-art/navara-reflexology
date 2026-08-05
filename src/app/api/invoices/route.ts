@@ -10,7 +10,6 @@ import {
 } from "@/lib/db/schema";
 import { eq, and, like, desc, inArray, gte, lte } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
-import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { financeTransactions, therapistCommissions, therapistServiceCommissions, therapistMonthlyReports } from "@/lib/db/schema";
 import { calculateTherapistCommission } from "@/lib/commission";

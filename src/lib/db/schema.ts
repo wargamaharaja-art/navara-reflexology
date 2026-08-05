@@ -34,6 +34,21 @@ export const services = pgTable("services", {
 }));
 
 // ============================================
+// SERVICE BRANCH PRICES (Override Harga per Cabang)
+// ============================================
+export const serviceBranchPrices = pgTable("service_branch_prices", {
+  id: text("id").primaryKey(),
+  serviceId: text("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
+  branchId: text("branch_id").notNull().references(() => branches.id),
+  price: integer("price").notNull(),
+  commission: integer("commission"),  // Override komisi, null = pakai globalCommission dari services
+}, (table) => ({
+  serviceIdx: index("sbp_service_idx").on(table.serviceId),
+  branchIdx: index("sbp_branch_idx").on(table.branchId),
+  uniqueIdx: index("sbp_unique_idx").on(table.serviceId, table.branchId),
+}));
+
+// ============================================
 // THERAPISTS (Data Pegawai Terapis)
 // ============================================
 export const therapists = pgTable("therapists", {
@@ -249,6 +264,9 @@ export type NewBranch = typeof branches.$inferInsert;
 
 export type Service = typeof services.$inferSelect;
 export type NewService = typeof services.$inferInsert;
+
+export type ServiceBranchPrice = typeof serviceBranchPrices.$inferSelect;
+export type NewServiceBranchPrice = typeof serviceBranchPrices.$inferInsert;
 
 export type Therapist = typeof therapists.$inferSelect;
 export type NewTherapist = typeof therapists.$inferInsert;

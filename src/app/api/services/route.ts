@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
-import { services } from "@/lib/db/schema";
+import { services, serviceBranchPrices } from "@/lib/db/schema";
 import { eq, or, isNull, and } from "drizzle-orm";
 
 import { getActiveBranchFilter, getSession } from "@/lib/auth";
 
 // GET /api/services — List all active services (or all if ?all=true)
+// Returns effectivePrice and effectiveCommission based on branch context
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -28,7 +29,39 @@ export async function GET(request: Request) {
 
     const result = await query;
 
-    return Response.json({ data: result });
+    // If we have a branch context, apply branch-specific price overrides
+    if (branchFilter) {
+      const branchPrices = await db
+        .select()
+        .from(serviceBranchPrices)
+        .where(eq(serviceBranchPrices.branchId, branchFilter));
+
+      const priceMap = new Map(
+        branchPrices.map(bp => [bp.serviceId, bp])
+      );
+
+      const enriched = result.map(s => {
+        const override = priceMap.get(s.id);
+        return {
+          ...s,
+          effectivePrice: override ? override.price : s.price,
+          effectiveCommission: override?.commission ?? s.globalCommission,
+          hasOverride: !!override,
+        };
+      });
+
+      return Response.json({ data: enriched });
+    }
+
+    // No branch context — return default prices
+    const enriched = result.map(s => ({
+      ...s,
+      effectivePrice: s.price,
+      effectiveCommission: s.globalCommission,
+      hasOverride: false,
+    }));
+
+    return Response.json({ data: enriched });
   } catch (error) {
     console.error("GET /api/services error:", error);
     return Response.json({ error: "Gagal mengambil data layanan" }, { status: 500 });

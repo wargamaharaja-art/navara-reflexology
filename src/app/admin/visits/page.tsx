@@ -34,7 +34,7 @@ type PatientVisit = {
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
 type Branch = { id: string; name: string; address?: string; phone?: string };
-type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null };
+type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null; effectivePrice?: number; effectiveCommission?: number };
 
 type InvoiceItem = {
   serviceId: string;
@@ -512,7 +512,7 @@ export default function AdminVisitsPage() {
     if (existing) {
       setPosItems(posItems.map(i => 
         i.serviceId === serviceId 
-          ? { ...i, qty: i.qty + 1, subtotal: (i.qty + 1) * (svc.price || 0) }
+          ? { ...i, qty: i.qty + 1, subtotal: (i.qty + 1) * (svc.effectivePrice ?? svc.price ?? 0) }
           : i
       ));
     } else {
@@ -520,8 +520,8 @@ export default function AdminVisitsPage() {
         serviceId,
         name: svc.name,
         qty: 1,
-        price: svc.price || 0,
-        subtotal: svc.price || 0,
+        price: svc.effectivePrice ?? svc.price ?? 0,
+        subtotal: svc.effectivePrice ?? svc.price ?? 0,
       }]);
     }
   };
@@ -538,7 +538,7 @@ export default function AdminVisitsPage() {
     const svc = services.find(s => s.id === serviceId);
     setPosItems(posItems.map(i =>
       i.serviceId === serviceId
-        ? { ...i, qty, subtotal: qty * (svc?.price || i.price || 0) }
+        ? { ...i, qty, subtotal: qty * (svc?.effectivePrice ?? svc?.price ?? i.price ?? 0) }
         : i
     ));
   };
@@ -779,14 +779,14 @@ export default function AdminVisitsPage() {
         const existing = newItems.find(i => i.serviceId === svc.id);
         if (existing) {
           existing.qty += 1;
-          existing.subtotal = existing.qty * (svc.price || 0);
+          existing.subtotal = existing.qty * (svc.effectivePrice ?? svc.price ?? 0);
         } else {
           newItems.push({
             serviceId: svc.id,
             name: svc.name,
             qty: 1,
-            price: svc.price || 0,
-            subtotal: svc.price || 0,
+            price: svc.effectivePrice ?? svc.price ?? 0,
+            subtotal: svc.effectivePrice ?? svc.price ?? 0,
           });
         }
       }
@@ -1040,7 +1040,7 @@ export default function AdminVisitsPage() {
                           if (catServices.length === 0) return null;
                           return (
                             <optgroup key={cat} label={cat}>
-                              {catServices.map(s => <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.price || 0)}</option>)}
+                              {catServices.map(s => <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.effectivePrice ?? s.price ?? 0)}</option>)}
                             </optgroup>
                           );
                         })}
@@ -1048,7 +1048,7 @@ export default function AdminVisitsPage() {
                         {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).length > 0 && (
                           <optgroup label="Lainnya">
                             {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).map(s => (
-                              <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.price || 0)}</option>
+                              <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.effectivePrice ?? s.price ?? 0)}</option>
                             ))}
                           </optgroup>
                         )}
@@ -1805,14 +1805,14 @@ export default function AdminVisitsPage() {
                           return (
                             <div key={id} className="flex justify-between text-sm">
                               <span className="text-gray-600">{s?.name} <span className="text-gray-400 text-xs">({s?.durationMinutes}m)</span></span>
-                              <span className="font-semibold text-gray-800">{formatRupiah(s?.price || 0)}</span>
+                              <span className="font-semibold text-gray-800">{formatRupiah(s?.effectivePrice ?? s?.price ?? 0)}</span>
                             </div>
                           );
                         })}
                         <div className="border-t border-blue-200/50 pt-2 mt-2 flex justify-between font-bold">
                           <span className="text-blue-900">Estimasi Total</span>
                           <span className="text-blue-700">
-                            {formatRupiah(selectedServices.reduce((sum, id) => sum + (services.find(s => s.id === id)?.price || 0), 0))}
+                            {formatRupiah(selectedServices.reduce((sum, id) => { const s = services.find(sv => sv.id === id); return sum + (s?.effectivePrice ?? s?.price ?? 0); }, 0))}
                           </span>
                         </div>
                       </div>

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users } from "lucide-react";
-import { SERVICES_LIST, getServicePrice } from "@/lib/pricing";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 import {
