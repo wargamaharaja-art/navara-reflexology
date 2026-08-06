@@ -1054,6 +1054,13 @@ export default function AdminVisitsPage() {
                           
                           const hasUncategorized = activePosServices.some(s => !s.category);
                           const categoriesToMap = hasUncategorized ? [...uniqueCategories, "Lainnya"] : uniqueCategories;
+                          
+                          const CATEGORY_ORDER = ["Paket Treatment", "Full Body Massages", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"];
+                          categoriesToMap.sort((a, b) => {
+                            const indexA = CATEGORY_ORDER.indexOf(a);
+                            const indexB = CATEGORY_ORDER.indexOf(b);
+                            return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+                          });
 
                           return categoriesToMap.map(cat => {
                             const catServices = activePosServices.filter(s => {
@@ -1669,6 +1676,13 @@ export default function AdminVisitsPage() {
                                   
                                   const hasUncategorized = activeServices.some(s => !s.category);
                                   const categoriesToMap = hasUncategorized ? [...uniqueCategories, "Lainnya"] : uniqueCategories;
+                                  
+                                  const CATEGORY_ORDER = ["Paket Treatment", "Full Body Massages", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"];
+                                  categoriesToMap.sort((a, b) => {
+                                    const indexA = CATEGORY_ORDER.indexOf(a);
+                                    const indexB = CATEGORY_ORDER.indexOf(b);
+                                    return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+                                  });
 
                                   return categoriesToMap.map(cat => {
                                     const catServices = activeServices.filter(s => {

@@ -54,12 +54,19 @@ export function BookingForm({
     categorizedServices["Lainnya"] = uncategorizedServices;
   }
 
+  const CATEGORY_ORDER = ["Paket Treatment", "Full Body Massages", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"];
+  
   const filteredCategories = Object.entries(categorizedServices)
     .map(([category, items]) => ({
       category,
       items: items.filter(s => s.name.toLowerCase().includes(serviceSearch.toLowerCase()))
     }))
-    .filter(c => c.items.length > 0);
+    .filter(c => c.items.length > 0)
+    .sort((a, b) => {
+      const indexA = CATEGORY_ORDER.indexOf(a.category);
+      const indexB = CATEGORY_ORDER.indexOf(b.category);
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
 
   const displayServiceName = selectedServices.length > 0 
     ? selectedServices.map(id => services.find(s => s.id === id)?.name).join(", ")
