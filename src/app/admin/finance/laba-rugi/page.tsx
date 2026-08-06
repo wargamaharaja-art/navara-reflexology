@@ -276,8 +276,6 @@ export default function AdminLabaRugiPage() {
     ...reportData.biayaUsahaItems.map(i => [`  ${i.name}`, i.amount]),
     ["TOTAL BIAYA OPERASIONAL", reportData.totalBiayaUsaha],
     [""],
-    ["LABA KOTOR", reportData.labaKotor],
-    [""],
     ["BIAYA BAGI HASIL TERAPIS", ""],
     ...reportData.biayaTerapisItems.map(i => [`  ${i.name}`, i.amount]),
     ["TOTAL BIAYA TERAPIS", reportData.totalBiayaTerapis],
@@ -503,23 +501,19 @@ export default function AdminLabaRugiPage() {
                 </div>
               </div>
 
-              {/* Laba Kotor Card */}
-              <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaKotor >= 0 ? "hover:shadow-[0_20px_40px_rgb(59,130,246,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
-                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500 ${reportData.labaKotor >= 0 ? "bg-gradient-to-br from-blue-500/10 to-sky-500/5" : "bg-gradient-to-br from-rose-500/10 to-red-500/5"}`}></div>
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10 ${reportData.labaKotor >= 0 ? "bg-gradient-to-br from-blue-400 to-sky-500 shadow-blue-500/30" : "bg-gradient-to-br from-rose-400 to-red-500 shadow-rose-500/30"}`}>
-                  {reportData.labaKotor >= 0
-                    ? <TrendingUp className="w-7 h-7 text-white" />
-                    : <TrendingDown className="w-7 h-7 text-white" />}
+              {/* Biaya Terapis Card */}
+              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(249,115,22,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
+                  <DollarSign className="w-7 h-7 text-white" />
                 </div>
                 <div className="relative z-10 flex-1">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Laba Kotor</p>
-                  <p className={`text-3xl lg:text-4xl font-black text-transparent bg-clip-text tracking-tight ${reportData.labaKotor >= 0 ? "bg-gradient-to-r from-blue-600 to-sky-600" : "bg-gradient-to-r from-rose-600 to-red-600"}`}>
-                    {formatRupiah(reportData.labaKotor)}
-                  </p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Biaya Terapis</p>
+                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-600 tracking-tight">{formatRupiah(reportData.totalBiayaTerapis)}</p>
                   {selectedMonth !== "ALL" && prevMonthReportData && (() => {
-                    const cmp = getComparison(reportData.labaKotor, prevMonthReportData.labaKotor);
+                    const cmp = getComparison(reportData.totalBiayaTerapis, prevMonthReportData.totalBiayaTerapis);
                     return (
-                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-blue-600' : cmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-rose-600' : cmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
                         {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
                         <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
                         <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
@@ -630,26 +624,7 @@ export default function AdminLabaRugiPage() {
                               </span>
                             </td>
                           </tr>
-                          {/* Divider */}
-                          <tr><td colSpan={5} className="py-1"><div className="border-t-2 border-dashed border-gray-100"></div></td></tr>
-                          {/* Laba Kotor Row */}
-                          <tr className="group hover:bg-blue-50/30 transition-colors">
-                            <td className="py-4 px-4 font-bold text-blue-800 flex items-center gap-2 rounded-l-xl">
-                              <TrendingUp className="w-4 h-4" />
-                              Laba Kotor
-                            </td>
-                            <td className="py-4 px-4 text-right font-semibold text-blue-600">{formatRupiah(prevMonthReportData.labaKotor)}</td>
-                            <td className="py-4 px-4 text-right font-black text-lg text-blue-700">{formatRupiah(reportData.labaKotor)}</td>
-                            <td className={`py-4 px-4 text-right font-black ${labaKotorCmp.direction === 'up' ? 'text-blue-600' : labaKotorCmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
-                              {labaKotorCmp.diff >= 0 ? '+' : ''}{formatRupiah(labaKotorCmp.diff)}
-                            </td>
-                            <td className="py-4 px-4 text-right rounded-r-xl">
-                              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black ${labaKotorCmp.direction === 'up' ? 'bg-blue-100 text-blue-700' : labaKotorCmp.direction === 'down' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-500'}`}>
-                                {labaKotorCmp.direction === 'up' ? <ArrowUpRight className="w-4 h-4" /> : labaKotorCmp.direction === 'down' ? <ArrowDownRight className="w-4 h-4" /> : <Equal className="w-4 h-4" />}
-                                {Math.abs(labaKotorCmp.pct).toFixed(1)}%
-                              </span>
-                            </td>
-                          </tr>
+
                           {/* Biaya Terapis Row */}
                           <tr className="group hover:bg-orange-50/30 transition-colors">
                             <td className="py-4 px-4 font-bold text-gray-700 flex items-center gap-2 rounded-l-xl">

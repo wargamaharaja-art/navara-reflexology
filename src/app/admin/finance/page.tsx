@@ -281,6 +281,7 @@ export default function AdminFinancePage() {
   const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
   const operationalExpense = transactions.filter(t => t.type === "EXPENSE" && t.category.toLowerCase() !== "bagi hasil terapis").reduce((sum, t) => sum + t.amount, 0);
+  const labaKotor = totalIncome - operationalExpense;
   const netProfit = totalIncome - totalExpense;
 
   const formatRupiah = (amount: number) => {
@@ -415,13 +416,13 @@ export default function AdminFinancePage() {
 
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
                 <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
-                  <TrendingDown className="h-24 w-24" />
+                  <TrendingUp className="h-24 w-24" />
                 </div>
                 <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-                  <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="h-5 w-5" /></div>
-                  Total Pengeluaran
+                  <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp className="h-5 w-5" /></div>
+                  Laba Kotor
                 </div>
-                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(labaKotor)}</div>
               </div>
 
               <div className="bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
