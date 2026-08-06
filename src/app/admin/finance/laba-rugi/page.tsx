@@ -1,8 +1,9 @@
 "use client";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Download, FileText, TrendingUp, DollarSign,
   FileSpreadsheet, File as FileIcon, ChevronDown, TrendingDown,
+  ArrowUpRight, ArrowDownRight, Equal, GitCompareArrows,
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -23,6 +24,7 @@ type FinanceTransaction = {
 
 export default function AdminLabaRugiPage() {
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
+  const [prevYearTransactions, setPrevYearTransactions] = useState<FinanceTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
@@ -42,7 +44,7 @@ export default function AdminLabaRugiPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`/api/finance?startDate=${selectedYear}-01-01&endDate=${selectedYear}-12-31`);
@@ -52,14 +54,34 @@ export default function AdminLabaRugiPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear]);
+
+  // Fetch previous year data when January is selected (for Dec comparison)
+  const fetchPrevYearTransactions = useCallback(async () => {
+    try {
+      const prevYear = selectedYear - 1;
+      const res = await fetch(`/api/finance?startDate=${prevYear}-01-01&endDate=${prevYear}-12-31`);
+      if (res.ok) setPrevYearTransactions(await res.json());
+    } catch (err) {
+      console.error(err);
+    }
+  }, [selectedYear]);
 
   useEffect(() => {
     fetchTransactions();
-  }, [selectedYear]);
+  }, [fetchTransactions]);
+
+  useEffect(() => {
+    // Need previous year data when January is selected
+    if (selectedMonth === "1") {
+      fetchPrevYearTransactions();
+    }
+  }, [selectedMonth, fetchPrevYearTransactions]);
 
   const formatRupiah = (val: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
+
+  const MONTH_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
   const filteredTransactions = useMemo(() => {
     if (selectedMonth === "ALL") return transactions;
@@ -68,6 +90,23 @@ export default function AdminLabaRugiPage() {
       return d.getMonth() + 1 === parseInt(selectedMonth);
     });
   }, [transactions, selectedMonth]);
+
+  // Get previous month transactions for comparison
+  const prevMonthTransactions = useMemo(() => {
+    if (selectedMonth === "ALL") return [];
+    const currentMonth = parseInt(selectedMonth);
+    if (currentMonth === 1) {
+      // Previous month is December of the previous year
+      return prevYearTransactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() + 1 === 12;
+      });
+    }
+    return transactions.filter(t => {
+      const d = new Date(t.date);
+      return d.getMonth() + 1 === currentMonth - 1;
+    });
+  }, [transactions, prevYearTransactions, selectedMonth]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // LOGIKA SESUAI FOTO:
@@ -131,6 +170,57 @@ export default function AdminLabaRugiPage() {
       managementPercentage,
     };
   }, [filteredTransactions, investorPercentage, managementPercentage, penyusutanModalInvestor]);
+
+  // ── Previous month report data for comparison ──────────────────────────────
+  const prevMonthReportData = useMemo(() => {
+    if (selectedMonth === "ALL" || prevMonthTransactions.length === 0) return null;
+
+    let totalPendapatan = 0;
+    let totalBiayaUsaha = 0;
+
+    prevMonthTransactions.forEach(t => {
+      if (t.type === "INCOME") {
+        totalPendapatan += t.amount;
+      } else {
+        totalBiayaUsaha += t.amount;
+      }
+    });
+
+    const labaRugi = totalPendapatan - totalBiayaUsaha;
+
+    return {
+      totalPendapatan,
+      totalBiayaUsaha,
+      labaRugi,
+    };
+  }, [prevMonthTransactions, selectedMonth]);
+
+  // ── Comparison helpers ─────────────────────────────────────────────────────
+  const getComparison = (current: number, previous: number | undefined) => {
+    if (previous === undefined || previous === 0) {
+      if (current === 0) return { diff: 0, pct: 0, direction: "neutral" as const };
+      return { diff: current, pct: 100, direction: current > 0 ? "up" as const : "down" as const };
+    }
+    const diff = current - previous;
+    const pct = (diff / Math.abs(previous)) * 100;
+    return {
+      diff,
+      pct,
+      direction: diff > 0 ? "up" as const : diff < 0 ? "down" as const : "neutral" as const,
+    };
+  };
+
+  const getPrevMonthName = () => {
+    if (selectedMonth === "ALL") return "";
+    const currentMonth = parseInt(selectedMonth);
+    if (currentMonth === 1) return `Desember ${selectedYear - 1}`;
+    return `${MONTH_NAMES[currentMonth - 2]} ${selectedYear}`;
+  };
+
+  const getCurrentMonthName = () => {
+    if (selectedMonth === "ALL") return "";
+    return `${MONTH_NAMES[parseInt(selectedMonth) - 1]} ${selectedYear}`;
+  };
 
   // ── Chart data ────────────────────────────────────────────────────────────
   const monthlyChartData = useMemo(() => {
@@ -344,26 +434,50 @@ export default function AdminLabaRugiPage() {
 
             {/* ── Summary Cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Pendapatan Card */}
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
                   <TrendingUp className="w-7 h-7 text-white" />
                 </div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex-1">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Pendapatan</p>
                   <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-emerald-600 tracking-tight">{formatRupiah(reportData.totalPendapatan)}</p>
+                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
+                    const cmp = getComparison(reportData.totalPendapatan, prevMonthReportData.totalPendapatan);
+                    return (
+                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-emerald-600' : cmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
+                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
+                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
+              {/* Total Biaya Usaha Card */}
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(244,63,94,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-red-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-400 to-red-500 flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
                   <DollarSign className="w-7 h-7 text-white" />
                 </div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex-1">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Biaya Usaha</p>
                   <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-red-600 tracking-tight">{formatRupiah(reportData.totalBiayaUsaha)}</p>
+                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
+                    const cmp = getComparison(reportData.totalBiayaUsaha, prevMonthReportData.totalBiayaUsaha);
+                    // For expenses, up is bad (rose), down is good (emerald)
+                    return (
+                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-rose-600' : cmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
+                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
+                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
+              {/* Laba Rugi Card */}
               <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaRugi >= 0 ? "hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
                 <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500 ${reportData.labaRugi >= 0 ? "bg-gradient-to-br from-green-500/10 to-emerald-500/5" : "bg-gradient-to-br from-rose-500/10 to-red-500/5"}`}></div>
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10 ${reportData.labaRugi >= 0 ? "bg-gradient-to-br from-emerald-400 to-green-500 shadow-emerald-500/30" : "bg-gradient-to-br from-rose-400 to-red-500 shadow-rose-500/30"}`}>
@@ -371,14 +485,168 @@ export default function AdminLabaRugiPage() {
                     ? <TrendingUp className="w-7 h-7 text-white" />
                     : <TrendingDown className="w-7 h-7 text-white" />}
                 </div>
-                <div className="relative z-10">
+                <div className="relative z-10 flex-1">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Laba Rugi</p>
                   <p className={`text-3xl lg:text-4xl font-black text-transparent bg-clip-text tracking-tight ${reportData.labaRugi >= 0 ? "bg-gradient-to-r from-emerald-600 to-green-600" : "bg-gradient-to-r from-rose-600 to-red-600"}`}>
                     {formatRupiah(reportData.labaRugi)}
                   </p>
+                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
+                    const cmp = getComparison(reportData.labaRugi, prevMonthReportData.labaRugi);
+                    return (
+                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-emerald-600' : cmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
+                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
+                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
+
+            {/* ── Month-over-Month Comparison Section ── */}
+            {selectedMonth !== "ALL" && prevMonthReportData && (() => {
+              const pendapatanCmp = getComparison(reportData.totalPendapatan, prevMonthReportData.totalPendapatan);
+              const biayaCmp = getComparison(reportData.totalBiayaUsaha, prevMonthReportData.totalBiayaUsaha);
+              const labaCmp = getComparison(reportData.labaRugi, prevMonthReportData.labaRugi);
+
+              return (
+                <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
+                  <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-violet-50/40 to-transparent">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-black text-xl text-gray-800 flex items-center gap-3">
+                        <div className="bg-violet-100 p-2 rounded-xl">
+                          <GitCompareArrows className="w-5 h-5 text-violet-600" />
+                        </div>
+                        Perbandingan Bulan
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                        <span className="bg-violet-100 text-violet-700 px-3 py-1 rounded-lg">{getCurrentMonthName()}</span>
+                        <span>vs</span>
+                        <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">{getPrevMonthName()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6 lg:p-8">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-gray-100">
+                            <th className="text-left py-4 px-4 text-xs font-black text-gray-400 uppercase tracking-widest">Keterangan</th>
+                            <th className="text-right py-4 px-4 text-xs font-black text-gray-400 uppercase tracking-widest">{getPrevMonthName()}</th>
+                            <th className="text-right py-4 px-4 text-xs font-black text-gray-400 uppercase tracking-widest">{getCurrentMonthName()}</th>
+                            <th className="text-right py-4 px-4 text-xs font-black text-gray-400 uppercase tracking-widest">Selisih</th>
+                            <th className="text-right py-4 px-4 text-xs font-black text-gray-400 uppercase tracking-widest">Perubahan</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Pendapatan Row */}
+                          <tr className="group hover:bg-emerald-50/30 transition-colors">
+                            <td className="py-4 px-4 font-bold text-gray-700 flex items-center gap-2 rounded-l-xl">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                              Total Pendapatan
+                            </td>
+                            <td className="py-4 px-4 text-right font-semibold text-gray-500">{formatRupiah(prevMonthReportData.totalPendapatan)}</td>
+                            <td className="py-4 px-4 text-right font-bold text-gray-800">{formatRupiah(reportData.totalPendapatan)}</td>
+                            <td className={`py-4 px-4 text-right font-bold ${pendapatanCmp.direction === 'up' ? 'text-emerald-600' : pendapatanCmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                              {pendapatanCmp.diff >= 0 ? '+' : ''}{formatRupiah(pendapatanCmp.diff)}
+                            </td>
+                            <td className="py-4 px-4 text-right rounded-r-xl">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black ${pendapatanCmp.direction === 'up' ? 'bg-emerald-100 text-emerald-700' : pendapatanCmp.direction === 'down' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {pendapatanCmp.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> : pendapatanCmp.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Equal className="w-3 h-3" />}
+                                {Math.abs(pendapatanCmp.pct).toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                          {/* Biaya Usaha Row */}
+                          <tr className="group hover:bg-rose-50/30 transition-colors">
+                            <td className="py-4 px-4 font-bold text-gray-700 flex items-center gap-2 rounded-l-xl">
+                              <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+                              Total Biaya Usaha
+                            </td>
+                            <td className="py-4 px-4 text-right font-semibold text-gray-500">{formatRupiah(prevMonthReportData.totalBiayaUsaha)}</td>
+                            <td className="py-4 px-4 text-right font-bold text-gray-800">{formatRupiah(reportData.totalBiayaUsaha)}</td>
+                            <td className={`py-4 px-4 text-right font-bold ${biayaCmp.direction === 'up' ? 'text-rose-600' : biayaCmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                              {biayaCmp.diff >= 0 ? '+' : ''}{formatRupiah(biayaCmp.diff)}
+                            </td>
+                            <td className="py-4 px-4 text-right rounded-r-xl">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black ${biayaCmp.direction === 'up' ? 'bg-rose-100 text-rose-700' : biayaCmp.direction === 'down' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {biayaCmp.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> : biayaCmp.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Equal className="w-3 h-3" />}
+                                {Math.abs(biayaCmp.pct).toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                          {/* Divider */}
+                          <tr><td colSpan={5} className="py-1"><div className="border-t-2 border-dashed border-gray-100"></div></td></tr>
+                          {/* Laba Rugi Row */}
+                          <tr className="group">
+                            <td className="py-4 px-4 rounded-l-xl">
+                              <span className={`font-black flex items-center gap-2 ${reportData.labaRugi >= 0 ? 'text-emerald-800' : 'text-rose-800'}`}>
+                                {reportData.labaRugi >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                                Laba Rugi Bersih
+                              </span>
+                            </td>
+                            <td className={`py-4 px-4 text-right font-bold ${prevMonthReportData.labaRugi >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {formatRupiah(prevMonthReportData.labaRugi)}
+                            </td>
+                            <td className={`py-4 px-4 text-right font-black text-lg ${reportData.labaRugi >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                              {formatRupiah(reportData.labaRugi)}
+                            </td>
+                            <td className={`py-4 px-4 text-right font-black ${labaCmp.direction === 'up' ? 'text-emerald-600' : labaCmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                              {labaCmp.diff >= 0 ? '+' : ''}{formatRupiah(labaCmp.diff)}
+                            </td>
+                            <td className="py-4 px-4 text-right rounded-r-xl">
+                              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black ${labaCmp.direction === 'up' ? 'bg-emerald-100 text-emerald-700' : labaCmp.direction === 'down' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {labaCmp.direction === 'up' ? <ArrowUpRight className="w-4 h-4" /> : labaCmp.direction === 'down' ? <ArrowDownRight className="w-4 h-4" /> : <Equal className="w-4 h-4" />}
+                                {Math.abs(labaCmp.pct).toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Visual comparison bars */}
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { label: 'Pendapatan', current: reportData.totalPendapatan, prev: prevMonthReportData.totalPendapatan, color: 'emerald', cmp: pendapatanCmp },
+                        { label: 'Biaya Usaha', current: reportData.totalBiayaUsaha, prev: prevMonthReportData.totalBiayaUsaha, color: 'rose', cmp: biayaCmp },
+                        { label: 'Laba Rugi', current: reportData.labaRugi, prev: prevMonthReportData.labaRugi, color: reportData.labaRugi >= 0 ? 'emerald' : 'rose', cmp: labaCmp },
+                      ].map((item) => {
+                        const maxVal = Math.max(Math.abs(item.current), Math.abs(item.prev), 1);
+                        const currentPct = (Math.abs(item.current) / maxVal) * 100;
+                        const prevPct = (Math.abs(item.prev) / maxVal) * 100;
+                        return (
+                          <div key={item.label} className="bg-gray-50/80 rounded-2xl p-4 border border-gray-100">
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">{item.label}</p>
+                            <div className="space-y-2">
+                              <div>
+                                <div className="flex items-center justify-between text-xs mb-1">
+                                  <span className="text-gray-400 font-semibold">{getPrevMonthName()}</span>
+                                  <span className="font-bold text-gray-500">{formatRupiah(item.prev)}</span>
+                                </div>
+                                <div className="w-full bg-gray-200/60 rounded-full h-2.5 overflow-hidden">
+                                  <div className="bg-gray-400/50 h-full rounded-full transition-all duration-700" style={{ width: `${prevPct}%` }}></div>
+                                </div>
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between text-xs mb-1">
+                                  <span className={`font-semibold ${item.color === 'emerald' ? 'text-emerald-600' : 'text-rose-600'}`}>{getCurrentMonthName()}</span>
+                                  <span className={`font-bold ${item.color === 'emerald' ? 'text-emerald-700' : 'text-rose-700'}`}>{formatRupiah(item.current)}</span>
+                                </div>
+                                <div className="w-full bg-gray-200/60 rounded-full h-2.5 overflow-hidden">
+                                  <div className={`h-full rounded-full transition-all duration-700 ${item.color === 'emerald' ? 'bg-emerald-500' : 'bg-rose-500'}`} style={{ width: `${currentPct}%` }}></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
