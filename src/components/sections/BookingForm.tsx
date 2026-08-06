@@ -42,14 +42,17 @@ export function BookingForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const categorizedServices = {
-    "Paket Treatment": services.filter(s => s.category === "Paket Treatment" || (!s.category && s.name.toLowerCase().includes("paket"))),
-    "Full Body Massages": services.filter(s => s.category === "Full Body Massages" || (!s.category && s.name.toLowerCase().includes("pijat"))),
-    "Refleksi": services.filter(s => s.category === "Refleksi" || (!s.category && (s.name.toLowerCase().includes("refleksi") || s.name.toLowerCase().includes("totok")))),
-    "Bekam": services.filter(s => s.category === "Bekam" || (!s.category && s.name.toLowerCase().includes("bekam"))),
-    "Adds On": services.filter(s => s.category === "Adds On" || (!s.category && (s.name.toLowerCase().includes("cek") || s.name.toLowerCase().includes("infra")))),
-    "Lainnya": services.filter(s => !s.category && !s.name.toLowerCase().includes("bekam") && !s.name.toLowerCase().includes("pijat") && !s.name.toLowerCase().includes("refleksi") && !s.name.toLowerCase().includes("totok") && !s.name.toLowerCase().includes("infra") && !s.name.toLowerCase().includes("paket") && !s.name.toLowerCase().includes("cek"))
-  };
+  const activeCategories = Array.from(new Set(services.map(s => s.category).filter(Boolean))) as string[];
+  const categorizedServices: Record<string, typeof services> = {};
+  
+  activeCategories.forEach(cat => {
+    categorizedServices[cat] = services.filter(s => s.category === cat);
+  });
+  
+  const uncategorizedServices = services.filter(s => !s.category);
+  if (uncategorizedServices.length > 0) {
+    categorizedServices["Lainnya"] = uncategorizedServices;
+  }
 
   const filteredCategories = Object.entries(categorizedServices)
     .map(([category, items]) => ({

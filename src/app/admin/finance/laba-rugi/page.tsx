@@ -128,27 +128,37 @@ export default function AdminLabaRugiPage() {
   const reportData = useMemo(() => {
     let incomeCategories: Record<string, number> = {};
     let expenseCategories: Record<string, number> = {};
+    let therapistExpenseCategories: Record<string, number> = {};
     let totalPendapatan = 0;
     let totalBiayaUsaha = 0;
+    let totalBiayaTerapis = 0;
 
     filteredTransactions.forEach(t => {
       if (t.type === "INCOME") {
         totalPendapatan += t.amount;
         incomeCategories[t.category] = (incomeCategories[t.category] || 0) + t.amount;
       } else {
-        totalBiayaUsaha += t.amount;
-        expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
+        if (t.category.toLowerCase().includes("bagi hasil terapis") || t.category.toLowerCase().includes("komisi terapis")) {
+          totalBiayaTerapis += t.amount;
+          therapistExpenseCategories[t.category] = (therapistExpenseCategories[t.category] || 0) + t.amount;
+        } else {
+          totalBiayaUsaha += t.amount;
+          expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
+        }
       }
     });
 
-    // Semua pengeluaran jadi satu list flat (BIAYA USAHA)
     const biayaUsahaItems: { name: string; amount: number }[] = Object.entries(expenseCategories)
       .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount); // urutkan terbesar dulu
+      .sort((a, b) => b.amount - a.amount);
 
-    const labaRugi = totalPendapatan - totalBiayaUsaha;
+    const biayaTerapisItems: { name: string; amount: number }[] = Object.entries(therapistExpenseCategories)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount);
 
-    // Distribusi dari Laba Rugi (bisa negatif → tidak dibagi)
+    const labaKotor = totalPendapatan - totalBiayaUsaha;
+    const labaRugi = labaKotor - totalBiayaTerapis;
+
     const infaqShare = labaRugi > 0 ? labaRugi * 0.025 : 0;
     const investorShare = labaRugi > 0 ? labaRugi * (investorPercentage / 100) : 0;
     const managementShare = labaRugi > 0 ? labaRugi * (managementPercentage / 100) : 0;
@@ -160,8 +170,10 @@ export default function AdminLabaRugiPage() {
       totalPendapatan,
       biayaUsahaItems,
       totalBiayaUsaha,
+      biayaTerapisItems,
+      totalBiayaTerapis,
+      labaKotor,
       labaRugi,
-      // distribusi
       penyusutanModalInvestor,
       infaqShare,
       investorShare,
@@ -171,26 +183,33 @@ export default function AdminLabaRugiPage() {
     };
   }, [filteredTransactions, investorPercentage, managementPercentage, penyusutanModalInvestor]);
 
-  // ── Previous month report data for comparison ──────────────────────────────
   const prevMonthReportData = useMemo(() => {
     if (selectedMonth === "ALL" || prevMonthTransactions.length === 0) return null;
 
     let totalPendapatan = 0;
     let totalBiayaUsaha = 0;
+    let totalBiayaTerapis = 0;
 
     prevMonthTransactions.forEach(t => {
       if (t.type === "INCOME") {
         totalPendapatan += t.amount;
       } else {
-        totalBiayaUsaha += t.amount;
+        if (t.category.toLowerCase().includes("bagi hasil terapis") || t.category.toLowerCase().includes("komisi terapis")) {
+          totalBiayaTerapis += t.amount;
+        } else {
+          totalBiayaUsaha += t.amount;
+        }
       }
     });
 
-    const labaRugi = totalPendapatan - totalBiayaUsaha;
+    const labaKotor = totalPendapatan - totalBiayaUsaha;
+    const labaRugi = labaKotor - totalBiayaTerapis;
 
     return {
       totalPendapatan,
       totalBiayaUsaha,
+      totalBiayaTerapis,
+      labaKotor,
       labaRugi,
     };
   }, [prevMonthTransactions, selectedMonth]);
@@ -253,11 +272,17 @@ export default function AdminLabaRugiPage() {
     ...reportData.incomeItems.map(i => [`  ${i.name}`, i.amount]),
     ["TOTAL PENDAPATAN", reportData.totalPendapatan],
     [""],
-    ["BIAYA USAHA", ""],
+    ["BIAYA OPERASIONAL", ""],
     ...reportData.biayaUsahaItems.map(i => [`  ${i.name}`, i.amount]),
-    ["TOTAL BIAYA USAHA", reportData.totalBiayaUsaha],
+    ["TOTAL BIAYA OPERASIONAL", reportData.totalBiayaUsaha],
     [""],
-    ["LABA RUGI", reportData.labaRugi],
+    ["LABA KOTOR", reportData.labaKotor],
+    [""],
+    ["BIAYA BAGI HASIL TERAPIS", ""],
+    ...reportData.biayaTerapisItems.map(i => [`  ${i.name}`, i.amount]),
+    ["TOTAL BIAYA TERAPIS", reportData.totalBiayaTerapis],
+    [""],
+    ["LABA RUGI BERSIH", reportData.labaRugi],
     [""],
     ["Penyusutan Sewa Ruko", reportData.penyusutanModalInvestor],
     [`Infaq (2.5%)`, reportData.infaqShare],
@@ -433,7 +458,7 @@ export default function AdminLabaRugiPage() {
           <div className="space-y-8 mt-8">
 
             {/* ── Summary Cards ── */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Total Pendapatan Card */}
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
@@ -462,7 +487,7 @@ export default function AdminLabaRugiPage() {
                   <DollarSign className="w-7 h-7 text-white" />
                 </div>
                 <div className="relative z-10 flex-1">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Biaya Usaha</p>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Biaya Operasional</p>
                   <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-red-600 tracking-tight">{formatRupiah(reportData.totalBiayaUsaha)}</p>
                   {selectedMonth !== "ALL" && prevMonthReportData && (() => {
                     const cmp = getComparison(reportData.totalBiayaUsaha, prevMonthReportData.totalBiayaUsaha);
@@ -477,6 +502,33 @@ export default function AdminLabaRugiPage() {
                   })()}
                 </div>
               </div>
+
+              {/* Laba Kotor Card */}
+              <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaKotor >= 0 ? "hover:shadow-[0_20px_40px_rgb(59,130,246,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
+                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500 ${reportData.labaKotor >= 0 ? "bg-gradient-to-br from-blue-500/10 to-sky-500/5" : "bg-gradient-to-br from-rose-500/10 to-red-500/5"}`}></div>
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10 ${reportData.labaKotor >= 0 ? "bg-gradient-to-br from-blue-400 to-sky-500 shadow-blue-500/30" : "bg-gradient-to-br from-rose-400 to-red-500 shadow-rose-500/30"}`}>
+                  {reportData.labaKotor >= 0
+                    ? <TrendingUp className="w-7 h-7 text-white" />
+                    : <TrendingDown className="w-7 h-7 text-white" />}
+                </div>
+                <div className="relative z-10 flex-1">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Laba Kotor</p>
+                  <p className={`text-3xl lg:text-4xl font-black text-transparent bg-clip-text tracking-tight ${reportData.labaKotor >= 0 ? "bg-gradient-to-r from-blue-600 to-sky-600" : "bg-gradient-to-r from-rose-600 to-red-600"}`}>
+                    {formatRupiah(reportData.labaKotor)}
+                  </p>
+                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
+                    const cmp = getComparison(reportData.labaKotor, prevMonthReportData.labaKotor);
+                    return (
+                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-blue-600' : cmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
+                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
+                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
               {/* Laba Rugi Card */}
               <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaRugi >= 0 ? "hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
                 <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500 ${reportData.labaRugi >= 0 ? "bg-gradient-to-br from-green-500/10 to-emerald-500/5" : "bg-gradient-to-br from-rose-500/10 to-red-500/5"}`}></div>
@@ -508,6 +560,8 @@ export default function AdminLabaRugiPage() {
             {selectedMonth !== "ALL" && prevMonthReportData && (() => {
               const pendapatanCmp = getComparison(reportData.totalPendapatan, prevMonthReportData.totalPendapatan);
               const biayaCmp = getComparison(reportData.totalBiayaUsaha, prevMonthReportData.totalBiayaUsaha);
+              const labaKotorCmp = getComparison(reportData.labaKotor, prevMonthReportData.labaKotor);
+              const biayaTerapisCmp = getComparison(reportData.totalBiayaTerapis, prevMonthReportData.totalBiayaTerapis);
               const labaCmp = getComparison(reportData.labaRugi, prevMonthReportData.labaRugi);
 
               return (
@@ -562,7 +616,7 @@ export default function AdminLabaRugiPage() {
                           <tr className="group hover:bg-rose-50/30 transition-colors">
                             <td className="py-4 px-4 font-bold text-gray-700 flex items-center gap-2 rounded-l-xl">
                               <div className="w-2 h-2 rounded-full bg-rose-500"></div>
-                              Total Biaya Usaha
+                              Total Biaya Operasional
                             </td>
                             <td className="py-4 px-4 text-right font-semibold text-gray-500">{formatRupiah(prevMonthReportData.totalBiayaUsaha)}</td>
                             <td className="py-4 px-4 text-right font-bold text-gray-800">{formatRupiah(reportData.totalBiayaUsaha)}</td>
@@ -573,6 +627,44 @@ export default function AdminLabaRugiPage() {
                               <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black ${biayaCmp.direction === 'up' ? 'bg-rose-100 text-rose-700' : biayaCmp.direction === 'down' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
                                 {biayaCmp.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> : biayaCmp.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Equal className="w-3 h-3" />}
                                 {Math.abs(biayaCmp.pct).toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                          {/* Divider */}
+                          <tr><td colSpan={5} className="py-1"><div className="border-t-2 border-dashed border-gray-100"></div></td></tr>
+                          {/* Laba Kotor Row */}
+                          <tr className="group hover:bg-blue-50/30 transition-colors">
+                            <td className="py-4 px-4 font-bold text-blue-800 flex items-center gap-2 rounded-l-xl">
+                              <TrendingUp className="w-4 h-4" />
+                              Laba Kotor
+                            </td>
+                            <td className="py-4 px-4 text-right font-semibold text-blue-600">{formatRupiah(prevMonthReportData.labaKotor)}</td>
+                            <td className="py-4 px-4 text-right font-black text-lg text-blue-700">{formatRupiah(reportData.labaKotor)}</td>
+                            <td className={`py-4 px-4 text-right font-black ${labaKotorCmp.direction === 'up' ? 'text-blue-600' : labaKotorCmp.direction === 'down' ? 'text-rose-600' : 'text-gray-400'}`}>
+                              {labaKotorCmp.diff >= 0 ? '+' : ''}{formatRupiah(labaKotorCmp.diff)}
+                            </td>
+                            <td className="py-4 px-4 text-right rounded-r-xl">
+                              <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-black ${labaKotorCmp.direction === 'up' ? 'bg-blue-100 text-blue-700' : labaKotorCmp.direction === 'down' ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {labaKotorCmp.direction === 'up' ? <ArrowUpRight className="w-4 h-4" /> : labaKotorCmp.direction === 'down' ? <ArrowDownRight className="w-4 h-4" /> : <Equal className="w-4 h-4" />}
+                                {Math.abs(labaKotorCmp.pct).toFixed(1)}%
+                              </span>
+                            </td>
+                          </tr>
+                          {/* Biaya Terapis Row */}
+                          <tr className="group hover:bg-orange-50/30 transition-colors">
+                            <td className="py-4 px-4 font-bold text-gray-700 flex items-center gap-2 rounded-l-xl">
+                              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                              Total Biaya Terapis
+                            </td>
+                            <td className="py-4 px-4 text-right font-semibold text-gray-500">{formatRupiah(prevMonthReportData.totalBiayaTerapis)}</td>
+                            <td className="py-4 px-4 text-right font-bold text-gray-800">{formatRupiah(reportData.totalBiayaTerapis)}</td>
+                            <td className={`py-4 px-4 text-right font-bold ${biayaTerapisCmp.direction === 'up' ? 'text-orange-600' : biayaTerapisCmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
+                              {biayaTerapisCmp.diff >= 0 ? '+' : ''}{formatRupiah(biayaTerapisCmp.diff)}
+                            </td>
+                            <td className="py-4 px-4 text-right rounded-r-xl">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black ${biayaTerapisCmp.direction === 'up' ? 'bg-orange-100 text-orange-700' : biayaTerapisCmp.direction === 'down' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {biayaTerapisCmp.direction === 'up' ? <ArrowUpRight className="w-3 h-3" /> : biayaTerapisCmp.direction === 'down' ? <ArrowDownRight className="w-3 h-3" /> : <Equal className="w-3 h-3" />}
+                                {Math.abs(biayaTerapisCmp.pct).toFixed(1)}%
                               </span>
                             </td>
                           </tr>
@@ -607,10 +699,11 @@ export default function AdminLabaRugiPage() {
                     </div>
 
                     {/* Visual comparison bars */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       {[
                         { label: 'Pendapatan', current: reportData.totalPendapatan, prev: prevMonthReportData.totalPendapatan, color: 'emerald', cmp: pendapatanCmp },
-                        { label: 'Biaya Usaha', current: reportData.totalBiayaUsaha, prev: prevMonthReportData.totalBiayaUsaha, color: 'rose', cmp: biayaCmp },
+                        { label: 'Biaya Operasional', current: reportData.totalBiayaUsaha, prev: prevMonthReportData.totalBiayaUsaha, color: 'rose', cmp: biayaCmp },
+                        { label: 'Laba Kotor', current: reportData.labaKotor, prev: prevMonthReportData.labaKotor, color: 'blue', cmp: labaKotorCmp },
                         { label: 'Laba Rugi', current: reportData.labaRugi, prev: prevMonthReportData.labaRugi, color: reportData.labaRugi >= 0 ? 'emerald' : 'rose', cmp: labaCmp },
                       ].map((item) => {
                         const maxVal = Math.max(Math.abs(item.current), Math.abs(item.prev), 1);
@@ -686,10 +779,10 @@ export default function AdminLabaRugiPage() {
                         <td className="py-4 px-5 text-right font-black text-emerald-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalPendapatan)}</td>
                       </tr>
 
-                      {/* ── BIAYA USAHA ── */}
+                      {/* ── BIAYA OPERASIONAL ── */}
                       <tr>
                         <td colSpan={2} className="font-black text-rose-800 pt-8 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-rose-500"></div> Biaya Usaha
+                          <div className="w-2 h-2 rounded-full bg-rose-500"></div> Biaya Operasional
                         </td>
                       </tr>
                       {reportData.biayaUsahaItems.map(item => (
@@ -704,14 +797,53 @@ export default function AdminLabaRugiPage() {
                           <td className="py-3 px-4 text-right text-gray-400">{formatRupiah(0)}</td>
                         </tr>
                       )}
-                      {/* TOTAL BIAYA USAHA */}
+                      {/* TOTAL BIAYA OPERASIONAL */}
                       <tr><td colSpan={2} className="py-1"></td></tr>
                       <tr className="bg-rose-50/80 rounded-2xl">
-                        <td className="py-4 px-5 font-black text-rose-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-rose-500">TOTAL BIAYA USAHA</td>
+                        <td className="py-4 px-5 font-black text-rose-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-rose-500">TOTAL BIAYA OPERASIONAL</td>
                         <td className="py-4 px-5 text-right font-black text-rose-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalBiayaUsaha)}</td>
                       </tr>
 
-                      {/* ── LABA RUGI BERSIN ── */}
+                      {/* ── LABA KOTOR ── */}
+                      <tr><td colSpan={2} className="pt-8"></td></tr>
+                      <tr>
+                        <td colSpan={2}>
+                          <div className={`p-5 sm:p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${reportData.labaKotor >= 0 ? "bg-gradient-to-r from-blue-500 to-sky-600 border-blue-400 shadow-lg shadow-blue-500/20" : "bg-gradient-to-r from-rose-500 to-red-600 border-rose-400 shadow-lg shadow-rose-500/20"}`}>
+                            <span className="font-black text-white/90 text-sm tracking-widest uppercase flex items-center gap-2">
+                              {reportData.labaKotor >= 0 ? <TrendingUp className="w-5 h-5 text-white" /> : <TrendingDown className="w-5 h-5 text-white" />}
+                              Laba Kotor
+                            </span>
+                            <span className="font-black text-white text-2xl sm:text-3xl tracking-tight">{formatRupiah(reportData.labaKotor)}</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* ── BIAYA BAGI HASIL TERAPIS ── */}
+                      <tr>
+                        <td colSpan={2} className="font-black text-orange-800 pt-8 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-orange-500"></div> Biaya Bagi Hasil Terapis
+                        </td>
+                      </tr>
+                      {reportData.biayaTerapisItems.map(item => (
+                        <tr key={item.name} className="group">
+                          <td className="py-3 px-4 text-gray-600 font-medium group-hover:bg-orange-50/50 rounded-l-xl transition-colors">{item.name}</td>
+                          <td className="py-3 px-4 text-right font-bold text-gray-800 group-hover:bg-orange-50/50 rounded-r-xl transition-colors">{formatRupiah(item.amount)}</td>
+                        </tr>
+                      ))}
+                      {reportData.biayaTerapisItems.length === 0 && (
+                        <tr>
+                          <td className="py-3 px-4 text-gray-400 italic text-sm">Tidak ada data biaya terapis</td>
+                          <td className="py-3 px-4 text-right text-gray-400">{formatRupiah(0)}</td>
+                        </tr>
+                      )}
+                      {/* TOTAL BIAYA TERAPIS */}
+                      <tr><td colSpan={2} className="py-1"></td></tr>
+                      <tr className="bg-orange-50/80 rounded-2xl">
+                        <td className="py-4 px-5 font-black text-orange-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-orange-500">TOTAL BIAYA TERAPIS</td>
+                        <td className="py-4 px-5 text-right font-black text-orange-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalBiayaTerapis)}</td>
+                      </tr>
+
+                      {/* ── LABA RUGI BERSIH ── */}
                       <tr><td colSpan={2} className="pt-8"></td></tr>
                       <tr>
                         <td colSpan={2}>

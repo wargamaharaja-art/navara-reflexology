@@ -1048,24 +1048,26 @@ export default function AdminVisitsPage() {
                         className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 font-semibold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer hover:bg-blue-100"
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
-                        {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On"].map(cat => {
+                        {(() => {
                           const activePosServices = getValidServicesForBranch(posBranchId);
-                          const catServices = activePosServices.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
-                          if (catServices.length === 0) return null;
-                          return (
-                            <optgroup key={cat} label={cat}>
-                              {catServices.map(s => <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.effectivePrice ?? s.price ?? 0)}</option>)}
-                            </optgroup>
-                          );
-                        })}
-                        {/* Fallback */}
-                        {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).length > 0 && (
-                          <optgroup label="Lainnya">
-                            {getValidServicesForBranch(posBranchId).filter(s => !s.category && !s.name.toLowerCase().includes("bekam")).map(s => (
-                              <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.effectivePrice ?? s.price ?? 0)}</option>
-                            ))}
-                          </optgroup>
-                        )}
+                          const uniqueCategories = Array.from(new Set(activePosServices.map(s => s.category).filter(Boolean))) as string[];
+                          
+                          const hasUncategorized = activePosServices.some(s => !s.category);
+                          const categoriesToMap = hasUncategorized ? [...uniqueCategories, "Lainnya"] : uniqueCategories;
+
+                          return categoriesToMap.map(cat => {
+                            const catServices = activePosServices.filter(s => {
+                              if (cat === "Lainnya") return !s.category;
+                              return s.category === cat;
+                            });
+                            if (catServices.length === 0) return null;
+                            return (
+                              <optgroup key={cat} label={cat}>
+                                {catServices.map(s => <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.effectivePrice ?? s.price ?? 0)}</option>)}
+                              </optgroup>
+                            );
+                          });
+                        })()}
                       </select>
                     </div>
 
@@ -1661,13 +1663,19 @@ export default function AdminVisitsPage() {
                               </div>
                               
                               <div className="max-h-64 overflow-y-auto p-2 space-y-2">
-                                {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
+                                {(() => {
                                   const activeServices = getValidServicesForBranch(formData.branchId);
-                                  const catServices = activeServices.filter(s => {
-                                    if (cat === "Lainnya") return !s.category;
-                                    return (s.category === cat || (!s.category && cat === "Paket Treatment")) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
-                                  });
-                                  if (catServices.length === 0) return null;
+                                  const uniqueCategories = Array.from(new Set(activeServices.map(s => s.category).filter(Boolean))) as string[];
+                                  
+                                  const hasUncategorized = activeServices.some(s => !s.category);
+                                  const categoriesToMap = hasUncategorized ? [...uniqueCategories, "Lainnya"] : uniqueCategories;
+
+                                  return categoriesToMap.map(cat => {
+                                    const catServices = activeServices.filter(s => {
+                                      if (cat === "Lainnya") return !s.category && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
+                                      return s.category === cat && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
+                                    });
+                                    if (catServices.length === 0) return null;
                                   return (
                                     <div key={cat} className="mb-1">
                                       <div className="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
@@ -1698,7 +1706,7 @@ export default function AdminVisitsPage() {
                                       })}
                                     </div>
                                   );
-                                })}
+                                })})()}
                               </div>
                             </div>
                           )}

@@ -48,7 +48,7 @@ export default function AdminFinancePage() {
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [session, setSession] = useState<any>(null);
-  
+
   // Filters
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
@@ -243,15 +243,15 @@ export default function AdminFinancePage() {
 
   const handleExportCSV = () => {
     if (transactions.length === 0) return alert("Tidak ada data untuk diekspor");
-    
+
     const headers = ["Tanggal", "Waktu", "Tipe", "Kategori", "Metode Pembayaran", "Deskripsi", "Cabang", "Nominal", "Referensi", "Attachment"];
     const csvRows = [headers.join(",")];
-    
+
     transactions.forEach(t => {
       const dateObj = new Date(t.date);
       const dateStr = dateObj.toLocaleDateString('id-ID');
       const timeStr = dateObj.toLocaleTimeString('id-ID');
-      
+
       const row = [
         `"${dateStr}"`,
         `"${timeStr}"`,
@@ -289,7 +289,7 @@ export default function AdminFinancePage() {
 
   const chartData = useMemo(() => {
     const dailyData: Record<string, { date: string, Pemasukan: number, Pengeluaran: number }> = {};
-    
+
     [...transactions].reverse().forEach(t => {
       const date = new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
       if (!dailyData[date]) {
@@ -320,7 +320,7 @@ export default function AdminFinancePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <div className="bg-primary/10 p-3 rounded-lg">
@@ -331,17 +331,17 @@ export default function AdminFinancePage() {
               <p className="text-gray-500 text-sm">Dashboard komprehensif performa finansial klinik.</p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
-              <Link 
+              <Link
                 href="/admin/finance/accounting"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
               >
                 <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
               </Link>
             )}
-            
+
 
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-sm rounded-lg px-2 py-1.5">
               <input
@@ -361,7 +361,7 @@ export default function AdminFinancePage() {
 
             {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
               <>
-                <button 
+                <button
                   onClick={() => setIsCategoryModalOpen(true)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm"
                   title="Kelola Kategori"
@@ -369,14 +369,14 @@ export default function AdminFinancePage() {
                   <Settings className="h-5 w-5" />
                 </button>
 
-                <button 
+                <button
                   onClick={handleExportCSV}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
                 >
                   <Download className="h-5 w-5" /> Export CSV
                 </button>
 
-                <Link 
+                <Link
                   href="/admin/finance/expenses"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
                 >
@@ -401,7 +401,7 @@ export default function AdminFinancePage() {
                 </div>
                 <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
               </div>
-              
+
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
                 <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
                   <TrendingDown className="h-24 w-24" />
@@ -423,7 +423,7 @@ export default function AdminFinancePage() {
                 </div>
                 <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
               </div>
-              
+
               <div className="bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
                 <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
                   <DollarSign className="h-32 w-32" />
@@ -446,38 +446,38 @@ export default function AdminFinancePage() {
                       <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                           </linearGradient>
                           <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis 
-                          dataKey="date" 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{fill: '#9ca3af', fontSize: 12}} 
-                          dy={10} 
+                        <XAxis
+                          dataKey="date"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9ca3af', fontSize: 12 }}
+                          dy={10}
                         />
-                        <YAxis 
-                          tickFormatter={(value) => `Rp ${value / 1000}k`} 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{fill: '#9ca3af', fontSize: 12}}
+                        <YAxis
+                          tickFormatter={(value) => `Rp ${value / 1000}k`}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#9ca3af', fontSize: 12 }}
                           width={80}
                           dx={-10}
                         />
-                        <Tooltip 
+                        <Tooltip
                           formatter={(value: any) => formatRupiah(Number(value))}
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px' }}
                           itemStyle={{ fontWeight: 600 }}
                         />
                         <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                        <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
-                        <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
+                        <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{ r: 8, strokeWidth: 0 }} />
+                        <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{ r: 8, strokeWidth: 0 }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   ) : (
@@ -507,7 +507,7 @@ export default function AdminFinancePage() {
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
                             ))}
                           </Pie>
-                          <Tooltip 
+                          <Tooltip
                             formatter={(value: any) => formatRupiah(Number(value))}
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ fontWeight: 600 }}
@@ -516,11 +516,11 @@ export default function AdminFinancePage() {
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br />pemasukan</div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                   <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
                   <div className="h-[450px] w-full">
@@ -542,7 +542,7 @@ export default function AdminFinancePage() {
                               <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
                             ))}
                           </Pie>
-                          <Tooltip 
+                          <Tooltip
                             formatter={(value: any) => formatRupiah(Number(value))}
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                             itemStyle={{ fontWeight: 600 }}
@@ -551,7 +551,7 @@ export default function AdminFinancePage() {
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pengeluaran</div>
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br />pengeluaran</div>
                     )}
                   </div>
                 </div>
@@ -568,23 +568,23 @@ export default function AdminFinancePage() {
             <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
               <div className="px-6 py-4 border-b flex justify-between items-center">
                 <h3 className="text-lg font-bold">Kelola Kategori Keuangan</h3>
-                <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5"/></button>
+                <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
               </div>
-              
+
               <div className="p-6">
                 <form onSubmit={handleAddCategory} className="flex gap-2 mb-6">
                   <div className="bg-red-50 text-red-700 border border-red-200 rounded-lg px-3 py-2 text-sm w-32 font-medium flex items-center justify-center cursor-not-allowed">
                     Pengeluaran
                   </div>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newCategoryName}
                     onChange={e => setNewCategoryName(e.target.value)}
                     placeholder="Nama Kategori Baru"
                     required
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary"
                   />
-                  <button type="submit" className="bg-primary text-white px-3 py-2 rounded-lg"><Plus className="w-5 h-5"/></button>
+                  <button type="submit" className="bg-primary text-white px-3 py-2 rounded-lg"><Plus className="w-5 h-5" /></button>
                 </form>
 
                 <div className="space-y-4 max-h-64 overflow-y-auto">
@@ -594,7 +594,7 @@ export default function AdminFinancePage() {
                       {categories.filter(c => c.type === "EXPENSE").map(c => (
                         <li key={c.id} className="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
                           <span className="text-sm font-medium capitalize">{c.name}</span>
-                          <button onClick={() => handleDeleteCategory(c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4"/></button>
+                          <button onClick={() => handleDeleteCategory(c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><Trash2 className="w-4 h-4" /></button>
                         </li>
                       ))}
                     </ul>
@@ -611,7 +611,7 @@ export default function AdminFinancePage() {
             <h3 className="font-bold text-gray-800 text-lg">Riwayat Transaksi</h3>
             <span className="text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">{transactions.length} Data</span>
           </div>
-          
+
           {loading ? (
             <div className="text-center py-16 text-gray-500 flex flex-col items-center">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -642,19 +642,19 @@ export default function AdminFinancePage() {
                     const dateObj = new Date(t.date);
                     const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
                     const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
-                    
+
                     return (
                       <tr key={t.id} className="hover:bg-blue-50/50 transition-colors group">
                         <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
-                          <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3"/> {formattedTime}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3" /> {formattedTime}</div>
                         </td>
                         <td className="px-4 sm:px-6 py-4">
                           <div className="font-medium text-gray-900 line-clamp-2">{t.description}</div>
-                          
+
                           {/* Mobile-only info (Date & Category) */}
                           <div className="sm:hidden flex flex-col gap-1 mt-1">
-                            <span className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3"/> {formattedDate} {formattedTime}</span>
+                            <span className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> {formattedDate} {formattedTime}</span>
                           </div>
                           <div className="md:hidden flex items-center gap-2 mt-1">
                             <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded capitalize">{t.category}</span>
@@ -697,14 +697,14 @@ export default function AdminFinancePage() {
               </table>
             </div>
           )}
-          
+
           {!loading && transactions.length > 0 && (
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={Math.ceil(transactions.length / itemsPerPage)} 
-              onPageChange={setCurrentPage} 
-              totalItems={transactions.length} 
-              itemsPerPage={itemsPerPage} 
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(transactions.length / itemsPerPage)}
+              onPageChange={setCurrentPage}
+              totalItems={transactions.length}
+              itemsPerPage={itemsPerPage}
             />
           )}
         </div>
