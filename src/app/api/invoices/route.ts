@@ -318,7 +318,7 @@ export async function POST(request: Request) {
       const visitsToMark = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
       const primaryVisitId = visitsToMark[0] || (visitId ? visitId : null);
       
-      if (primaryVisitId) {
+      if (visitsToMark.length > 0) {
         await tx.update(patientVisits)
           .set({ 
             status: "completed",
@@ -326,19 +326,23 @@ export async function POST(request: Request) {
             updatedAt: now,
             ...(therapistId && { therapistId })
           })
-          .where(eq(patientVisits.id, primaryVisitId));
+          .where(inArray(patientVisits.id, visitsToMark));
       }
 
       // 10. Create therapist commission if applicable
-      if (therapistId && primaryVisitId) {
+      if (therapistId && visitsToMark.length > 0) {
         const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);
         if (therapistRecords.length > 0) {
           const therapist = therapistRecords[0];
   
           let totalCommission = 0;
           let commissionDetails = [];
+          
+          const visitsInCart = await tx.select().from(patientVisits).where(inArray(patientVisits.id, visitsToMark));
+          const handledVisitIds = new Set();
+          const commissionPerVisit = new Map();
 
-          // Calculate TOTAL commission for ALL items
+          // Calculate TOTAL commission for ALL items and distribute to visits
           for (const item of items) {
             const serviceId = item.serviceId;
             if (!serviceId) continue;
@@ -352,28 +356,44 @@ export async function POST(request: Request) {
             if (itemCommission > 0) {
               totalCommission += itemCommission;
               commissionDetails.push(item.name || serviceId);
+              
+              let targetVisitId = primaryVisitId;
+              const matchingVisit = visitsInCart.find(v => v.serviceId === serviceId && !handledVisitIds.has(v.id));
+              
+              if (matchingVisit) {
+                targetVisitId = matchingVisit.id;
+                handledVisitIds.add(matchingVisit.id);
+              }
+              
+              if (targetVisitId) {
+                const current = commissionPerVisit.get(targetVisitId) || 0;
+                commissionPerVisit.set(targetVisitId, current + itemCommission);
+              }
             }
           }
 
           if (totalCommission > 0) {
-            // Hapus komisi lama jika ada untuk mencegah duplikasi (karena disatukan)
-            await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, primaryVisitId));
+            // Hapus komisi lama jika ada untuk mencegah duplikasi
+            await tx.delete(therapistCommissions).where(inArray(therapistCommissions.visitId, visitsToMark));
             await tx.delete(financeTransactions).where(
               and(
-                eq(financeTransactions.referenceId, primaryVisitId),
+                inArray(financeTransactions.referenceId, visitsToMark),
                 eq(financeTransactions.type, "EXPENSE"),
                 like(financeTransactions.description, "%Bagi Hasil Terapis%")
               )
             );
 
-            await tx.insert(therapistCommissions).values({
-              id: crypto.randomUUID(),
-              therapistId,
-              visitId: primaryVisitId,
-              amount: totalCommission,
-              status: "PAID",
-              paidAt: now,
-            });
+            // Insert new commission for each visit
+            for (const [vId, amount] of commissionPerVisit.entries()) {
+              await tx.insert(therapistCommissions).values({
+                id: crypto.randomUUID(),
+                therapistId,
+                visitId: vId,
+                amount: amount,
+                status: "PAID",
+                paidAt: now,
+              });
+            }
   
             // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
             const commTrxId = crypto.randomUUID();

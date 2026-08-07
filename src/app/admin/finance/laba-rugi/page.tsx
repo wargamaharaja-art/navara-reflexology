@@ -81,7 +81,7 @@ export default function AdminLabaRugiPage() {
   const formatRupiah = (val: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
 
-  const MONTH_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   const filteredTransactions = useMemo(() => {
     if (selectedMonth === "ALL") return transactions;
@@ -375,7 +375,7 @@ export default function AdminLabaRugiPage() {
                   className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
                 >
                   <option value="ALL">Semua Bulan</option>
-                  {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
+                  {["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"].map((m, i) => (
                     <option key={i + 1} value={String(i + 1)}>{m}</option>
                   ))}
                 </select>
@@ -456,7 +456,7 @@ export default function AdminLabaRugiPage() {
           <div className="space-y-8 mt-8">
 
             {/* ── Summary Cards ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Pendapatan Card */}
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
@@ -501,27 +501,6 @@ export default function AdminLabaRugiPage() {
                 </div>
               </div>
 
-              {/* Biaya Terapis Card */}
-              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(249,115,22,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
-                  <DollarSign className="w-7 h-7 text-white" />
-                </div>
-                <div className="relative z-10 flex-1">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Biaya Terapis</p>
-                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-600 tracking-tight">{formatRupiah(reportData.totalBiayaTerapis)}</p>
-                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
-                    const cmp = getComparison(reportData.totalBiayaTerapis, prevMonthReportData.totalBiayaTerapis);
-                    return (
-                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-rose-600' : cmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
-                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
-                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
 
               {/* Laba Rugi Card */}
               <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaRugi >= 0 ? "hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
@@ -837,20 +816,20 @@ export default function AdminLabaRugiPage() {
                         <td colSpan={2} className="pt-6">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="bg-gradient-to-br from-amber-50 to-orange-50/50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                               <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Sewa Ruko</p>
-                               <p className="text-xl font-black text-amber-900">{formatRupiah(reportData.penyusutanModalInvestor)}</p>
+                              <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Sewa Ruko</p>
+                              <p className="text-xl font-black text-amber-900">{formatRupiah(reportData.penyusutanModalInvestor)}</p>
                             </div>
                             <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                               <p className="text-xs font-extrabold text-emerald-700/80 uppercase tracking-widest mb-1.5">Infaq (2.5%)</p>
-                               <p className="text-xl font-black text-emerald-900">{formatRupiah(reportData.infaqShare)}</p>
+                              <p className="text-xs font-extrabold text-emerald-700/80 uppercase tracking-widest mb-1.5">Infaq (2.5%)</p>
+                              <p className="text-xl font-black text-emerald-900">{formatRupiah(reportData.infaqShare)}</p>
                             </div>
                             <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                               <p className="text-xs font-extrabold text-blue-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Inv ({reportData.investorPercentage}%)</p>
-                               <p className="text-xl font-black text-blue-900">{formatRupiah(reportData.investorShare)}</p>
+                              <p className="text-xs font-extrabold text-blue-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Inv ({reportData.investorPercentage}%)</p>
+                              <p className="text-xl font-black text-blue-900">{formatRupiah(reportData.investorShare)}</p>
                             </div>
                             <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50/50 p-5 rounded-2xl border border-purple-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                               <p className="text-xs font-extrabold text-purple-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Mgt ({reportData.managementPercentage}%)</p>
-                               <p className="text-xl font-black text-purple-900">{formatRupiah(reportData.managementShare)}</p>
+                              <p className="text-xs font-extrabold text-purple-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Mgt ({reportData.managementPercentage}%)</p>
+                              <p className="text-xl font-black text-purple-900">{formatRupiah(reportData.managementShare)}</p>
                             </div>
                           </div>
                         </td>
@@ -873,12 +852,12 @@ export default function AdminLabaRugiPage() {
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} dy={10} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} dy={10} />
                       <YAxis
                         tickFormatter={val => `Rp${(val / 1000000).toFixed(0)}M`}
                         axisLine={false}
                         tickLine={false}
-                        tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}}
+                        tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
                         dx={-10}
                       />
                       <Tooltip
@@ -892,20 +871,20 @@ export default function AdminLabaRugiPage() {
                       <Bar dataKey="Pendapatan" fill="url(#colorPendapatan)" radius={[6, 6, 0, 0]} />
                       <Bar dataKey="BiayaUsaha" name="Biaya Usaha" fill="url(#colorBiaya)" radius={[6, 6, 0, 0]} />
                       <Bar dataKey="LabaRugi" name="Laba Rugi" fill="url(#colorLaba)" radius={[6, 6, 0, 0]} />
-                      
+
                       {/* Define Gradients for Bars */}
                       <defs>
                         <linearGradient id="colorPendapatan" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#0d9488" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.8}/>
+                          <stop offset="0%" stopColor="#0d9488" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.8} />
                         </linearGradient>
                         <linearGradient id="colorBiaya" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#e11d48" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.8}/>
+                          <stop offset="0%" stopColor="#e11d48" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.8} />
                         </linearGradient>
                         <linearGradient id="colorLaba" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#059669" stopOpacity={1}/>
-                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.8}/>
+                          <stop offset="0%" stopColor="#059669" stopOpacity={1} />
+                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.8} />
                         </linearGradient>
                       </defs>
                     </BarChart>
