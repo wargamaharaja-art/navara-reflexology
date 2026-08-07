@@ -264,7 +264,7 @@ export default function TherapistReportsPage() {
 
     autoTable(doc, {
       startY: 75,
-      body: tableData,
+      body: tableData as any,
       theme: "grid",
       columnStyles: {
         0: { cellWidth: 100 },
