@@ -233,21 +233,63 @@ export default function TherapistReportsPage() {
     }
   };
 
-  const handleCopyLink = (reportId: string | null) => {
-    if (!reportId) return;
-    const reportUrl = `${window.location.origin}/therapist/report/${reportId}`;
-    navigator.clipboard.writeText(reportUrl);
-    alert("Link rapor privat berhasil disalin ke clipboard!");
+  const handleDownloadSlipPDF = async (report: MonthlyReport) => {
+    const { jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+
+    const doc = new jsPDF("portrait");
+    const readableMonth = getPeriodLabel(report);
+
+    doc.setFontSize(16);
+    doc.text("Slip Gaji Terapis", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.text("Klinik Navara Reflexology", 105, 28, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.text(`Nama Terapis: ${report.therapistName}`, 14, 45);
+    doc.text(`Periode: ${readableMonth}`, 14, 52);
+    doc.text(`Total Penanganan: ${report.totalTreatments} Pasien`, 14, 59);
+    doc.text(`Kehadiran (Hadir/Telat/Absen): ${report.attendancePresent} / ${report.attendanceLate} / ${report.attendanceAbsent}`, 14, 66);
+
+    const tableData = [
+      [{ content: "Keterangan", styles: { fontStyle: "bold", fillColor: [240, 240, 240] } }, { content: "Nominal", styles: { fontStyle: "bold", fillColor: [240, 240, 240], halign: "right" } }],
+      ["Gaji Pokok", formatRupiah(report.baseSalary)],
+      ["Komisi Tindakan", formatRupiah(report.commissions)],
+      ["Tunjangan", formatRupiah(report.allowances)],
+      ["Bonus", formatRupiah(report.bonuses)],
+      ["Potongan", formatRupiah(report.deductions)],
+      [{ content: "Take Home Pay (THP)", styles: { fontStyle: "bold" } }, { content: formatRupiah(report.takeHomePay), styles: { fontStyle: "bold", halign: "right" } }]
+    ];
+
+    autoTable(doc, {
+      startY: 75,
+      body: tableData,
+      theme: "grid",
+      columnStyles: {
+        0: { cellWidth: 100 },
+        1: { cellWidth: 80, halign: "right" }
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    doc.text("Penerima", 40, finalY + 30, { align: "center" });
+    doc.text(`(${report.therapistName})`, 40, finalY + 55, { align: "center" });
+
+    doc.text("Manajemen", 170, finalY + 30, { align: "center" });
+    doc.text("(...........................)", 170, finalY + 55, { align: "center" });
+
+    const fileNameMonth = month || "Periode";
+    doc.save(`Slip_Gaji_${report.therapistName.replace(/\s+/g, "_")}_${fileNameMonth}.pdf`);
   };
 
   const handleSendWA = (report: MonthlyReport) => {
     if (!report.id) return;
-    const reportUrl = `${window.location.origin}/therapist/report/${report.id}`;
-
+    
     // Format period to readable string
     const readableMonth = getPeriodLabel(report);
 
-    const messageText = `Halo ${report.therapistName}, berikut adalah Rapor Kinerja & Slip Gaji Bulanan Anda untuk periode *${readableMonth}*.\n\nSilakan buka tautan berikut untuk melihat rincian privat Anda:\n${reportUrl}\n\nMasukkan PIN keamanan Anda (6 digit Tanggal Lahir Anda: DDMMYY) untuk masuk. Terima kasih!`;
+    const messageText = `Halo ${report.therapistName}, berikut adalah informasi Slip Gaji Bulanan Anda untuk periode *${readableMonth}*.\n\nSilakan cek lampiran PDF yang kami kirimkan bersama pesan ini untuk melihat rincian Gaji Pokok, Komisi, Bonus, Potongan, dan Take Home Pay Anda. Terima kasih!`;
 
     // Clean phone number (replace starting '0' with '62' if necessary)
     // Here we can fetch the therapist's phone or assume they copy it. We direct to standard share.
@@ -681,11 +723,11 @@ export default function TherapistReportsPage() {
 
                           <button
                             disabled={!r.isSaved}
-                            onClick={() => handleCopyLink(r.id)}
+                            onClick={() => handleDownloadSlipPDF(r)}
                             className="bg-gray-50 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 px-2 py-1.5 rounded-lg border border-gray-200 transition-colors"
-                            title="Salin Link Rapor Privat"
+                            title="Download Slip Gaji (PDF)"
                           >
-                            <Copy className="w-3.5 h-3.5" />
+                            <FileText className="w-3.5 h-3.5" />
                           </button>
 
                           <button

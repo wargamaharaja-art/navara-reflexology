@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users } from "lucide-react";
+import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users, FileText, FileSpreadsheet, File as FileIcon } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import Pagination from "@/components/ui/Pagination";
 import {
   AreaChart,
@@ -45,6 +48,7 @@ export default function AdminFinancePage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [session, setSession] = useState<any>(null);
@@ -278,6 +282,65 @@ export default function AdminFinancePage() {
     document.body.removeChild(link);
   };
 
+  const handleExportExcel = () => {
+    if (transactions.length === 0) return alert("Tidak ada data untuk diekspor");
+
+    const exportData = transactions.map(t => {
+      const dateObj = new Date(t.date);
+      return {
+        Tanggal: dateObj.toLocaleDateString('id-ID'),
+        Waktu: dateObj.toLocaleTimeString('id-ID'),
+        Tipe: t.type,
+        Kategori: t.category,
+        "Metode Pembayaran": t.paymentMethod,
+        Deskripsi: t.description,
+        Cabang: t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat",
+        Nominal: t.amount,
+        Referensi: t.referenceId || "",
+        Attachment: t.attachmentUrl || ""
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Keuangan");
+    XLSX.writeFile(workbook, `laporan_keuangan_${new Date().getTime()}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    if (transactions.length === 0) return alert("Tidak ada data untuk diekspor");
+
+    const doc = new jsPDF();
+    doc.text("Laporan Keuangan", 14, 15);
+
+    const tableColumn = ["Tanggal", "Waktu", "Tipe", "Kategori", "Metode", "Cabang", "Nominal"];
+    const tableRows: any[] = [];
+
+    transactions.forEach(t => {
+      const dateObj = new Date(t.date);
+      const rowData = [
+        dateObj.toLocaleDateString('id-ID'),
+        dateObj.toLocaleTimeString('id-ID'),
+        t.type,
+        t.category,
+        t.paymentMethod,
+        t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat",
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(t.amount)
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 20,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] },
+    });
+
+    doc.save(`laporan_keuangan_${new Date().getTime()}.pdf`);
+  };
+
   const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
   const operationalExpense = transactions.filter(t => t.type === "EXPENSE" && t.category.toLowerCase() !== "bagi hasil terapis").reduce((sum, t) => sum + t.amount, 0);
@@ -370,12 +433,34 @@ export default function AdminFinancePage() {
                   <Settings className="h-5 w-5" />
                 </button>
 
-                <button
-                  onClick={handleExportCSV}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-                >
-                  <Download className="h-5 w-5" /> Export CSV
-                </button>
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                  >
+                    <Download className="h-5 w-5" /> Export
+                  </button>
+                  
+                  {isExportDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsExportDropdownOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                        <button onClick={() => { handleExportCSV(); setIsExportDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <FileText className="h-4 w-4" /> Export CSV
+                        </button>
+                        <button onClick={() => { handleExportExcel(); setIsExportDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4" /> Export Excel
+                        </button>
+                        <button onClick={() => { handleExportPDF(); setIsExportDropdownOpen(false); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                          <FileIcon className="h-4 w-4" /> Export PDF
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
 
                 <Link
                   href="/admin/finance/expenses"
