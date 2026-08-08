@@ -4,6 +4,7 @@ import {
   therapistCommissions,
   patientVisits,
   therapistMonthlyReports,
+  invoices,
 } from "@/lib/db/schema";
 import { eq, and, like, isNull, isNotNull, gte, lte } from "drizzle-orm";
 import crypto from "crypto";
@@ -32,11 +33,16 @@ export async function POST(request: Request) {
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
         branchId: patientVisits.branchId,
+        invoiceItems: invoices.items,
       })
       .from(therapistCommissions)
       .innerJoin(
         patientVisits,
         eq(therapistCommissions.visitId, patientVisits.id),
+      )
+      .leftJoin(
+        invoices,
+        eq(patientVisits.id, invoices.visitId)
       );
 
     let fixedCount = 0;
@@ -52,13 +58,38 @@ export async function POST(request: Request) {
         batch.map(async (c) => {
           if (!c.serviceId || !c.therapistId) return;
 
-          const correctAmount = await calculateTherapistCommission(
-            db,
-            c.therapistId,
-            c.serviceId,
-            1,
-            c.branchId
-          );
+          let correctAmount = 0;
+          if (c.invoiceItems) {
+            try {
+              const items = JSON.parse(c.invoiceItems);
+              if (Array.isArray(items)) {
+                for (const item of items) {
+                  if (item.serviceId) {
+                    const itemComm = await calculateTherapistCommission(
+                      db,
+                      c.therapistId,
+                      item.serviceId,
+                      item.qty || 1,
+                      c.branchId
+                    );
+                    correctAmount += itemComm;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Failed to parse invoice items for visit", c.visitId);
+            }
+          }
+          
+          if (correctAmount === 0 && c.serviceId) {
+            correctAmount = await calculateTherapistCommission(
+              db,
+              c.therapistId,
+              c.serviceId,
+              1,
+              c.branchId
+            );
+          }
 
           if (c.amount !== correctAmount) {
             await db
@@ -88,11 +119,16 @@ export async function POST(request: Request) {
         visitDate: patientVisits.visitDate,
         paymentStatus: patientVisits.paymentStatus,
         branchId: patientVisits.branchId,
+        invoiceItems: invoices.items,
       })
       .from(patientVisits)
       .leftJoin(
         therapistCommissions,
         eq(patientVisits.id, therapistCommissions.visitId),
+      )
+      .leftJoin(
+        invoices,
+        eq(patientVisits.id, invoices.visitId)
       )
       .where(
         and(
@@ -108,13 +144,39 @@ export async function POST(request: Request) {
       await Promise.all(
         batch.map(async (v) => {
           if (!v.therapistId || !v.serviceId) return;
-          const commissionAmount = await calculateTherapistCommission(
-            db,
-            v.therapistId,
-            v.serviceId,
-            1,
-            v.branchId
-          );
+
+          let commissionAmount = 0;
+          if (v.invoiceItems) {
+            try {
+              const items = JSON.parse(v.invoiceItems);
+              if (Array.isArray(items)) {
+                for (const item of items) {
+                  if (item.serviceId) {
+                    const itemComm = await calculateTherapistCommission(
+                      db,
+                      v.therapistId,
+                      item.serviceId,
+                      item.qty || 1,
+                      v.branchId
+                    );
+                    commissionAmount += itemComm;
+                  }
+                }
+              }
+            } catch (e) {
+              console.error("Failed to parse invoice items for missing visit", v.visitId);
+            }
+          }
+          
+          if (commissionAmount === 0 && v.serviceId) {
+            commissionAmount = await calculateTherapistCommission(
+              db,
+              v.therapistId,
+              v.serviceId,
+              1,
+              v.branchId
+            );
+          }
           
           console.log(`[DEBUG] Visit ${v.visitId} | Therapist ${v.therapistId} | Service ${v.serviceId} | Calculated Comm: ${commissionAmount}`);
 
