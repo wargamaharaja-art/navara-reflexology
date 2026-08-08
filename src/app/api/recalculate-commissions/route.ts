@@ -154,24 +154,6 @@ export async function POST(request: Request) {
       const lastDay = new Date(parseInt(year), parseInt(m), 0).getDate();
       const monthEnd = `${year}-${m}-${String(lastDay).padStart(2, "0")}`;
 
-      // Get all commissions for this therapist in this month using date range
-      const monthCommissions = await db
-        .select({ amount: therapistCommissions.amount })
-        .from(therapistCommissions)
-        .innerJoin(
-          patientVisits,
-          eq(therapistCommissions.visitId, patientVisits.id),
-        )
-        .where(
-          and(
-            eq(therapistCommissions.therapistId, therapistId),
-            gte(patientVisits.visitDate, monthStart),
-            lte(patientVisits.visitDate, monthEnd),
-          ),
-        );
-
-      const totalComm = monthCommissions.reduce((s, c) => s + c.amount, 0);
-
       // Find all reports for this therapist that overlap with this month
       // This handles both month-based reports AND date-range-based reports
       const reports = await db
@@ -193,25 +175,27 @@ export async function POST(request: Request) {
       });
 
       for (const r of matchingReports) {
-        // For date-range reports, recalculate commissions specific to that date range
-        let reportTotalComm = totalComm;
-        if (r.startDate && r.endDate && !r.month) {
-          const rangeCommissions = await db
-            .select({ amount: therapistCommissions.amount })
-            .from(therapistCommissions)
-            .innerJoin(
-              patientVisits,
-              eq(therapistCommissions.visitId, patientVisits.id),
-            )
-            .where(
-              and(
-                eq(therapistCommissions.therapistId, therapistId),
-                gte(patientVisits.visitDate, r.startDate),
-                lte(patientVisits.visitDate, r.endDate),
-              ),
-            );
-          reportTotalComm = rangeCommissions.reduce((s, c) => s + c.amount, 0);
-        }
+        // We must calculate the commission specifically for this report's branch (if it has one)
+        // and date range (if it has one, otherwise use the month's start/end dates).
+        const start = r.startDate || monthStart;
+        const end = r.endDate || monthEnd;
+
+        const rangeCommissions = await db
+          .select({ amount: therapistCommissions.amount })
+          .from(therapistCommissions)
+          .innerJoin(
+            patientVisits,
+            eq(therapistCommissions.visitId, patientVisits.id),
+          )
+          .where(
+            and(
+              eq(therapistCommissions.therapistId, therapistId),
+              gte(patientVisits.visitDate, start),
+              lte(patientVisits.visitDate, end),
+              r.branchId ? eq(patientVisits.branchId, r.branchId) : undefined
+            ),
+          );
+        const reportTotalComm = rangeCommissions.reduce((s, c) => s + c.amount, 0);
 
         const newThp =
           r.baseSalary + reportTotalComm + r.allowances + r.bonuses - r.deductions;
