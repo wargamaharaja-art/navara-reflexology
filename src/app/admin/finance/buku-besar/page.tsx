@@ -38,6 +38,24 @@ const toTitleCase = (str: string) => {
   return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
 };
 
+const extractTherapistName = (description: string) => {
+  if (!description) return "Terapis Tidak Diketahui";
+  
+  // 1. Try parentheses: Bagi Hasil Terapis (Deni Akbar)
+  const matchParen = description.match(/\((.*?)\)/);
+  if (matchParen && matchParen[1].trim()) return matchParen[1].trim();
+  
+  // 2. Try standard format without parentheses: Bagi Hasil Terapis Deni Akbar - ...
+  const matchBagiHasil = description.match(/Bagi Hasil(?: Terapis)?\s+(.*?)(?:\s+-|\s+untuk|$)/i);
+  if (matchBagiHasil && matchBagiHasil[1].trim()) return matchBagiHasil[1].trim();
+
+  // 3. Try Gaji format: Gaji Terapis Deni Akbar
+  const matchGaji = description.match(/Gaji(?: Terapis)?\s+(.*?)(?:\s+-|\s+untuk|$)/i);
+  if (matchGaji && matchGaji[1].trim()) return matchGaji[1].trim();
+
+  return "Terapis Tidak Diketahui";
+};
+
 export default function BukuBesarPage() {
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -361,8 +379,7 @@ export default function BukuBesarPage() {
                             (() => {
                               const therapistTotals = new Map<string, number>();
                               items.forEach(t => {
-                                const match = t.description.match(/\((.*?)\)/);
-                                const name = match ? match[1] : "Terapis Tidak Diketahui";
+                                const name = extractTherapistName(t.description);
                                 therapistTotals.set(name, (therapistTotals.get(name) || 0) + t.amount);
                               });
                               return Array.from(therapistTotals.entries()).map(([name, amount], idx) => (
