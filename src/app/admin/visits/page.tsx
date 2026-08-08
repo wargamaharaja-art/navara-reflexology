@@ -33,7 +33,7 @@ type PatientVisit = {
 
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
-type Branch = { id: string; name: string; address?: string; phone?: string; brand?: string };
+type Branch = { id: string; name: string; address?: string; phone?: string; brand?: string; taxRate?: number };
 type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null; effectivePrice?: number; effectiveCommission?: number; isActive?: boolean; brand?: string };
 
 type InvoiceItem = {
@@ -558,7 +558,11 @@ export default function AdminVisitsPage() {
   };
 
   const posSubtotal = posItems.reduce((sum, i) => sum + i.subtotal, 0);
-  const posGrandTotal = posSubtotal - posDiscount;
+  // Auto-calculate tax based on selected branch's tax rate
+  const selectedPosBranch = branches.find(b => b.id === posBranchId);
+  const posBranchTaxRate = selectedPosBranch?.taxRate || 0;
+  const posTax = posBranchTaxRate > 0 ? Math.round(posSubtotal * posBranchTaxRate / 100) : 0;
+  const posGrandTotal = posSubtotal - posDiscount + posTax;
   const totalPosPaid = posIsSplitPayment ? (posSplitAmount1 + posSplitAmount2) : posAmountPaid;
   const posChangeAmount = Math.max(0, totalPosPaid - posGrandTotal);
 
@@ -582,7 +586,7 @@ export default function AdminVisitsPage() {
           therapistId: posTherapistId || null,
           items: posItems,
           discount: posDiscount,
-          tax: 0,
+          tax: posTax,
           paymentMethod: posIsSplitPayment ? "SPLIT" : posPaymentMethod,
           splitPayments: posIsSplitPayment ? [
             { method: posSplitMethod1, amount: posSplitAmount1 },
@@ -1147,6 +1151,14 @@ export default function AdminVisitsPage() {
                       <div className="flex justify-between text-sm text-red-600">
                         <span>Diskon</span>
                         <span>- {formatRupiah(posDiscount)}</span>
+                      </div>
+                    )}
+
+                    {/* Tax (auto-calculated from branch taxRate) */}
+                    {posTax > 0 && (
+                      <div className="flex justify-between text-sm text-blue-600">
+                        <span>Pajak ({posBranchTaxRate}%)</span>
+                        <span>+ {formatRupiah(posTax)}</span>
                       </div>
                     )}
 

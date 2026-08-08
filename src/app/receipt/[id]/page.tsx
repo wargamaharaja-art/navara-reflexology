@@ -312,7 +312,7 @@ export default function PublicReceiptPage() {
             )}
             {invoice.tax > 0 && (
               <div className="flex justify-between">
-                <span className="text-gray-500">Pajak</span>
+                <span className="text-gray-500">Pajak{invoice.subtotal > 0 ? ` (${Math.round(invoice.tax / invoice.subtotal * 100)}%)` : ''}</span>
                 <span className="font-semibold text-gray-800">{formatRupiah(invoice.tax)}</span>
               </div>
             )}

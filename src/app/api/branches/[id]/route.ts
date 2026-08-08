@@ -7,7 +7,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive, brand } = body;
+    const { name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive, brand, taxRate } = body;
 
     const updatedBranch = await db.update(branches)
       .set({
@@ -20,6 +20,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         mapUrl: mapUrl || null,
         isActive: isActive !== undefined ? isActive : true,
         brand: brand || "NAVARA",
+        taxRate: taxRate !== undefined ? Number(taxRate) : 0,
       })
       .where(eq(branches.id, id))
       .returning();

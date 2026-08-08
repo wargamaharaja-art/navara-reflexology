@@ -14,6 +14,7 @@ export const branches = pgTable("branches", {
   operatingHoursWeekend: text("operating_hours_weekend").notNull().default("09:00 - 21:00 WIB"),
   mapUrl: text("map_url"),
   isActive: boolean("is_active").notNull().default(true),
+  taxRate: integer("tax_rate").notNull().default(0), // Persentase pajak layanan (0-100). Contoh: 10 = pajak 10%
 });
 
 // ============================================

@@ -15,6 +15,7 @@ type Branch = {
   mapUrl: string | null;
   isActive: boolean;
   brand: string;
+  taxRate: number;
 };
 
 export default function AdminBranchesPage() {
@@ -36,6 +37,7 @@ export default function AdminBranchesPage() {
     mapUrl: "",
     isActive: true,
     brand: "NAVARA",
+    taxRate: 0,
   });
 
   const fetchBranches = async () => {
@@ -75,6 +77,7 @@ export default function AdminBranchesPage() {
       mapUrl: "",
       isActive: true,
       brand: "NAVARA",
+      taxRate: 0,
     });
     setIsEditMode(false);
     setIsFormOpen(true);
@@ -203,6 +206,46 @@ export default function AdminBranchesPage() {
                       <option value="RADJA_BEKAM">Radja Bekam</option>
                     </select>
                   </div>
+                  <div className="space-y-3 md:col-span-2 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="text-sm font-bold text-gray-900">Fitur Pajak Layanan</label>
+                        <p className="text-xs text-gray-500 mt-0.5">Aktifkan untuk membebankan otomatis pajak pada setiap layanan di cabang ini.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={(formData.taxRate || 0) > 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({...formData, taxRate: 10}); // Default 10% saat dihidupkan
+                            } else {
+                              setFormData({...formData, taxRate: 0});
+                            }
+                          }}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                    
+                    {(formData.taxRate || 0) > 0 && (
+                      <div className="pt-3 border-t border-blue-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Persentase Pajak:</label>
+                        <div className="relative w-32">
+                          <input 
+                            type="number" 
+                            min="1" 
+                            max="100" 
+                            value={formData.taxRate || ""} 
+                            onChange={e => setFormData({...formData, taxRate: parseInt(e.target.value) || 0})} 
+                            className="w-full pl-3 pr-8 py-1.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm font-semibold text-gray-900" 
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-sm font-medium text-gray-700">URL Lokasi GMaps (Sematkan / Embed)</label>
                     <input 
@@ -256,6 +299,11 @@ export default function AdminBranchesPage() {
                       <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${branch.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {branch.isActive ? "Aktif" : "Nonaktif"}
                       </span>
+                      {branch.taxRate > 0 && (
+                        <span className="inline-block mt-1 ml-1 text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+                          Pajak {branch.taxRate}%
+                        </span>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(branch)} className="text-emerald-600 hover:bg-emerald-50 p-2 rounded-md transition-colors" title="Edit">

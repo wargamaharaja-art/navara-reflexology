@@ -177,6 +177,11 @@ export async function POST(
         invoiceId = crypto.randomUUID();
         const therapistRecords2 = visit.therapistId ? await db.select().from(therapists).where(eq(therapists.id, visit.therapistId)).limit(1) : [];
 
+        // Auto-calculate tax based on branch tax rate
+        const branchTaxRate = branch.taxRate || 0;
+        const calculatedTax = branchTaxRate > 0 ? Math.round(basePrice * branchTaxRate / 100) : 0;
+        const grandTotal = basePrice + calculatedTax;
+
         await db.insert(invoices).values({
           id: invoiceId,
           invoiceNumber,
@@ -193,10 +198,10 @@ export async function POST(
           items: JSON.stringify([{ serviceId: visit.serviceId, name: serviceName, qty: 1, price: basePrice, subtotal: basePrice }]),
           subtotal: basePrice,
           discount: 0,
-          tax: 0,
-          grandTotal: basePrice,
+          tax: calculatedTax,
+          grandTotal: grandTotal,
           paymentMethod,
-          amountPaid: basePrice,
+          amountPaid: grandTotal,
           changeAmount: 0,
           createdAt: trxDate,
         });

@@ -186,7 +186,10 @@ export async function POST(request: Request) {
   
       // 4. Calculate totals
       const subtotal = items.reduce((sum: number, item: any) => sum + (item.subtotal || item.price * item.qty), 0);
-      const grandTotal = subtotal - discount + tax;
+      // Auto-calculate tax based on branch tax rate
+      const branchTaxRate = branch.taxRate || 0;
+      const calculatedTax = branchTaxRate > 0 ? Math.round(subtotal * branchTaxRate / 100) : (tax || 0);
+      const grandTotal = subtotal - discount + calculatedTax;
   
       // 5. Generate invoice number
       const invoiceNumber = await generateInvoiceNumber(finalBranchId, tx);
@@ -234,7 +237,7 @@ export async function POST(request: Request) {
         items: JSON.stringify(items),
         subtotal,
         discount,
-        tax,
+        tax: calculatedTax,
         grandTotal,
         paymentMethod: splitPayments && splitPayments.length > 1 ? "SPLIT" : paymentMethod,
         splitPayments: splitPayments ? JSON.stringify(splitPayments) : null,
