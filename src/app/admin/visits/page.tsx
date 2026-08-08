@@ -386,7 +386,7 @@ export default function AdminVisitsPage() {
       const [resVisits, resPatients, resTherapists, resBranches, resServices, resSession, resInvoices] = await Promise.all([
         fetch("/api/patient-visits"),
         fetch("/api/patients"),
-        fetch("/api/therapists"),
+        fetch("/api/therapists?all=true"),
         fetch("/api/branches"),
         fetch("/api/services?all=true"),
         fetch("/api/auth/session"),

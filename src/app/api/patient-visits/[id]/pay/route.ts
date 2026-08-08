@@ -94,7 +94,8 @@ export async function POST(
             db,
             visit.therapistId,
             visit.serviceId,
-            1
+            1,
+            visit.branchId
           );
 
           if (commissionAmount > 0) {

@@ -4,17 +4,20 @@ import { therapists, patientVisits, therapistCommissions, therapistServiceCommis
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const fetchAll = searchParams.get("all") === "true";
+
     const branchFilter = await getActiveBranchFilter();
 
     const therapistsConditions: any[] = [];
-    if (branchFilter) {
+    if (branchFilter && !fetchAll) {
       therapistsConditions.push(eq(therapists.branchId, branchFilter));
     }
 

@@ -108,7 +108,8 @@ export async function PATCH(
             tx,
             therapistId,
             serviceId,
-            item.qty || 1
+            item.qty || 1,
+            visit.branchId
           );
 
           if (commissionAmount > 0) {

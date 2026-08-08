@@ -67,7 +67,8 @@ export async function calculateTherapistCommission(
   dbInstance: any,
   therapistId: string,
   serviceId: string,
-  qty: number = 1
+  qty: number = 1,
+  transactionBranchId?: string
 ): Promise<number> {
   // 1. Therapist-specific override
   const overrideRow = await dbInstance
@@ -104,14 +105,17 @@ export async function calculateTherapistCommission(
   const therapistCommissionRate = thRow.length > 0 ? thRow[0].cr : 0;
   const therapistBranchId = thRow.length > 0 ? thRow[0].branchId : null;
 
-  if (therapistBranchId) {
+  // Use transaction branch if provided, otherwise fallback to therapist's current branch
+  const effectiveBranchId = transactionBranchId || therapistBranchId;
+
+  if (effectiveBranchId) {
     const branchPriceRow = await dbInstance
       .select({ commission: serviceBranchPrices.commission })
       .from(serviceBranchPrices)
       .where(
         and(
           eq(serviceBranchPrices.serviceId, serviceId),
-          eq(serviceBranchPrices.branchId, therapistBranchId)
+          eq(serviceBranchPrices.branchId, effectiveBranchId)
         )
       )
       .limit(1);

@@ -354,7 +354,8 @@ export async function POST(request: Request) {
               tx,
               therapistId,
               serviceId,
-              item.qty || 1
+              item.qty || 1,
+              finalBranchId
             );
             if (itemCommission > 0) {
               totalCommission += itemCommission;

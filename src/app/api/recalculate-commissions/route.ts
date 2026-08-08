@@ -31,6 +31,7 @@ export async function POST(request: Request) {
         amount: therapistCommissions.amount,
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
+        branchId: patientVisits.branchId,
       })
       .from(therapistCommissions)
       .innerJoin(
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
             c.therapistId,
             c.serviceId,
             1,
+            c.branchId
           );
 
           if (c.amount !== correctAmount) {
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
         paymentStatus: patientVisits.paymentStatus,
+        branchId: patientVisits.branchId,
       })
       .from(patientVisits)
       .leftJoin(
@@ -110,6 +113,7 @@ export async function POST(request: Request) {
             v.therapistId,
             v.serviceId,
             1,
+            v.branchId
           );
           
           console.log(`[DEBUG] Visit ${v.visitId} | Therapist ${v.therapistId} | Service ${v.serviceId} | Calculated Comm: ${commissionAmount}`);
