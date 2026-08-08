@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { 
   patientVisits, 
+  therapists,
   therapistCommissions, 
   invoices,
   financeTransactions,
@@ -10,6 +11,66 @@ import {
 } from "@/lib/db/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    // 1. Dapatkan data visit
+    const visitsRecords = await db.select().from(patientVisits).where(eq(patientVisits.id, id)).limit(1);
+    if (visitsRecords.length === 0) {
+      return Response.json({ error: "Data kunjungan tidak ditemukan" }, { status: 404 });
+    }
+    const visit = visitsRecords[0];
+
+    // 2. Jika status berubah menjadi completed, rilis terapis
+    if (body.status === "completed") {
+      const nowStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+      const nowJkt = new Date(nowStr);
+      const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
+
+      await db
+        .update(patientVisits)
+        .set({
+          status: "completed",
+          actualCheckOutTime: currentTime,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(patientVisits.id, id));
+
+      if (visit.therapistId) {
+        await db
+          .update(therapists)
+          .set({ availabilityStatus: "AVAILABLE" })
+          .where(
+            and(
+              eq(therapists.id, visit.therapistId),
+              eq(therapists.availabilityStatus, "BUSY")
+            )
+          );
+      }
+      return Response.json({ success: true, message: "Kunjungan berhasil diselesaikan" });
+    }
+
+    // 3. Update field lainnya jika ada
+    await db
+      .update(patientVisits)
+      .set({
+        ...body,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(patientVisits.id, id));
+
+    return Response.json({ success: true, message: "Data kunjungan berhasil diubah" });
+  } catch (error) {
+    console.error("PATCH /api/patient-visits/[id] error:", error);
+    return Response.json({ error: "Gagal mengubah data kunjungan" }, { status: 500 });
+  }
+}
 
 export async function DELETE(
   request: Request,

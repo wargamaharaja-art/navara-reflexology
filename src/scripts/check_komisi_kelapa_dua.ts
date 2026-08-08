@@ -5,7 +5,7 @@ const { eq, and } = require("drizzle-orm");
 
 async function main() {
   const allBranches = await db.select().from(branches);
-  const kelapaDua = allBranches.find(b => b.name.toLowerCase().includes("kelapa dua"));
+  const kelapaDua = allBranches.find((b: any) => b.name.toLowerCase().includes("kelapa dua"));
   
   if (!kelapaDua) {
     console.log("Branch Navara Kelapa Dua not found.");
@@ -19,9 +19,9 @@ async function main() {
     )
   );
   
-  const byMonth = {};
+  const byMonth: Record<string, { total: number; byTherapist: Record<string, number> }> = {};
   
-  transactions.forEach(t => {
+  transactions.forEach((t: any) => {
     // get YYYY-MM
     const dateStr = t.date.substring(0, 7);
     if (!byMonth[dateStr]) {
