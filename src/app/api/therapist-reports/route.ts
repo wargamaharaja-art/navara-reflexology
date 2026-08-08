@@ -32,10 +32,57 @@ export async function GET(request: Request) {
 
     const branchFilter = await getActiveBranchFilter();
 
-    // 1. Fetch therapists in the active branch
+    // Konversi filterStartDate dan filterEndDate ke format ISO UTC dengan asumsi zona waktu Jakarta (+07:00)
+    const startIso = new Date(`${filterStartDate}T00:00:00+07:00`).toISOString();
+    const endIso = new Date(`${filterEndDate}T23:59:59.999+07:00`).toISOString();
+
+    // 1. Pre-fetch semua komisi dan kunjungan bulan ini (untuk mencari terapis yang aktif di cabang ini meskipun sudah pindah)
+    const visitConditions = [
+      gte(patientVisits.visitDate, startIso),
+      lte(patientVisits.visitDate, endIso)
+    ];
+    if (branchFilter) {
+      visitConditions.push(eq(patientVisits.branchId, branchFilter));
+    }
+
+    const allMonthCommissions = await db
+      .select({
+        therapistId: therapistCommissions.therapistId,
+        amount: therapistCommissions.amount,
+      })
+      .from(therapistCommissions)
+      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+      .where(and(...visitConditions));
+
+    const allMonthVisits = await db
+      .select({ therapistId: patientVisits.therapistId })
+      .from(patientVisits)
+      .where(
+        and(
+          eq(patientVisits.status, "completed"),
+          ...visitConditions
+        )
+      );
+
+    const activeTherapistIds = new Set<string>();
+    allMonthCommissions.forEach(c => activeTherapistIds.add(c.therapistId));
+    allMonthVisits.forEach(v => activeTherapistIds.add(v.therapistId));
+
+    // 2. Fetch therapists in the active branch OR who have activity in this branch
+    const { inArray, or } = await import("drizzle-orm");
     const therapistConditions = [eq(therapists.isActive, true)];
     if (branchFilter) {
-      therapistConditions.push(eq(therapists.branchId, branchFilter));
+      const idsArray = Array.from(activeTherapistIds);
+      if (idsArray.length > 0) {
+        therapistConditions.push(
+          or(
+            eq(therapists.branchId, branchFilter),
+            inArray(therapists.id, idsArray)
+          )
+        );
+      } else {
+        therapistConditions.push(eq(therapists.branchId, branchFilter));
+      }
     }
 
     const activeTherapists = await db
@@ -64,35 +111,7 @@ export async function GET(request: Request) {
 
     const savedReportsMap = new Map(savedReports.map(r => [r.therapistId, r]));
 
-    // Konversi filterStartDate dan filterEndDate ke format ISO UTC dengan asumsi zona waktu Jakarta (+07:00)
-    const startIso = new Date(`${filterStartDate}T00:00:00+07:00`).toISOString();
-    const endIso = new Date(`${filterEndDate}T23:59:59.999+07:00`).toISOString();
-
-    // 3. Pre-fetch semua komisi dan kunjungan bulan ini sekali saja (efisien)
-    const allMonthCommissions = await db
-      .select({
-        therapistId: therapistCommissions.therapistId,
-        amount: therapistCommissions.amount,
-      })
-      .from(therapistCommissions)
-      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-      .where(
-        and(
-          gte(patientVisits.visitDate, startIso),
-          lte(patientVisits.visitDate, endIso)
-        )
-      );
-
-    const allMonthVisits = await db
-      .select({ therapistId: patientVisits.therapistId })
-      .from(patientVisits)
-      .where(
-        and(
-          eq(patientVisits.status, "completed"),
-          gte(patientVisits.visitDate, startIso),
-          lte(patientVisits.visitDate, endIso)
-        )
-      );
+    // (Sudah di-fetch di atas, kita gunakan variabel yang sama)
 
     // 4. For each therapist, map existing report or calculate defaults
     const data = await Promise.all(
@@ -207,6 +226,7 @@ export async function POST(request: Request) {
       notesImprovements,
       notesTargets,
       rating,
+      branchId,
     } = body;
 
     if (!therapistId || (!month && (!startDate || !endDate))) {
@@ -250,11 +270,12 @@ export async function POST(request: Request) {
             eq(therapistMonthlyReports.startDate, startDate),
             eq(therapistMonthlyReports.endDate, endDate)
           );
+      const branchCondition = branchId ? eq(therapistMonthlyReports.branchId, branchId) : undefined;
 
       const existing = await db
         .select()
         .from(therapistMonthlyReports)
-        .where(and(baseCondition, periodCondition))
+        .where(branchCondition ? and(baseCondition, periodCondition, branchCondition) : and(baseCondition, periodCondition))
         .limit(1);
 
       if (existing.length > 0) {
@@ -265,6 +286,7 @@ export async function POST(request: Request) {
       await db.insert(therapistMonthlyReports).values({
         id: newId,
         therapistId,
+        branchId: branchId || null,
         month: month || null,
         startDate: startDate || null,
         endDate: endDate || null,

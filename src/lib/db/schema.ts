@@ -387,6 +387,7 @@ export type NewTherapistServiceCommission = typeof therapistServiceCommissions.$
 export const therapistMonthlyReports = pgTable("therapist_monthly_reports", {
   id: text("id").primaryKey(), // Secure UUID / Token unik
   therapistId: text("therapist_id").notNull().references(() => therapists.id, { onDelete: "cascade" }),
+  branchId: text("branch_id").references(() => branches.id),
   month: text("month"), // Format YYYY-MM (misal "2026-06") - opsional jika pakai rentang tanggal
   startDate: text("start_date"), // YYYY-MM-DD
   endDate: text("end_date"), // YYYY-MM-DD
