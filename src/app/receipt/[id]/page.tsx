@@ -30,6 +30,8 @@ type InvoiceData = {
   changeAmount: number;
   notes: string | null;
   createdAt: string;
+  branchMapUrl?: string;
+  branchWhatsapp?: string;
 };
 
 export default function PublicReceiptPage() {
@@ -86,7 +88,6 @@ export default function PublicReceiptPage() {
                 URL.revokeObjectURL(url);
                 
                 // WA Text
-                const landingPageUrl = "https://navara-reflexology-7gk3ni66x-rizaldmoch30-3888s-projects.vercel.app/";
                 const dateFormatted = new Date(invoice.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
                 let itemsText = "";
                 invoice.items.forEach(item => {
@@ -95,7 +96,7 @@ export default function PublicReceiptPage() {
                 });
                 itemsText = itemsText.trimEnd();
                 
-                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Navara Reflexology Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n🎁 Nikmati sesi Full Body Massage selama 60' dengan mendaftar sebagai member di Navara Reflexology! \n(S&K berlaku)\n\nUntuk informasi lebih lanjut, silahkan kunjungi website kami di : ${landingPageUrl}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Navara Reflexology`;
+                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Navara Reflexology Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n📍 *Lokasi Navara Reflexology:*\n${invoice.branchMapUrl || "[Link Google Maps Klinik belum diatur]"}\n\n📞 *Layanan Pengaduan & Saran:*\n${invoice.branchWhatsapp || "[Nomor WhatsApp Pengaduan belum diatur]"}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Navara Reflexology`;
                 
                 const cleanPhone = invoice.patientPhone.replace(/^0/, "62").replace(/\D/g, "");
                 
