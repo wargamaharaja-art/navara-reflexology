@@ -70,27 +70,8 @@ export async function GET(request: Request) {
 
     // 2. Fetch therapists in the active branch OR who have activity in this branch
     const { inArray, or } = await import("drizzle-orm");
-    const therapistConditions = [eq(therapists.isActive, true)];
-    if (branchFilter) {
-      const idsArray = Array.from(activeTherapistIds);
-      if (idsArray.length > 0) {
-        therapistConditions.push(
-          or(
-            eq(therapists.branchId, branchFilter),
-            inArray(therapists.id, idsArray)
-          )
-        );
-      } else {
-        therapistConditions.push(eq(therapists.branchId, branchFilter));
-      }
-    }
-
-    const activeTherapists = await db
-      .select()
-      .from(therapists)
-      .where(and(...therapistConditions));
-
-    // 2. Fetch existing saved reports for this period
+    
+    // Dapatkan ID terapis yang sudah punya rapor bulan ini
     // If using month, match month. If custom, maybe match startDate and endDate.
     const reportConditions = [];
     if (month) {
@@ -110,6 +91,40 @@ export async function GET(request: Request) {
       .where(and(...reportConditions));
 
     const savedReportsMap = new Map(savedReports.map(r => [r.therapistId, r]));
+
+    const idsToInclude = new Set<string>(activeTherapistIds);
+    savedReports.forEach(r => idsToInclude.add(r.therapistId));
+    const idsArray = Array.from(idsToInclude);
+
+    const therapistConditions = [];
+    if (branchFilter) {
+      if (idsArray.length > 0) {
+        therapistConditions.push(
+          or(
+            and(eq(therapists.branchId, branchFilter), eq(therapists.isActive, true)),
+            inArray(therapists.id, idsArray)
+          )
+        );
+      } else {
+        therapistConditions.push(and(eq(therapists.branchId, branchFilter), eq(therapists.isActive, true)));
+      }
+    } else {
+      if (idsArray.length > 0) {
+        therapistConditions.push(
+          or(
+            eq(therapists.isActive, true),
+            inArray(therapists.id, idsArray)
+          )
+        );
+      } else {
+        therapistConditions.push(eq(therapists.isActive, true));
+      }
+    }
+
+    const activeTherapists = await db
+      .select()
+      .from(therapists)
+      .where(therapistConditions.length > 0 ? and(...therapistConditions) : undefined);
 
     // (Sudah di-fetch di atas, kita gunakan variabel yang sama)
 
