@@ -225,21 +225,50 @@ function TherapistCommissionsContent() {
           description="Atur satu nominal komisi khusus pada layanan dan terapkan langsung ke seluruh terapis aktif di klinik."
           icon={Settings2}
           rightContent={
-            session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-              <div className="relative w-full sm:w-auto">
-                <select
-                  value={filterBranch}
-                  onChange={(e) => setFilterBranch(e.target.value)}
-                  className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={filterBranch}
+                    onChange={(e) => setFilterBranch(e.target.value)}
+                    className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-emerald-500/20 text-sm outline-none cursor-pointer w-full sm:w-64 transition-all appearance-none pr-10 shadow-sm font-medium"
+                  >
+                    <option value="ALL">Semua Cabang (Global)</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>Khusus {b.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
+                </div>
+              )}
+              {session?.role === "SUPER_ADMIN" && (
+                <button
+                  onClick={async () => {
+                    if (!confirm("Apakah Anda yakin ingin menghitung ulang seluruh histori komisi terapis? Ini akan memperbaiki data transaksi lama sesuai tarif komisi saat ini.")) return;
+                    setSaving(true);
+                    setMessage(null);
+                    try {
+                      const res = await fetch("/api/recalculate-commissions", { method: "POST" });
+                      const data = await res.json();
+                      if (res.ok && data.success) {
+                        setMessage({ type: "success", text: data.message });
+                      } else {
+                        setMessage({ type: "error", text: data.error || "Gagal menghitung ulang komisi" });
+                      }
+                    } catch (e) {
+                      setMessage({ type: "error", text: "Terjadi kesalahan sistem saat menghitung ulang." });
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 shadow-sm shadow-blue-600/20 transition-all cursor-pointer whitespace-nowrap"
                 >
-                  <option value="ALL">Semua Cabang (Global)</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>Khusus {b.name}</option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
-              </div>
-            )
+                  <RefreshCw className={`w-4 h-4 ${saving ? "animate-spin" : ""}`} />
+                  {saving ? "Menghitung..." : "Hitung Ulang Komisi"}
+                </button>
+              )}
+            </div>
           }
         />
 

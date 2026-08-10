@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoices, financeTransactions, journalEntries, journalLines, branches } from "@/lib/db/schema";
+import { invoices, financeTransactions, journalEntries, journalLines, branches, settings } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
@@ -30,12 +30,17 @@ export async function GET(
       whatsappNumber: branches.whatsappNumber
     }).from(branches).where(eq(branches.id, invoice.branchId)).limit(1);
 
+    const settingsResult = await db.select({
+      mapUrl: settings.mapUrl,
+      whatsappNumber: settings.whatsappNumber
+    }).from(settings).where(eq(settings.id, "company_info")).limit(1);
+
     return NextResponse.json({
       data: {
         ...invoice,
         items: JSON.parse(invoice.items),
-        branchMapUrl: branchResult[0]?.mapUrl || "",
-        branchWhatsapp: branchResult[0]?.whatsappNumber || "",
+        branchMapUrl: branchResult[0]?.mapUrl || settingsResult[0]?.mapUrl || "",
+        branchWhatsapp: branchResult[0]?.whatsappNumber || settingsResult[0]?.whatsappNumber || "",
       }
     });
   } catch (error) {

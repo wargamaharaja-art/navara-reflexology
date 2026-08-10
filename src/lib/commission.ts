@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
-import { services } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
+import { services, serviceBranchPrices } from "@/lib/db/schema";
 
 /**
  * ⚠️ WARNING UNTUK AI AGENTS & DEVELOPERS:
@@ -8,7 +8,8 @@ import { services } from "@/lib/db/schema";
  * Selalu panggil fungsi ini jika Anda perlu menghitung komisi.
  * 
  * Hierarki Komisi:
- * 1. MURNI dari Global Commission (services.globalCommission)
+ * 1. Branch Commission Override (service_branch_prices.commission)
+ * 2. MURNI dari Global Commission (services.globalCommission)
  * 
  * @param dbInstance - Instance Drizzle DB (bisa `db` biasa atau `tx` dari transaksi)
  * @param therapistId - ID terapis
@@ -48,7 +49,7 @@ export async function calculateTherapistCommission(
   therapistId: string, // Kept for signature compatibility
   serviceId: string,
   qty: number = 1,
-  transactionBranchId?: string, // Kept for signature compatibility
+  transactionBranchId?: string,
   cache?: {
     services?: Map<string, { gc: number | null; price: number; name: string }>;
   }
@@ -73,6 +74,29 @@ export async function calculateTherapistCommission(
     
     if (cache?.services) {
       cache.services.set(serviceId, { gc: serviceGlobalCommission, price: servicePrice, name: svcRow.length > 0 ? svcRow[0].name : "" });
+    }
+  }
+
+  if (transactionBranchId) {
+    const branchPriceRow = await dbInstance
+      .select({
+        price: serviceBranchPrices.price,
+        commission: serviceBranchPrices.commission
+      })
+      .from(serviceBranchPrices)
+      .where(
+        and(
+          eq(serviceBranchPrices.serviceId, serviceId),
+          eq(serviceBranchPrices.branchId, transactionBranchId)
+        )
+      )
+      .limit(1);
+
+    if (branchPriceRow.length > 0) {
+      servicePrice = branchPriceRow[0].price; // Set overriden price
+      if (branchPriceRow[0].commission !== null) {
+        serviceGlobalCommission = branchPriceRow[0].commission; // Set overriden commission
+      }
     }
   }
 
