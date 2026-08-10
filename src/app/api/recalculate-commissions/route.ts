@@ -59,34 +59,14 @@ export async function POST(request: Request) {
           if (!c.serviceId || !c.therapistId) return;
 
           let correctAmount = 0;
-          if (c.invoiceItems) {
-            try {
-              const items = JSON.parse(c.invoiceItems);
-              if (Array.isArray(items)) {
-                for (const item of items) {
-                  if (item.serviceId) {
-                    const itemComm = await calculateTherapistCommission(
-                      db,
-                      c.therapistId,
-                      item.serviceId,
-                      item.qty || 1,
-                      c.branchId
-                    );
-                    correctAmount += itemComm;
-                  }
-                }
-              }
-            } catch (e) {
-              console.error("Failed to parse invoice items for visit", c.visitId);
-            }
-          }
-          
-          if (correctAmount === 0 && c.serviceId) {
+          if (c.serviceId) {
+            // Kita cukup menghitung komisi berdasarkan serviceId dari kunjungan ini.
+            // JANGAN loop melalui semua invoiceItems karena patientVisits sudah dibuat per item layanan.
             correctAmount = await calculateTherapistCommission(
               db,
               c.therapistId,
               c.serviceId,
-              1,
+              1, // Di sistem ini, qty biasanya dipisah menjadi multiple visit rows jika dipecah, atau qty selalu 1
               c.branchId
             );
           }
@@ -146,34 +126,12 @@ export async function POST(request: Request) {
           if (!v.therapistId || !v.serviceId) return;
 
           let commissionAmount = 0;
-          if (v.invoiceItems) {
-            try {
-              const items = JSON.parse(v.invoiceItems);
-              if (Array.isArray(items)) {
-                for (const item of items) {
-                  if (item.serviceId) {
-                    const itemComm = await calculateTherapistCommission(
-                      db,
-                      v.therapistId,
-                      item.serviceId,
-                      item.qty || 1,
-                      v.branchId
-                    );
-                    commissionAmount += itemComm;
-                  }
-                }
-              }
-            } catch (e) {
-              console.error("Failed to parse invoice items for missing visit", v.visitId);
-            }
-          }
-          
-          if (commissionAmount === 0 && v.serviceId) {
+          if (v.serviceId) {
             commissionAmount = await calculateTherapistCommission(
               db,
               v.therapistId,
               v.serviceId,
-              1,
+              1, // quantity
               v.branchId
             );
           }
