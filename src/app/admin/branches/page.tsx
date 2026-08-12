@@ -157,81 +157,102 @@ export default function AdminBranchesPage() {
 
         {/* Modal Form */}
         {isFormOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
-              <div className="flex justify-between items-center mb-6 border-b pb-4">
-                <h3 className="text-xl font-bold">{isEditMode ? "Edit Cabang" : "Tambah Cabang Baru"}</h3>
-                <button onClick={() => setIsFormOpen(false)} className="text-gray-500 hover:text-gray-700 bg-gray-100 p-2 rounded-full">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm transition-all duration-300">
+            <div className="bg-white rounded-[24px] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 sm:p-8 border border-white/20 relative animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{isEditMode ? "Edit Cabang" : "Tambah Cabang"}</h3>
+                  <p className="text-sm text-slate-500 mt-1.5">{isEditMode ? "Perbarui informasi detail untuk cabang ini." : "Masukkan informasi detail untuk cabang baru."}</p>
+                </div>
+                <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2.5 rounded-full transition-all active:scale-95">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Nama Cabang</label>
-                    <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Nama Cabang</label>
+                    <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" placeholder="Contoh: Navara Jatiasih" />
                   </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">Alamat Lengkap</label>
-                    <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required rows={2} className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+                  
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Alamat Lengkap</label>
+                    <textarea value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required rows={3} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium resize-none leading-relaxed" placeholder="Contoh: Jl. Raya Jatiasih No.11..." />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">No. Telepon (Tampilan)</label>
-                    <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required placeholder="+62 812..." className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">No. Telepon (Tampilan)</label>
+                    <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} required placeholder="+62 812..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Nomor WhatsApp (Angka Saja)</label>
-                    <input type="text" value={formData.whatsappNumber} onChange={e => setFormData({...formData, whatsappNumber: e.target.value})} required placeholder="62812..." className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Nomor WhatsApp (Angka Saja)</label>
+                    <input type="text" value={formData.whatsappNumber} onChange={e => setFormData({...formData, whatsappNumber: e.target.value})} required placeholder="62812..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" />
                   </div>
-                  <div className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-medium text-gray-700">Jam Operasional (Senin - Jumat)</label>
-                    <input type="text" value={formData.operatingHours} onChange={e => setFormData({...formData, operatingHours: e.target.value})} required placeholder="09:00 - 21:00 WIB" className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+
+                  <div className="space-y-2 md:col-span-1">
+                    <label className="text-sm font-semibold text-slate-700">Jam Operasional (Senin - Jumat)</label>
+                    <input type="text" value={formData.operatingHours} onChange={e => setFormData({...formData, operatingHours: e.target.value})} required placeholder="09:00 - 21:00 WIB" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" />
                   </div>
-                  <div className="space-y-1.5 md:col-span-1">
-                    <label className="text-sm font-medium text-gray-700">Jam Operasional (Sabtu - Minggu)</label>
-                    <input type="text" value={formData.operatingHoursWeekend} onChange={e => setFormData({...formData, operatingHoursWeekend: e.target.value})} required placeholder="09:00 - 22:00 WIB" className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+
+                  <div className="space-y-2 md:col-span-1">
+                    <label className="text-sm font-semibold text-slate-700">Jam Operasional (Sabtu - Minggu)</label>
+                    <input type="text" value={formData.operatingHoursWeekend} onChange={e => setFormData({...formData, operatingHoursWeekend: e.target.value})} required placeholder="09:00 - 22:00 WIB" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Status</label>
-                    <select value={formData.isActive ? "true" : "false"} onChange={e => setFormData({...formData, isActive: e.target.value === "true"})} className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary">
-                      <option value="true">Aktif</option>
-                      <option value="false">Tidak Aktif (Coming Soon)</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Brand</label>
-                    <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary">
-                      <option value="NAVARA">Navara Reflexology</option>
-                      <option value="RADJA_BEKAM">Radja Bekam</option>
-                    </select>
-                  </div>
-                  <div className="space-y-3 md:col-span-2 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <label className="text-sm font-bold text-gray-900">Fitur Pajak Layanan</label>
-                        <p className="text-xs text-gray-500 mt-0.5">Aktifkan untuk membebankan otomatis pajak pada setiap layanan di cabang ini.</p>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Status</label>
+                    <div className="relative">
+                      <select value={formData.isActive ? "true" : "false"} onChange={e => setFormData({...formData, isActive: e.target.value === "true"})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm font-medium appearance-none cursor-pointer">
+                        <option value="true">Aktif</option>
+                        <option value="false">Tidak Aktif (Coming Soon)</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700">Brand</label>
+                    <div className="relative">
+                      <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm font-medium appearance-none cursor-pointer">
+                        <option value="NAVARA">Navara Reflexology</option>
+                        <option value="RADJA_BEKAM">Radja Bekam</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 bg-slate-50/80 border border-slate-200 rounded-2xl p-5 sm:p-6 mt-2 transition-all hover:border-slate-300">
+                    <div className="flex items-center justify-between">
+                      <div className="pr-4">
+                        <label className="text-base font-bold text-slate-900">Fitur Pajak Layanan</label>
+                        <p className="text-sm text-slate-500 mt-1 leading-relaxed">Aktifkan untuk membebankan otomatis pajak pada setiap layanan di cabang ini.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
                         <input 
                           type="checkbox" 
                           className="sr-only peer" 
                           checked={(formData.taxRate || 0) > 0}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setFormData({...formData, taxRate: 10}); // Default 10% saat dihidupkan
+                              setFormData({...formData, taxRate: 10}); 
                             } else {
                               setFormData({...formData, taxRate: 0});
                             }
                           }}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-[22px] after:w-[22px] after:transition-all peer-checked:bg-emerald-500"></div>
                       </label>
                     </div>
                     
                     {(formData.taxRate || 0) > 0 && (
-                      <div className="pt-3 border-t border-blue-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                        <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Persentase Pajak:</label>
+                      <div className="pt-5 mt-5 border-t border-slate-200 flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
+                        <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Persentase Pajak</label>
                         <div className="relative w-32">
                           <input 
                             type="number" 
@@ -239,21 +260,21 @@ export default function AdminBranchesPage() {
                             max="100" 
                             value={formData.taxRate || ""} 
                             onChange={e => setFormData({...formData, taxRate: parseInt(e.target.value) || 0})} 
-                            className="w-full pl-3 pr-8 py-1.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm font-semibold text-gray-900" 
+                            className="w-full pl-4 pr-8 py-2.5 bg-white border border-slate-300 rounded-lg focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 text-sm font-bold text-emerald-700 transition-all text-center" 
                           />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 font-medium">%</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">%</span>
                         </div>
                       </div>
                     )}
                   </div>
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-sm font-medium text-gray-700">URL Lokasi GMaps (Sematkan / Embed)</label>
+
+                  <div className="space-y-2 md:col-span-2 mt-2">
+                    <label className="text-sm font-semibold text-slate-700">URL Lokasi GMaps (Sematkan / Embed)</label>
                     <input 
                       type="url" 
                       value={formData.mapUrl || ""} 
                       onChange={e => {
                         let val = e.target.value;
-                        // Auto-extract src if they pasted the full iframe code
                         if (val.includes("<iframe") && val.includes("src=")) {
                           const match = val.match(/src="([^"]+)"/);
                           if (match && match[1]) {
@@ -263,16 +284,27 @@ export default function AdminBranchesPage() {
                         setFormData({...formData, mapUrl: val});
                       }} 
                       placeholder="https://maps.google.com/maps?q=..." 
-                      className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" 
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-all duration-200 text-slate-900 text-sm placeholder-slate-400 font-medium" 
                     />
-                    <p className="text-xs text-red-500 font-medium mt-1">WAJIB gunakan fitur "Sematkan Peta (Embed a map)" dari Google Maps. Link Share biasa (maps.app.goo.gl) TIDAK AKAN MUNCUL.</p>
+                    <p className="text-[13px] text-amber-600 font-medium mt-2 bg-amber-50 p-3 rounded-xl border border-amber-100 flex items-start gap-2">
+                      <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                      WAJIB gunakan fitur "Sematkan Peta (Embed a map)" dari Google Maps. Link Share biasa (maps.app.goo.gl) TIDAK AKAN MUNCUL.
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex gap-3 justify-end pt-6 mt-4 border-t">
-                  <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50 font-medium">Batal</button>
-                  <button type="submit" disabled={saving} className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md font-medium">
-                    {saving ? "Menyimpan..." : "Simpan Cabang"}
+                <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-8 mt-6 border-t border-slate-100">
+                  <button type="button" onClick={() => setIsFormOpen(false)} className="w-full sm:w-auto px-6 py-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl font-semibold transition-all active:scale-95 text-center">Batal</button>
+                  <button type="submit" disabled={saving} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-600/20 active:scale-95 transition-all disabled:opacity-70 disabled:active:scale-100 flex items-center justify-center min-w-[160px]">
+                    {saving ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Menyimpan...
+                      </span>
+                    ) : "Simpan Cabang"}
                   </button>
                 </div>
               </form>
