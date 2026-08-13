@@ -33,6 +33,7 @@ export async function POST(request: Request) {
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
         branchId: patientVisits.branchId,
+        patientId: patientVisits.patientId,
         invoiceItems: invoices.items,
       })
       .from(therapistCommissions)
@@ -60,8 +61,7 @@ export async function POST(request: Request) {
 
           let correctAmount = 0;
           if (c.serviceId) {
-            // Kita cukup menghitung komisi berdasarkan serviceId dari kunjungan ini.
-            // JANGAN loop melalui semua invoiceItems karena patientVisits sudah dibuat per item layanan.
+            // Hitung komisi dari layanan utama
             correctAmount = await calculateTherapistCommission(
               db,
               c.therapistId,
@@ -69,6 +69,34 @@ export async function POST(request: Request) {
               1, // Di sistem ini, qty biasanya dipisah menjadi multiple visit rows jika dipecah, atau qty selalu 1
               c.branchId
             );
+
+            // Jika ada invoice, periksa apakah ada POS add-on yang tidak memiliki record patientVisits sendiri
+            if (c.invoiceItems && c.patientId && c.visitDate) {
+              try {
+                const items = JSON.parse(c.invoiceItems);
+                if (Array.isArray(items) && items.length > 1) {
+                  const allVisits = await db.select({ serviceId: patientVisits.serviceId, id: patientVisits.id }).from(patientVisits).where(and(eq(patientVisits.patientId, c.patientId), like(patientVisits.visitDate, c.visitDate)));
+                  const matchedVisitIds = new Set();
+                  matchedVisitIds.add(c.visitId);
+                  
+                  for (const item of items) {
+                    if (item.serviceId === c.serviceId && matchedVisitIds.has(c.visitId)) {
+                      matchedVisitIds.delete(c.visitId);
+                    } else if (item.serviceId) {
+                      const match = allVisits.find(v => v.serviceId === item.serviceId && !matchedVisitIds.has(v.id));
+                      if (match) {
+                        matchedVisitIds.add(match.id);
+                      } else {
+                        const itemComm = await calculateTherapistCommission(db, c.therapistId, item.serviceId, item.qty || 1, c.branchId);
+                        correctAmount += itemComm;
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to parse invoice items for POS add-ons");
+              }
+            }
           }
 
           if (c.amount !== correctAmount) {
@@ -99,6 +127,7 @@ export async function POST(request: Request) {
         visitDate: patientVisits.visitDate,
         paymentStatus: patientVisits.paymentStatus,
         branchId: patientVisits.branchId,
+        patientId: patientVisits.patientId,
         invoiceItems: invoices.items,
       })
       .from(patientVisits)
@@ -134,6 +163,33 @@ export async function POST(request: Request) {
               1, // quantity
               v.branchId
             );
+
+            if (v.invoiceItems && v.patientId && v.visitDate) {
+              try {
+                const items = JSON.parse(v.invoiceItems);
+                if (Array.isArray(items) && items.length > 1) {
+                  const allVisits = await db.select({ serviceId: patientVisits.serviceId, id: patientVisits.id }).from(patientVisits).where(and(eq(patientVisits.patientId, v.patientId), like(patientVisits.visitDate, v.visitDate)));
+                  const matchedVisitIds = new Set();
+                  matchedVisitIds.add(v.visitId);
+                  
+                  for (const item of items) {
+                    if (item.serviceId === v.serviceId && matchedVisitIds.has(v.visitId)) {
+                      matchedVisitIds.delete(v.visitId);
+                    } else if (item.serviceId) {
+                      const match = allVisits.find(av => av.serviceId === item.serviceId && !matchedVisitIds.has(av.id));
+                      if (match) {
+                        matchedVisitIds.add(match.id);
+                      } else {
+                        const itemComm = await calculateTherapistCommission(db, v.therapistId, item.serviceId, item.qty || 1, v.branchId);
+                        commissionAmount += itemComm;
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.error("Failed to parse invoice items for POS add-ons in missing visits");
+              }
+            }
           }
           
           console.log(`[DEBUG] Visit ${v.visitId} | Therapist ${v.therapistId} | Service ${v.serviceId} | Calculated Comm: ${commissionAmount}`);

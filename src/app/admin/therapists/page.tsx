@@ -265,17 +265,19 @@ export default function AdminTherapistsPage() {
                   <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-[10px] font-bold text-gray-500">K</kbd>
                 </div>
               </div>
-              <button 
-                onClick={() => {
-                  setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
-                  setIsFormOpen(true);
-                }}
-                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-500 ease-in-out" />
-                <Plus className="h-5 w-5 relative z-10" /> 
-                <span className="relative z-10">Tambah Terapis</span>
-              </button>
+              {session?.role !== "BRANCH_ADMIN" && (
+                <button 
+                  onClick={() => {
+                    setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });
+                    setIsFormOpen(true);
+                  }}
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_0_rgba(16,185,129,0.39)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.23)] hover:-translate-y-0.5 active:scale-95 group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-y-[-100%] group-hover:translate-y-[100%] transition-transform duration-500 ease-in-out" />
+                  <Plus className="h-5 w-5 relative z-10" /> 
+                  <span className="relative z-10">Tambah Terapis</span>
+                </button>
+              )}
             </div>
           }
         />
@@ -577,14 +579,16 @@ export default function AdminTherapistsPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-1 relative z-10 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-1">
-                        <button onClick={(e) => { e.stopPropagation(); handleEdit(therapist); }} className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="Edit">
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleDelete(therapist.id); }} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {session?.role !== "BRANCH_ADMIN" && (
+                        <div className="flex gap-1 relative z-10 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-1">
+                          <button onClick={(e) => { e.stopPropagation(); handleEdit(therapist); }} className="text-gray-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="Edit">
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(therapist.id); }} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Hapus">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="space-y-2.5 text-sm text-gray-600 mt-2">
@@ -792,14 +796,16 @@ export default function AdminTherapistsPage() {
                 <FileText className="h-4 w-4" /> Riwayat Penanganan Pasien
               </Link>
               <div className="flex gap-2">
-                <button onClick={() => { setSelectedTherapist(null); handleEdit(selectedTherapist); }} className="flex-1 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors border border-gray-200 text-sm">
-                  <Edit className="h-4 w-4" /> Edit
-                </button>
+                {session?.role !== "BRANCH_ADMIN" && (
+                  <button onClick={() => { setSelectedTherapist(null); handleEdit(selectedTherapist); }} className="flex-1 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:text-gray-900 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-colors border border-gray-200 text-sm">
+                    <Edit className="h-4 w-4" /> Edit
+                  </button>
+                )}
                 <a 
                   href={`https://wa.me/${selectedTherapist.phone.replace(/^0/, '62')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-[2] bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-blue-500/20 text-sm"
+                  className={`${session?.role === "BRANCH_ADMIN" ? "w-full" : "flex-[2]"} bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 py-2.5 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-md shadow-blue-500/20 text-sm`}
                 >
                   <MessageCircle className="h-4 w-4" /> Hubungi WhatsApp
                 </a>
