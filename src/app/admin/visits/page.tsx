@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { 
   Plus, CalendarCheck, Search, User, Phone, MapPin, Activity, Store, 
@@ -8,6 +8,7 @@ import {
   Check, Receipt, Printer, MessageCircle, Link2, Download, AlertCircle, 
   Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet, Save, Timer
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
 import TherapistPicker from "@/components/ui/TherapistPicker";
@@ -652,6 +653,103 @@ export default function AdminVisitsPage() {
 
   const handleExportCSV = () => {
     window.open(`/api/invoices/export?date=${historyDate}`, "_blank");
+  };
+
+  // Export Follow-up & Retensi ke Excel
+  const handleExportRetentionExcel = () => {
+    if (retentionPatients.length === 0) {
+      alert("Tidak ada data retensi pasien untuk diekspor");
+      return;
+    }
+
+    const rows = retentionPatients.map((rp, idx) => ({
+      No: idx + 1,
+      "Nama Pasien": rp.patient.name,
+      "No. WhatsApp / HP": rp.patient.phone || "-",
+      "Tanggal Kunjungan Terakhir": rp.lastVisitDate.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }),
+      "Lama Absen (Hari)": `${rp.daysSinceLastVisit} Hari`,
+      "Status Retensi": rp.daysSinceLastVisit > 30 ? "Kritis (> 30 Hari)" : "Perlu Follow-up (15-30 Hari)",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Follow-up & Retensi");
+    XLSX.writeFile(wb, `Data-Retensi-Pasien-${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
+  // Export Follow-up & Retensi ke PDF
+  const handleExportRetentionPDF = async () => {
+    if (retentionPatients.length === 0) {
+      alert("Tidak ada data retensi pasien untuk diekspor");
+      return;
+    }
+
+    try {
+      const { jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const todayStr = new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
+      // Header Title
+      doc.setFontSize(15);
+      doc.setFont("helvetica", "bold");
+      doc.text("Laporan Follow-up & Retensi Pasien", 105, 15, { align: "center" });
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const activeBranchName = session?.role === "SUPER_ADMIN" ? "Semua Cabang (Pusat)" : (branches.find(b => b.id === session?.branchId)?.name || "Navara Reflexology");
+      doc.text(`Klinik: ${activeBranchName}`, 105, 21, { align: "center" });
+      doc.text(`Dicetak pada: ${todayStr} | Total Pasien Absen: ${retentionPatients.length} Orang`, 105, 26, { align: "center" });
+
+      // Table Data
+      const tableRows = retentionPatients.map((rp, idx) => [
+        String(idx + 1),
+        rp.patient.name,
+        rp.patient.phone || "-",
+        rp.lastVisitDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }),
+        `${rp.daysSinceLastVisit} Hari`,
+        rp.daysSinceLastVisit > 30 ? "Kritis (>30 hr)" : "Perlu Follow-up",
+      ]);
+
+      autoTable(doc, {
+        startY: 31,
+        head: [["No", "Nama Pasien", "No. Telepon / WA", "Kunjungan Terakhir", "Lama Absen", "Status"]],
+        body: tableRows,
+        theme: "grid",
+        styles: { fontSize: 8, cellPadding: 2.5 },
+        headStyles: {
+          fillColor: [234, 88, 12], // Orange-600
+          textColor: 255,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: "center" },
+          1: { cellWidth: 50 },
+          2: { cellWidth: 38 },
+          3: { cellWidth: 35, halign: "center" },
+          4: { cellWidth: 25, halign: "center" },
+          5: { cellWidth: 30, halign: "center" },
+        },
+        alternateRowStyles: {
+          fillColor: [255, 247, 237], // Orange-50
+        },
+      });
+
+      doc.save(`Laporan-Retensi-Pasien-${new Date().toISOString().split("T")[0]}.pdf`);
+    } catch (e) {
+      console.error("Gagal men-generate PDF:", e);
+      alert("Gagal mendownload PDF. Silakan coba lagi.");
+    }
   };
 
   useEffect(() => {
@@ -2596,15 +2694,29 @@ export default function AdminVisitsPage() {
         {/* ===== TAB: RETENTION ===== */}
         {activeTab === "retention" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-orange-50/30">
+            <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-orange-50/30">
               <div>
                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-orange-500" /> Follow-up & Retensi Pasien
                 </h3>
                 <p className="text-sm text-gray-500 mt-1">Daftar pasien yang belum berkunjung kembali selama lebih dari 14 hari.</p>
               </div>
-              <div className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-lg text-sm font-bold shadow-sm">
-                Total: {retentionPatients.length} Pasien
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="bg-orange-100 text-orange-700 px-3 py-2 rounded-xl text-xs font-bold shadow-sm">
+                  Total: {retentionPatients.length} Pasien
+                </div>
+                <button
+                  onClick={handleExportRetentionExcel}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <Download className="w-4 h-4" /> Download Excel
+                </button>
+                <button
+                  onClick={handleExportRetentionPDF}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <FileText className="w-4 h-4" /> Download PDF
+                </button>
               </div>
             </div>
             
