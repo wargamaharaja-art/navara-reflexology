@@ -10,10 +10,10 @@ export async function ensureFeedbackTable() {
       CREATE TABLE IF NOT EXISTS customer_feedbacks (
         id text PRIMARY KEY,
         token text NOT NULL UNIQUE,
-        visit_id text REFERENCES patient_visits(id) ON DELETE SET NULL,
-        invoice_id text REFERENCES invoices(id) ON DELETE SET NULL,
-        branch_id text NOT NULL REFERENCES branches(id),
-        therapist_id text REFERENCES therapists(id) ON DELETE SET NULL,
+        visit_id text,
+        invoice_id text,
+        branch_id text NOT NULL,
+        therapist_id text,
         customer_name text,
         customer_phone text,
         overall_rating integer,
@@ -32,13 +32,17 @@ export async function ensureFeedbackTable() {
       );
     `);
 
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS feedback_token_idx ON customer_feedbacks(token);
-      CREATE INDEX IF NOT EXISTS feedback_branch_idx ON customer_feedbacks(branch_id);
-      CREATE INDEX IF NOT EXISTS feedback_therapist_idx ON customer_feedbacks(therapist_id);
-      CREATE INDEX IF NOT EXISTS feedback_status_idx ON customer_feedbacks(status);
-      CREATE INDEX IF NOT EXISTS feedback_created_idx ON customer_feedbacks(created_at);
-    `);
+    try {
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS feedback_token_idx ON customer_feedbacks(token);
+        CREATE INDEX IF NOT EXISTS feedback_branch_idx ON customer_feedbacks(branch_id);
+        CREATE INDEX IF NOT EXISTS feedback_therapist_idx ON customer_feedbacks(therapist_id);
+        CREATE INDEX IF NOT EXISTS feedback_status_idx ON customer_feedbacks(status);
+        CREATE INDEX IF NOT EXISTS feedback_created_idx ON customer_feedbacks(created_at);
+      `);
+    } catch {
+      // index already exists or not supported
+    }
 
     isTableInitialized = true;
   } catch (error) {

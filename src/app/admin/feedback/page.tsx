@@ -33,19 +33,17 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
-import { QRCodeSVG } from "qrcode.react";
+import dynamic from "next/dynamic";
 import * as XLSX from "xlsx";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  BarChart,
-  Bar,
-} from "recharts";
+
+const QRCodeSVG = dynamic(() => import("qrcode.react").then(m => m.QRCodeSVG), { ssr: false });
+const ResponsiveContainer = dynamic(() => import("recharts").then(m => m.ResponsiveContainer), { ssr: false });
+const LineChart = dynamic(() => import("recharts").then(m => m.LineChart), { ssr: false });
+const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false });
+const XAxis = dynamic(() => import("recharts").then(m => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import("recharts").then(m => m.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import("recharts").then(m => m.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 
 type FeedbackItem = {
   id: string;
@@ -91,12 +89,17 @@ type SummaryData = {
 };
 
 export default function AdminFeedbackPage() {
+  const [mounted, setMounted] = useState(false);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [therapists, setTherapists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filters
   const [selectedBranch, setSelectedBranch] = useState("ALL");
@@ -431,7 +434,7 @@ export default function AdminFeedbackPage() {
               </div>
             </div>
             <div className="h-[220px] w-full">
-              {summary.trendData.length > 0 ? (
+              {mounted && (summary.trendData || []).length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={summary.trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -458,7 +461,7 @@ export default function AdminFeedbackPage() {
               <p className="text-xs text-slate-400 mb-4">Persentase kepuasan pelanggan</p>
 
               <div className="space-y-2 mb-6">
-                {summary.starDistribution.slice().reverse().map(item => (
+                {(summary.starDistribution || []).slice().reverse().map(item => (
                   <div key={item.star} className="flex items-center gap-2 text-xs">
                     <span className="w-12 font-bold text-slate-600 flex items-center gap-1">
                       {item.star} <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -478,9 +481,9 @@ export default function AdminFeedbackPage() {
             {/* Top Therapist Mini Leaderboard */}
             <div className="pt-4 border-t border-slate-100">
               <h4 className="font-bold text-xs text-slate-700 uppercase tracking-wider mb-2">Peringkat Terapis Teratas</h4>
-              {summary.therapistRanking.length > 0 ? (
+              {(summary.therapistRanking || []).length > 0 ? (
                 <div className="space-y-2">
-                  {summary.therapistRanking.slice(0, 3).map((t, idx) => (
+                  {(summary.therapistRanking || []).slice(0, 3).map((t, idx) => (
                     <div key={t.id} className="flex items-center justify-between text-xs py-1">
                       <div className="flex items-center gap-2">
                         <span className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-[10px] ${
