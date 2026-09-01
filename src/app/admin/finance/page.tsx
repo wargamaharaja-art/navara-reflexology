@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users, FileText, FileSpreadsheet, File as FileIcon } from "lucide-react";
+import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users, FileText, FileSpreadsheet, File as FileIcon, Tag, Percent, Receipt, ChevronRight, Eye, Sparkles } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -20,6 +20,29 @@ import {
   Pie,
   Cell,
 } from "recharts";
+
+type DiscountInvoice = {
+  id: string;
+  invoiceNumber: string;
+  patientName: string;
+  branchName: string;
+  subtotal: number;
+  discount: number;
+  grandTotal: number;
+  createdAt: string;
+};
+
+type DiscountSummary = {
+  totalSubtotal: number;
+  totalDiscount: number;
+  totalTax: number;
+  totalGrandTotal: number;
+  totalInvoices: number;
+  discountedInvoicesCount: number;
+  discountPercentage: number;
+  discountedInvoiceRate: number;
+  discountedInvoices: DiscountInvoice[];
+};
 
 type FinanceTransaction = {
   id: string;
@@ -52,6 +75,8 @@ export default function AdminFinancePage() {
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [session, setSession] = useState<any>(null);
+  const [discountSummary, setDiscountSummary] = useState<DiscountSummary | null>(null);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
 
   // Filters
   const [startDate, setStartDate] = useState<string>(() => {
@@ -84,15 +109,15 @@ export default function AdminFinancePage() {
 
   const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
-  const incomeCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "INCOME").map(c => c.name))), [categories]);
-  const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
+  const incomeCategories = useMemo(() => Array.from(new Set(categories.filter((c: Category) => c.type === "INCOME").map((c: Category) => c.name))), [categories]);
+  const expenseCategories = useMemo(() => Array.from(new Set(categories.filter((c: Category) => c.type === "EXPENSE").map((c: Category) => c.name))), [categories]);
 
   // Set default category when type changes
   useEffect(() => {
     if (formData.type === "INCOME" && incomeCategories.length > 0 && !incomeCategories.includes(formData.category)) {
-      setFormData(prev => ({ ...prev, category: incomeCategories[0] }));
+      setFormData((prev: typeof formData) => ({ ...prev, category: incomeCategories[0] }));
     } else if (formData.type === "EXPENSE" && expenseCategories.length > 0 && !expenseCategories.includes(formData.category)) {
-      setFormData(prev => ({ ...prev, category: expenseCategories[0] }));
+      setFormData((prev: typeof formData) => ({ ...prev, category: expenseCategories[0] }));
     }
   }, [formData.type, incomeCategories, expenseCategories]);
 
@@ -109,6 +134,22 @@ export default function AdminFinancePage() {
       console.error("Failed to fetch finance data:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDiscountSummary = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
+
+      const res = await fetch(`/api/finance/discount-summary?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDiscountSummary(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch discount summary:", err);
     }
   };
 
@@ -189,6 +230,7 @@ export default function AdminFinancePage() {
   useEffect(() => {
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
+    fetchDiscountSummary();
   }, [startDate, endDate]);
 
   const handleDelete = async (id: string) => {
@@ -251,7 +293,7 @@ export default function AdminFinancePage() {
     const headers = ["Tanggal", "Waktu", "Tipe", "Kategori", "Metode Pembayaran", "Deskripsi", "Cabang", "Nominal", "Referensi", "Attachment"];
     const csvRows = [headers.join(",")];
 
-    transactions.forEach(t => {
+    transactions.forEach((t: FinanceTransaction) => {
       const dateObj = new Date(t.date);
       const dateStr = dateObj.toLocaleDateString('id-ID');
       const timeStr = dateObj.toLocaleTimeString('id-ID');
@@ -263,7 +305,7 @@ export default function AdminFinancePage() {
         `"${t.category}"`,
         `"${t.paymentMethod}"`,
         `"${t.description.replace(/"/g, '""')}"`,
-        `"${t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat"}"`,
+        `"${t.branchId ? branches.find((b: any) => b.id === t.branchId)?.name || t.branchId : "Pusat"}"`,
         t.amount,
         `"${t.referenceId || ""}"`,
         `"${t.attachmentUrl || ""}"`
@@ -285,7 +327,7 @@ export default function AdminFinancePage() {
   const handleExportExcel = () => {
     if (transactions.length === 0) return alert("Tidak ada data untuk diekspor");
 
-    const exportData = transactions.map(t => {
+    const exportData = transactions.map((t: FinanceTransaction) => {
       const dateObj = new Date(t.date);
       return {
         Tanggal: dateObj.toLocaleDateString('id-ID'),
@@ -294,7 +336,7 @@ export default function AdminFinancePage() {
         Kategori: t.category,
         "Metode Pembayaran": t.paymentMethod,
         Deskripsi: t.description,
-        Cabang: t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat",
+        Cabang: t.branchId ? branches.find((b: any) => b.id === t.branchId)?.name || t.branchId : "Pusat",
         Nominal: t.amount,
         Referensi: t.referenceId || "",
         Attachment: t.attachmentUrl || ""
@@ -316,7 +358,7 @@ export default function AdminFinancePage() {
     const tableColumn = ["Tanggal", "Waktu", "Tipe", "Kategori", "Metode", "Cabang", "Nominal"];
     const tableRows: any[] = [];
 
-    transactions.forEach(t => {
+    transactions.forEach((t: FinanceTransaction) => {
       const dateObj = new Date(t.date);
       const rowData = [
         dateObj.toLocaleDateString('id-ID'),
@@ -324,7 +366,7 @@ export default function AdminFinancePage() {
         t.type,
         t.category,
         t.paymentMethod,
-        t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat",
+        t.branchId ? branches.find((b: any) => b.id === t.branchId)?.name || t.branchId : "Pusat",
         new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(t.amount)
       ];
       tableRows.push(rowData);
@@ -341,9 +383,9 @@ export default function AdminFinancePage() {
     doc.save(`laporan_keuangan_${new Date().getTime()}.pdf`);
   };
 
-  const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
-  const operationalExpense = transactions.filter(t => t.type === "EXPENSE" && t.category.toLowerCase() !== "bagi hasil terapis").reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = transactions.filter((t: FinanceTransaction) => t.type === "INCOME").reduce((sum: number, t: FinanceTransaction) => sum + t.amount, 0);
+  const totalExpense = transactions.filter((t: FinanceTransaction) => t.type === "EXPENSE").reduce((sum: number, t: FinanceTransaction) => sum + t.amount, 0);
+  const operationalExpense = transactions.filter((t: FinanceTransaction) => t.type === "EXPENSE" && t.category.toLowerCase() !== "bagi hasil terapis").reduce((sum: number, t: FinanceTransaction) => sum + t.amount, 0);
   const labaKotor = totalIncome - operationalExpense;
   const netProfit = totalIncome - totalExpense;
 
@@ -354,7 +396,7 @@ export default function AdminFinancePage() {
   const chartData = useMemo(() => {
     const dailyData: Record<string, { date: string, Pemasukan: number, Pengeluaran: number }> = {};
 
-    [...transactions].reverse().forEach(t => {
+    [...transactions].reverse().forEach((t: FinanceTransaction) => {
       const date = new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
       if (!dailyData[date]) {
         dailyData[date] = { date, Pemasukan: 0, Pengeluaran: 0 };
@@ -367,7 +409,7 @@ export default function AdminFinancePage() {
 
   const pieData = useMemo(() => {
     const categoriesMap: Record<string, number> = {};
-    transactions.filter(t => t.type === "INCOME").forEach(t => {
+    transactions.filter((t: FinanceTransaction) => t.type === "INCOME").forEach((t: FinanceTransaction) => {
       categoriesMap[t.category] = (categoriesMap[t.category] || 0) + t.amount;
     });
     return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
@@ -375,7 +417,7 @@ export default function AdminFinancePage() {
 
   const expensePieData = useMemo(() => {
     const categoriesMap: Record<string, number> = {};
-    transactions.filter(t => t.type === "EXPENSE").forEach(t => {
+    transactions.filter((t: FinanceTransaction) => t.type === "EXPENSE").forEach((t: FinanceTransaction) => {
       categoriesMap[t.category] = (categoriesMap[t.category] || 0) + t.amount;
     });
     return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
@@ -411,14 +453,14 @@ export default function AdminFinancePage() {
               <input
                 type="date"
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                 className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
               />
               <span className="text-gray-400 font-bold px-1">s/d</span>
               <input
                 type="date"
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                 className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
               />
             </div>
@@ -522,6 +564,107 @@ export default function AdminFinancePage() {
               </div>
             </div>
 
+            {/* Analisis Diskon & Pendapatan Riil */}
+            <div className="mb-8 bg-gradient-to-br from-emerald-50/60 via-teal-50/40 to-blue-50/40 p-5 sm:p-6 rounded-2xl border border-emerald-100/80 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-1.5 bg-emerald-600 text-white rounded-lg shadow-sm">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900">Analisis Pendapatan Riil & Diskon Pasien</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                    Komparasi omset bruto (sebelum diskon) vs penerimaan bersih setelah diskon serta akumulasi potongan diskon yang dinikmati pasien.
+                  </p>
+                </div>
+                {discountSummary && discountSummary.discountedInvoicesCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsDiscountModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold text-xs sm:text-sm rounded-xl border border-emerald-200 shadow-sm transition-all hover:shadow self-start sm:self-auto cursor-pointer"
+                  >
+                    <Eye className="h-4 w-4 text-emerald-600" />
+                    Lihat Rincian Diskon ({discountSummary.discountedInvoicesCount})
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {/* 1. Pendapatan Riil (Sebelum Diskon) */}
+                <div className="bg-white rounded-xl border border-emerald-200/90 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm">
+                      <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                        <Receipt className="h-4 w-4" />
+                      </div>
+                      Pendapatan Riil (Bruto)
+                    </div>
+                    <span className="text-[10px] font-bold tracking-wide uppercase bg-emerald-100/70 text-emerald-800 px-2 py-0.5 rounded-full">
+                      Sebelum Diskon
+                    </span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">
+                    {formatRupiah(discountSummary?.totalSubtotal || 0)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                    <span>Total {discountSummary?.totalInvoices || 0} struk diterbitkan</span>
+                    <span className="font-medium text-emerald-700">100% Bruto</span>
+                  </div>
+                </div>
+
+                {/* 2. Pendapatan Setelah Diskon (Net POS) */}
+                <div className="bg-white rounded-xl border border-blue-200/90 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-blue-800 font-semibold text-sm">
+                      <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                        <Wallet className="h-4 w-4" />
+                      </div>
+                      Pendapatan Riil Diterima
+                    </div>
+                    <span className="text-[10px] font-bold tracking-wide uppercase bg-blue-100/70 text-blue-800 px-2 py-0.5 rounded-full">
+                      Setelah Diskon
+                    </span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-blue-600 mt-1">
+                    {formatRupiah(discountSummary?.totalGrandTotal || 0)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                    <span>Kas riil masuk dari POS</span>
+                    <span className="font-medium text-blue-700">
+                      {discountSummary && discountSummary.totalSubtotal > 0
+                        ? `${(100 - (discountSummary.discountPercentage || 0)).toFixed(1)}% Realisasi`
+                        : "100%"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3. Total Pengeluaran Diskon */}
+                <div className="bg-white rounded-xl border border-rose-200/90 p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-rose-800 font-semibold text-sm">
+                      <div className="p-2 bg-rose-100 text-rose-600 rounded-lg">
+                        <Tag className="h-4 w-4" />
+                      </div>
+                      Total Pengeluaran Diskon
+                    </div>
+                    <span className="text-[10px] font-bold tracking-wide uppercase bg-rose-100/70 text-rose-800 px-2 py-0.5 rounded-full">
+                      Potongan Pasien
+                    </span>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">
+                    {formatRupiah(discountSummary?.totalDiscount || 0)}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2 flex items-center justify-between">
+                    <span>{discountSummary?.discountedInvoicesCount || 0} transaksi didiskon</span>
+                    <span className="font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200/60">
+                      {(discountSummary?.discountPercentage || 0).toFixed(1)}% dari bruto
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Charts Section */}
             <div className="flex flex-col gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
@@ -589,7 +732,7 @@ export default function AdminFinancePage() {
                             stroke="none"
                             cornerRadius={6}
                           >
-                            {pieData.map((entry, index) => (
+                            {pieData.map((entry: any, index: number) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
                             ))}
                           </Pie>
@@ -624,7 +767,7 @@ export default function AdminFinancePage() {
                             stroke="none"
                             cornerRadius={6}
                           >
-                            {expensePieData.map((entry, index) => (
+                            {expensePieData.map((entry: any, index: number) => (
                               <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
                             ))}
                           </Pie>
@@ -665,7 +808,7 @@ export default function AdminFinancePage() {
                   <input
                     type="text"
                     value={newCategoryName}
-                    onChange={e => setNewCategoryName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewCategoryName(e.target.value)}
                     placeholder="Nama Kategori Baru"
                     required
                     className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary"
@@ -686,6 +829,129 @@ export default function AdminFinancePage() {
                     </ul>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Rincian Diskon Pasien */}
+        {isDiscountModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-emerald-50 to-teal-50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-600 text-white rounded-xl shadow-sm">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Rincian Transaksi dengan Potongan Diskon</h3>
+                    <p className="text-xs text-gray-500">
+                      Daftar struk transaksi pasien yang mendapatkan potongan harga pada periode terpilih.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDiscountModalOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Summary Stats Banner in Modal */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-5 sm:p-6 pb-4 bg-gray-50/70 border-b border-gray-100">
+                <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm">
+                  <div className="text-xs font-semibold text-gray-500 uppercase">Total Bruto (Tanpa Diskon)</div>
+                  <div className="text-lg font-bold text-gray-900 mt-0.5">
+                    {formatRupiah(discountSummary?.totalSubtotal || 0)}
+                  </div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-rose-200 shadow-sm">
+                  <div className="text-xs font-semibold text-rose-600 uppercase">Total Diskon Diberikan</div>
+                  <div className="text-lg font-bold text-rose-600 mt-0.5">
+                    {formatRupiah(discountSummary?.totalDiscount || 0)}
+                  </div>
+                </div>
+                <div className="bg-white p-3.5 rounded-xl border border-blue-200 shadow-sm">
+                  <div className="text-xs font-semibold text-blue-600 uppercase">Penerimaan Bersih POS</div>
+                  <div className="text-lg font-bold text-blue-600 mt-0.5">
+                    {formatRupiah(discountSummary?.totalGrandTotal || 0)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Table of Invoices with Discount */}
+              <div className="p-5 sm:p-6 overflow-y-auto flex-1">
+                {(!discountSummary?.discountedInvoices || discountSummary.discountedInvoices.length === 0) ? (
+                  <div className="text-center py-12 text-gray-400 text-sm">
+                    Tidak ada transaksi dengan potongan diskon pada rentang tanggal ini.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-gray-200 rounded-xl">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 font-semibold">No. Struk</th>
+                          <th className="px-4 py-3 font-semibold">Tanggal & Waktu</th>
+                          <th className="px-4 py-3 font-semibold">Pasien</th>
+                          <th className="px-4 py-3 font-semibold">Cabang</th>
+                          <th className="px-4 py-3 font-semibold text-right">Harga Bruto</th>
+                          <th className="px-4 py-3 font-semibold text-right">Potongan Diskon</th>
+                          <th className="px-4 py-3 font-semibold text-right">Total Dibayar</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {discountSummary.discountedInvoices.map((inv: DiscountInvoice) => {
+                          const d = new Date(inv.createdAt);
+                          const dateStr = d.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+                          const timeStr = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+                          return (
+                            <tr key={inv.id} className="hover:bg-emerald-50/40 transition-colors">
+                              <td className="px-4 py-3 font-mono font-bold text-xs text-gray-800">
+                                {inv.invoiceNumber}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                                <div className="font-medium">{dateStr}</div>
+                                <div className="text-gray-400 text-[11px]">{timeStr} WIB</div>
+                              </td>
+                              <td className="px-4 py-3 font-semibold text-gray-900">
+                                {inv.patientName}
+                              </td>
+                              <td className="px-4 py-3 text-xs text-gray-600">
+                                <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[11px]">
+                                  {inv.branchName}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-700 font-medium whitespace-nowrap">
+                                {formatRupiah(inv.subtotal)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-rose-600 whitespace-nowrap">
+                                -{formatRupiah(inv.discount)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-blue-600 whitespace-nowrap">
+                                {formatRupiah(inv.grandTotal)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
+                <span className="text-xs text-gray-500">
+                  Menampilkan {discountSummary?.discountedInvoices?.length || 0} struk transaksi
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsDiscountModalOpen(false)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium rounded-lg shadow-sm transition-colors cursor-pointer"
+                >
+                  Tutup
+                </button>
               </div>
             </div>
           </div>
@@ -724,7 +990,7 @@ export default function AdminFinancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t) => {
+                  {transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t: FinanceTransaction) => {
                     const dateObj = new Date(t.date);
                     const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
                     const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
