@@ -17,7 +17,7 @@ async function runFix() {
   
   if (completedVisits.length === 0) return;
 
-  const visitIds = completedVisits.map(v => v.id);
+  const visitIds = completedVisits.map((v: any) => v.id);
 
   // 2. Fetch all related data in bulk
   const allCommissions = await db.select().from(therapistCommissions)
@@ -32,35 +32,35 @@ async function runFix() {
       )
     );
 
-  const allServices = await db.select().from(services);
-  const allTherapists = await db.select().from(therapists);
-  const allOverrides = await db.select().from(therapistServiceCommissions);
-  const allInvoices = await db.select().from(invoices)
+  const allServices: any[] = await db.select().from(services);
+  const allTherapists: any[] = await db.select().from(therapists);
+  const allOverrides: any[] = await db.select().from(therapistServiceCommissions);
+  const allInvoices: any[] = await db.select().from(invoices)
     .where(inArray(invoices.visitId, visitIds));
 
   // Indexes for fast lookup
-  const commMap = new Map<string, typeof allCommissions>();
-  allCommissions.forEach(c => {
+  const commMap = new Map<string, any[]>();
+  allCommissions.forEach((c: any) => {
     if (!commMap.has(c.visitId)) commMap.set(c.visitId, []);
     commMap.get(c.visitId)!.push(c);
   });
 
-  const txMap = new Map<string, typeof allFinanceTxs>();
-  allFinanceTxs.forEach(t => {
+  const txMap = new Map<string, any[]>();
+  allFinanceTxs.forEach((t: any) => {
     if (!t.referenceId) return;
     if (!txMap.has(t.referenceId)) txMap.set(t.referenceId, []);
     txMap.get(t.referenceId)!.push(t);
   });
 
-  const svcMap = new Map(allServices.map(s => [s.id, s]));
-  const thMap = new Map(allTherapists.map(t => [t.id, t]));
-  const overMap = new Map(allOverrides.map(o => [`${o.therapistId}-${o.serviceId}`, o]));
-  const invoiceMap = new Map(allInvoices.map(i => [i.visitId, i]));
+  const svcMap = new Map<string, any>(allServices.map((s: any) => [s.id, s]));
+  const thMap = new Map<string, any>(allTherapists.map((t: any) => [t.id, t]));
+  const overMap = new Map<string, any>(allOverrides.map((o: any) => [`${o.therapistId}-${o.serviceId}`, o]));
+  const invoiceMap = new Map<string, any>(allInvoices.map((i: any) => [i.visitId, i]));
 
   let fixedMissing = 0;
   let fixedIncorrect = 0;
 
-  for (const visit of completedVisits) {
+  for (const visit of completedVisits as any[]) {
     const therapistId = visit.therapistId!;
     
     const commissions = commMap.get(visit.id) || [];

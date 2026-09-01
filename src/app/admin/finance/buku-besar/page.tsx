@@ -189,7 +189,7 @@ export default function BukuBesarPage() {
   // Kelompokkan per kategori (urutan sesuai kemunculan pertama)
   const grouped = useMemo(() => {
     const map = new Map<string, FinanceTransaction[]>();
-    transactions.forEach(t => {
+    transactions.forEach((t: FinanceTransaction) => {
       if (!map.has(t.category)) map.set(t.category, []);
       map.get(t.category)!.push(t);
     });
@@ -206,13 +206,13 @@ export default function BukuBesarPage() {
       ["Periode:", periodLabel()],
       [""],
     ];
-    grouped.forEach((items, cat) => {
+    grouped.forEach((items: FinanceTransaction[], cat: string) => {
       rows.push([toTitleCase(cat)]);
       rows.push(["Tanggal", "Keterangan", "Debit", "Kredit"]);
-      items.forEach(t => {
+      items.forEach((t: FinanceTransaction) => {
         rows.push([fmtDate(t.date), toTitleCase(t.description), t.amount, 0]);
       });
-      const jumlah = items.reduce((s, t) => s + t.amount, 0);
+      const jumlah = items.reduce((s: number, t: FinanceTransaction) => s + t.amount, 0);
       rows.push(["", "Jumlah", jumlah, 0]);
       rows.push([""]);
     });
@@ -240,7 +240,7 @@ export default function BukuBesarPage() {
 
     let y = 36;
 
-    grouped.forEach((items, cat) => {
+    grouped.forEach((items: FinanceTransaction[], cat: string) => {
       // Category label
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
@@ -250,8 +250,8 @@ export default function BukuBesarPage() {
       doc.text(toTitleCase(cat), 15, y + 5);
       y += 9;
 
-      const tableRows = items.map(t => [fmtDate(t.date), toTitleCase(t.description), fmtNum(t.amount), "0"]);
-      const jumlah = items.reduce((s, t) => s + t.amount, 0);
+      const tableRows = items.map((t: FinanceTransaction) => [fmtDate(t.date), toTitleCase(t.description), fmtNum(t.amount), "0"]);
+      const jumlah = items.reduce((s: number, t: FinanceTransaction) => s + t.amount, 0);
       tableRows.push(["", "Jumlah", fmtNum(jumlah), "0"]);
 
       autoTable(doc, {
@@ -267,7 +267,7 @@ export default function BukuBesarPage() {
           2: { cellWidth: 28, halign: "right" },
           3: { cellWidth: 22, halign: "right" },
         },
-        didDrawPage: (d) => { y = (d.cursor?.y ?? y) + 4; },
+        didDrawPage: (d: any) => { y = (d.cursor?.y ?? y) + 4; },
       });
       y = (doc as any).lastAutoTable.finalY + 6;
       if (y > 265) { doc.addPage(); y = 15; }
@@ -378,8 +378,8 @@ export default function BukuBesarPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {Array.from(grouped.entries()).map(([category, items]) => {
-                const jumlah = items.reduce((s, t) => s + t.amount, 0);
+              {Array.from(grouped.entries()).map(([category, items]: [string, FinanceTransaction[]]) => {
+                const jumlah = items.reduce((s: number, t: FinanceTransaction) => s + t.amount, 0);
                 return (
                   <div key={category} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print:rounded-none print:shadow-none print:border-0 print:break-inside-avoid">
                     {/* Kategori header (kuning seperti foto) */}
@@ -402,7 +402,7 @@ export default function BukuBesarPage() {
                           {category === "Bagi Hasil Terapis" ? (
                             (() => {
                               const therapistTotals = new Map<string, number>();
-                              items.forEach(t => {
+                              items.forEach((t: FinanceTransaction) => {
                                 const name = extractTherapistName(t.description);
                                 therapistTotals.set(name, (therapistTotals.get(name) || 0) + t.amount);
                               });
@@ -416,7 +416,7 @@ export default function BukuBesarPage() {
                               ));
                             })()
                           ) : (
-                            items.map((t, idx) => (
+                            items.map((t: FinanceTransaction, idx: number) => (
                               <tr
                                 key={t.id}
                                 className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
@@ -465,7 +465,7 @@ export default function BukuBesarPage() {
               <div className="bg-gray-900 text-white rounded-2xl px-6 py-4 flex justify-between items-center print:bg-gray-800">
                 <span className="font-black text-lg">Total Seluruh Biaya Usaha</span>
                 <span className="font-black text-xl tabular-nums">
-                  {fmtNum(transactions.reduce((s, t) => s + t.amount, 0))}
+                  {fmtNum(transactions.reduce((s: number, t: FinanceTransaction) => s + t.amount, 0))}
                 </span>
               </div>
             </div>
