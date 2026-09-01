@@ -24,6 +24,7 @@ const rbacMap = [
   { route: '/admin/inventory', permission: 'INVENTARIS_BARANG' },
   { route: '/admin/branches', permission: 'PENGATURAN_CABANG' },
   { route: '/admin/services', permission: 'LAYANAN_TERAPI' },
+  { route: '/admin/feedback', permission: 'FEEDBACK_PELANGGAN' },
 ];
 
 export default async function proxy(request: NextRequest) {

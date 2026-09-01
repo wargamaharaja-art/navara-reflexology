@@ -321,11 +321,12 @@ export default function AdminFeedbackPage() {
       <PageHeader
         title="Feedback & Kepuasan Pelanggan"
         description="Pantau ulasan pelanggan, evaluasi performa terapis, dan tingkatkan kenyamanan klinik."
-        action={
+        icon={MessageSquare}
+        rightContent={
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportExcel}
-              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs md:text-sm font-semibold flex items-center gap-1.5 shadow-sm transition"
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs md:text-sm font-semibold flex items-center gap-1.5 shadow-sm transition cursor-pointer"
             >
               <Download className="w-4 h-4 text-slate-500" /> Ekspor Excel
             </button>
