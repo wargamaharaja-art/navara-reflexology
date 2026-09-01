@@ -37,6 +37,12 @@ type Therapist = { id: string; name: string; branchId: string | null };
 type Branch = { id: string; name: string; address?: string; phone?: string; brand?: string; taxRate?: number };
 type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number; branchId?: string | null; effectivePrice?: number; effectiveCommission?: number; isActive?: boolean; brand?: string };
 
+type RetentionPatient = {
+  patient: any;
+  lastVisitDate: Date;
+  daysSinceLastVisit: number;
+};
+
 type InvoiceItem = {
   serviceId: string;
   name: string;
@@ -662,7 +668,7 @@ export default function AdminVisitsPage() {
       return;
     }
 
-    const rows = retentionPatients.map((rp, idx) => ({
+    const rows = retentionPatients.map((rp: RetentionPatient, idx: number) => ({
       No: idx + 1,
       "Nama Pasien": rp.patient.name,
       "No. WhatsApp / HP": rp.patient.phone || "-",
@@ -711,7 +717,7 @@ export default function AdminVisitsPage() {
       doc.text(`Dicetak pada: ${todayStr} | Total Pasien Absen: ${retentionPatients.length} Orang`, 105, 26, { align: "center" });
 
       // Table Data
-      const tableRows = retentionPatients.map((rp, idx) => [
+      const tableRows = retentionPatients.map((rp: RetentionPatient, idx: number) => [
         String(idx + 1),
         rp.patient.name,
         rp.patient.phone || "-",
@@ -2742,7 +2748,7 @@ export default function AdminVisitsPage() {
                       </td>
                     </tr>
                   ) : (
-                    retentionPatients.map((rp, idx) => (
+                    retentionPatients.map((rp: RetentionPatient, idx: number) => (
                       <tr key={idx} className="hover:bg-orange-50/20 transition-colors">
                         <td className="px-6 py-4">
                           <div className="font-bold text-gray-900">{rp.patient.name}</div>
