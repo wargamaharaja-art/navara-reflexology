@@ -122,12 +122,15 @@ async function runFix() {
 
       if (financeTxs.length === 0) {
         const txId = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        const therapistRec = await db.select({ name: therapists.name }).from(therapists).where(eq(therapists.id, therapistId)).limit(1);
+        const tName = therapistRec[0]?.name || "Terapis";
+
         await db.insert(financeTransactions).values({
           id: txId,
           type: "EXPENSE",
           category: "Bagi Hasil Terapis",
           amount: expectedTotalCommission,
-          description: `Bagi Hasil Terapis - Visit ${visit.id}`,
+          description: `Bagi Hasil Terapis (${tName}) - Visit ${visit.id}`,
           referenceId: visit.id,
           branchId: visit.branchId,
           paymentMethod: "CASH" // Assume cash for now if generated retroactively

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { financeTransactions } from "@/lib/db/schema";
-import { desc, eq, and, gte, lte } from "drizzle-orm";
+import { financeTransactions, patientVisits, therapists } from "@/lib/db/schema";
+import { desc, eq, and, gte, lte, inArray } from "drizzle-orm";
 import { type NextRequest } from "next/server";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
@@ -40,6 +40,60 @@ export async function GET(request: NextRequest) {
       .from(financeTransactions)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(financeTransactions.date));
+
+    // Auto-resolve missing therapist names for "Bagi Hasil Terapis"
+    const needFix = allTransactions.filter((t: any) =>
+      t.category &&
+      t.category.toLowerCase().includes("bagi hasil") &&
+      !t.description.includes("(") &&
+      (t.referenceId?.startsWith("V-") || t.description.includes("Visit V-"))
+    );
+
+    if (needFix.length > 0) {
+      const visitIds: string[] = Array.from(new Set(needFix.map((t: any) => {
+        if (t.referenceId?.startsWith("V-")) return t.referenceId;
+        const match = t.description.match(/Visit\s+(V-[^\s]+)/i);
+        return match ? match[1] : null;
+      }).filter((v: any): v is string => Boolean(v))));
+
+      if (visitIds.length > 0) {
+        const visitTherapists = await db
+          .select({
+            visitId: patientVisits.id,
+            therapistName: therapists.name,
+          })
+          .from(patientVisits)
+          .leftJoin(therapists, eq(patientVisits.therapistId, therapists.id))
+          .where(inArray(patientVisits.id, visitIds));
+
+        const therapistMap = new Map<string, string>();
+        visitTherapists.forEach((vt: any) => {
+          if (vt.visitId && vt.therapistName) {
+            therapistMap.set(vt.visitId, vt.therapistName);
+          }
+        });
+
+        for (const t of allTransactions) {
+          if (t.category && t.category.toLowerCase().includes("bagi hasil") && !t.description.includes("(")) {
+            const vId = t.referenceId?.startsWith("V-")
+              ? t.referenceId
+              : t.description.match(/Visit\s+(V-[^\s]+)/i)?.[1];
+
+            const tName = vId ? therapistMap.get(vId) : null;
+            if (tName) {
+              const oldDesc = t.description;
+              t.description = `Bagi Hasil Terapis (${tName}) - ${oldDesc.replace(/Bagi Hasil Terapis\s*-\s*/i, "")}`;
+              // Update database asynchronously
+              db.update(financeTransactions)
+                .set({ description: t.description })
+                .where(eq(financeTransactions.id, t.id))
+                .catch(() => {});
+            }
+          }
+        }
+      }
+    }
+
     return NextResponse.json(allTransactions);
   } catch (error) {
     console.error("Failed to fetch finance transactions:", error);

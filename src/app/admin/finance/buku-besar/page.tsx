@@ -43,15 +43,39 @@ const extractTherapistName = (description: string) => {
   
   // 1. Try parentheses: Bagi Hasil Terapis (Deni Akbar)
   const matchParen = description.match(/\((.*?)\)/);
-  if (matchParen && matchParen[1].trim()) return matchParen[1].trim();
+  if (matchParen && matchParen[1].trim() && !matchParen[1].toLowerCase().startsWith("auto")) {
+    const raw = matchParen[1].trim();
+    if (!raw.toLowerCase().startsWith("visit") && !raw.startsWith("-")) {
+      return raw;
+    }
+  }
   
-  // 2. Try standard format without parentheses: Bagi Hasil Terapis Deni Akbar - ...
-  const matchBagiHasil = description.match(/Bagi Hasil(?: Terapis)?\s+(.*?)(?:\s+-|\s+untuk|$)/i);
-  if (matchBagiHasil && matchBagiHasil[1].trim()) return matchBagiHasil[1].trim();
+  // 2. Try colon format: Bagi Hasil Terapis: Deni Akbar - ...
+  const matchColon = description.match(/(?:Bagi Hasil Terapis|Gaji Terapis|Beban Bagi Hasil Terapis):\s*([^-\n]+)/i);
+  if (matchColon && matchColon[1].trim()) {
+    const raw = matchColon[1].trim();
+    if (!raw.toLowerCase().startsWith("visit") && !raw.startsWith("-")) {
+      return raw;
+    }
+  }
 
-  // 3. Try Gaji format: Gaji Terapis Deni Akbar
-  const matchGaji = description.match(/Gaji(?: Terapis)?\s+(.*?)(?:\s+-|\s+untuk|$)/i);
-  if (matchGaji && matchGaji[1].trim()) return matchGaji[1].trim();
+  // 3. Try standard format without parentheses: Bagi Hasil Terapis Deni Akbar - ...
+  const matchBagiHasil = description.match(/Bagi Hasil(?: Terapis)?\s+([^-:\n]+?)(?:\s+-|\s+untuk|$)/i);
+  if (matchBagiHasil && matchBagiHasil[1].trim()) {
+    const raw = matchBagiHasil[1].trim();
+    if (!raw.toLowerCase().startsWith("visit") && !raw.startsWith("-")) {
+      return raw;
+    }
+  }
+
+  // 4. Try Gaji format: Gaji Terapis Deni Akbar
+  const matchGaji = description.match(/Gaji(?: Terapis)?\s+([^-:\n]+?)(?:\s+-|\s+untuk|$)/i);
+  if (matchGaji && matchGaji[1].trim()) {
+    const raw = matchGaji[1].trim();
+    if (!raw.toLowerCase().startsWith("visit") && !raw.startsWith("-")) {
+      return raw;
+    }
+  }
 
   return "Terapis Tidak Diketahui";
 };
