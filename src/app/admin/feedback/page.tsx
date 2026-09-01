@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star,
   Sparkles,
@@ -248,8 +248,8 @@ export default function AdminFeedbackPage() {
         body: JSON.stringify({ id: item.id, status: newStatus }),
       });
       if (res.ok) {
-        setFeedbacks(prev =>
-          prev.map(f => (f.id === item.id ? { ...f, status: newStatus } : f))
+        setFeedbacks((prev: FeedbackItem[]) =>
+          prev.map((f: FeedbackItem) => (f.id === item.id ? { ...f, status: newStatus } : f))
         );
         if (detailFeedback && detailFeedback.id === item.id) {
           setDetailFeedback({ ...detailFeedback, status: newStatus });
@@ -266,7 +266,7 @@ export default function AdminFeedbackPage() {
     try {
       const res = await fetch(`/api/feedback?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        setFeedbacks(prev => prev.filter(f => f.id !== id));
+        setFeedbacks((prev: FeedbackItem[]) => prev.filter((f: FeedbackItem) => f.id !== id));
         if (detailFeedback?.id === id) setDetailFeedback(null);
       } else {
         alert("Gagal menghapus feedback");
@@ -283,7 +283,7 @@ export default function AdminFeedbackPage() {
       return;
     }
 
-    const rows = feedbacks.map((f, idx) => ({
+    const rows = feedbacks.map((f: FeedbackItem, idx: number) => ({
       No: idx + 1,
       Tanggal: f.submittedAt
         ? new Date(f.submittedAt).toLocaleDateString("id-ID")
@@ -462,7 +462,7 @@ export default function AdminFeedbackPage() {
               <p className="text-xs text-slate-400 mb-4">Persentase kepuasan pelanggan</p>
 
               <div className="space-y-2 mb-6">
-                {(summary.starDistribution || []).slice().reverse().map(item => (
+                {(summary.starDistribution || []).slice().reverse().map((item: { star: number; count: number; percentage: number }) => (
                   <div key={item.star} className="flex items-center gap-2 text-xs">
                     <span className="w-12 font-bold text-slate-600 flex items-center gap-1">
                       {item.star} <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -484,7 +484,7 @@ export default function AdminFeedbackPage() {
               <h4 className="font-bold text-xs text-slate-700 uppercase tracking-wider mb-2">Peringkat Terapis Teratas</h4>
               {(summary.therapistRanking || []).length > 0 ? (
                 <div className="space-y-2">
-                  {(summary.therapistRanking || []).slice(0, 3).map((t, idx) => (
+                  {(summary.therapistRanking || []).slice(0, 3).map((t: { id: string; name: string; reviewCount: number; averageRating: number }, idx: number) => (
                     <div key={t.id} className="flex items-center justify-between text-xs py-1">
                       <div className="flex items-center gap-2">
                         <span className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-[10px] ${
@@ -518,11 +518,11 @@ export default function AdminFeedbackPage() {
             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Cabang</label>
             <select
               value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedBranch(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Semua Cabang</option>
-              {branches.map(b => (
+              {branches.map((b: any) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -533,11 +533,11 @@ export default function AdminFeedbackPage() {
             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Terapis</label>
             <select
               value={selectedTherapist}
-              onChange={(e) => setSelectedTherapist(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTherapist(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Semua Terapis</option>
-              {therapists.map(t => (
+              {therapists.map((t: any) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
@@ -548,7 +548,7 @@ export default function AdminFeedbackPage() {
             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Rating</label>
             <select
               value={selectedRating}
-              onChange={(e) => setSelectedRating(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedRating(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Semua Rating</option>
@@ -563,7 +563,7 @@ export default function AdminFeedbackPage() {
             <label className="block text-[10px] font-bold uppercase text-slate-400 mb-1">Status</label>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedStatus(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-500"
             >
               <option value="ALL">Semua Status</option>
@@ -579,7 +579,7 @@ export default function AdminFeedbackPage() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -590,7 +590,7 @@ export default function AdminFeedbackPage() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -604,7 +604,7 @@ export default function AdminFeedbackPage() {
               type="text"
               placeholder="Cari berdasarkan nama pelanggan, no. telepon, atau catatan..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -674,7 +674,7 @@ export default function AdminFeedbackPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {feedbacks.map((item) => (
+                {feedbacks.map((item: FeedbackItem) => (
                   <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* Customer & Date */}
                     <td className="py-3.5 px-4">
@@ -839,11 +839,11 @@ export default function AdminFeedbackPage() {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Cabang Klinik *</label>
                   <select
                     value={genBranchId}
-                    onChange={(e) => setGenBranchId(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenBranchId(e.target.value)}
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                   >
-                    {branches.map(b => (
+                    {branches.map((b: any) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
@@ -853,11 +853,11 @@ export default function AdminFeedbackPage() {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Terapis Terkait (Opsional)</label>
                   <select
                     value={genTherapistId}
-                    onChange={(e) => setGenTherapistId(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setGenTherapistId(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                   >
                     <option value="">-- Tanpa Terapis Tertentu --</option>
-                    {therapists.map(t => (
+                    {therapists.map((t: any) => (
                       <option key={t.id} value={t.id}>{t.name} ({t.specialization})</option>
                     ))}
                   </select>
@@ -870,7 +870,7 @@ export default function AdminFeedbackPage() {
                       type="text"
                       placeholder="Contoh: Bpk. Ahmad"
                       value={genCustomerName}
-                      onChange={(e) => setGenCustomerName(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGenCustomerName(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
@@ -880,7 +880,7 @@ export default function AdminFeedbackPage() {
                       type="tel"
                       placeholder="Contoh: 08123456789"
                       value={genCustomerPhone}
-                      onChange={(e) => setGenCustomerPhone(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGenCustomerPhone(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
