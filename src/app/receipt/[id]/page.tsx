@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 
 type InvoiceItem = {
   name: string;
@@ -32,6 +33,8 @@ type InvoiceData = {
   createdAt: string;
   branchMapUrl?: string;
   branchWhatsapp?: string;
+  feedbackToken?: string;
+  feedbackUrl?: string;
 };
 
 export default function PublicReceiptPage() {
@@ -96,7 +99,10 @@ export default function PublicReceiptPage() {
                 });
                 itemsText = itemsText.trimEnd();
                 
-                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Navara Reflexology Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n📍 *Lokasi Navara Reflexology:*\n${invoice.branchMapUrl || "[Link Google Maps Klinik belum diatur]"}\n\n📞 *Layanan Pengaduan & Saran:*\n${invoice.branchWhatsapp || "[Nomor WhatsApp Pengaduan belum diatur]"}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Navara Reflexology`;
+                const feedbackLink = invoice.feedbackUrl ? `${window.location.origin}${invoice.feedbackUrl}` : "";
+                const feedbackSection = feedbackLink ? `\n\n⭐ *Beri Masukan & Penilaian Layanan:*\n${feedbackLink}` : "";
+                
+                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Navara Reflexology Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n📍 *Lokasi Navara Reflexology:*\n${invoice.branchMapUrl || "[Link Google Maps Klinik belum diatur]"}\n\n📞 *Layanan Pengaduan & Saran:*\n${invoice.branchWhatsapp || "[Nomor WhatsApp Pengaduan belum diatur]"}${feedbackSection}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Navara Reflexology`;
                 
                 const cleanPhone = invoice.patientPhone.replace(/^0/, "62").replace(/\D/g, "");
                 
@@ -347,6 +353,34 @@ export default function PublicReceiptPage() {
             <div className="px-6 py-3 border-b border-dashed border-gray-200 text-xs">
               <span className="text-gray-400">Catatan:</span>
               <p className="text-gray-700 mt-0.5">{invoice.notes}</p>
+            </div>
+          )}
+
+          {/* Customer Feedback QR Code Section */}
+          {invoice.feedbackUrl && (
+            <div className="px-6 py-4 border-b border-dashed border-gray-200 text-center bg-emerald-50/40">
+              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
+                ⭐ Penilaian & Masukan Pelanggan
+              </span>
+              <p className="text-[10px] text-gray-500 mt-0.5 mb-2.5">
+                Scan QR Code di bawah untuk memberikan rating layanan kami:
+              </p>
+              <div className="inline-block p-2 bg-white rounded-xl shadow-xs border border-emerald-200/60 mb-2">
+                <QRCodeSVG
+                  value={typeof window !== "undefined" ? `${window.location.origin}${invoice.feedbackUrl}` : `https://navara.id${invoice.feedbackUrl}`}
+                  size={90}
+                />
+              </div>
+              <div className="no-print">
+                <a
+                  href={invoice.feedbackUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 underline"
+                >
+                  Buka Form Feedback Online →
+                </a>
+              </div>
             </div>
           )}
 

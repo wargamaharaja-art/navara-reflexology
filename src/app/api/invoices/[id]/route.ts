@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoices, financeTransactions, journalEntries, journalLines, branches, settings } from "@/lib/db/schema";
+import { invoices, financeTransactions, journalEntries, journalLines, branches, settings, customerFeedbacks } from "@/lib/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
+import { ensureFeedbackTable } from "@/lib/db/feedback-init";
+import crypto from "crypto";
 
 // GET: Public endpoint - fetch invoice detail by ID (no auth required)
 export async function GET(
@@ -11,6 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureFeedbackTable();
     const { id } = await params;
 
     const result = await db
@@ -35,12 +38,43 @@ export async function GET(
       whatsappNumber: settings.whatsappNumber
     }).from(settings).where(eq(settings.id, "company_info")).limit(1);
 
+    // Check or create feedback token for this invoice
+    let feedbackToken = "";
+    const feedbackList = await db
+      .select({ token: customerFeedbacks.token })
+      .from(customerFeedbacks)
+      .where(eq(customerFeedbacks.invoiceId, invoice.id))
+      .limit(1);
+
+    if (feedbackList.length > 0) {
+      feedbackToken = feedbackList[0].token;
+    } else {
+      feedbackToken = crypto.randomBytes(6).toString("hex");
+      try {
+        await db.insert(customerFeedbacks).values({
+          id: crypto.randomUUID(),
+          token: feedbackToken,
+          branchId: invoice.branchId,
+          therapistId: invoice.therapistId || null,
+          visitId: invoice.visitId || null,
+          invoiceId: invoice.id,
+          customerName: invoice.patientName,
+          customerPhone: invoice.patientPhone,
+          status: "PENDING",
+        });
+      } catch (fbErr) {
+        console.error("Failed to auto-create feedback record:", fbErr);
+      }
+    }
+
     return NextResponse.json({
       data: {
         ...invoice,
         items: JSON.parse(invoice.items),
         branchMapUrl: branchResult[0]?.mapUrl || settingsResult[0]?.mapUrl || "",
         branchWhatsapp: branchResult[0]?.whatsappNumber || settingsResult[0]?.whatsappNumber || "",
+        feedbackToken,
+        feedbackUrl: `/feedback/${feedbackToken}`,
       }
     });
   } catch (error) {

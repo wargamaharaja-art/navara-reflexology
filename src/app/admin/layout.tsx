@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Gift } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Gift, MessageSquare, Star } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -334,6 +334,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { name: "Promo Bekam Gratis", href: "/admin/promo", icon: Gift },
               { name: "Buku Pasien", href: "/admin/visits", icon: CalendarCheck },
               { name: "Transaksi Pelanggan", href: "/admin/transactions", icon: BookOpen },
+              { name: "Feedback Pelanggan", href: "/admin/feedback", icon: MessageSquare },
               { name: "Layanan Terapi", href: "/admin/services", icon: Activity },
               {
                 name: "Pegawai",
@@ -394,6 +395,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Buku Pasien") return isSuperAdmin || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return isSuperAdmin || perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
+              if (link.name === "Feedback Pelanggan") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER" || perms.includes("FEEDBACK_PELANGGAN");
               if (link.name === "Layanan Terapi") return isSuperAdmin || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER" || perms.includes("LAYANAN_TERAPI"); // Menampilkan untuk semua admin cabang & kasir
 
               if (link.name === "Pegawai") {

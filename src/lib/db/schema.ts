@@ -574,3 +574,40 @@ export const therapistMutations = pgTable("therapist_mutations", {
 
 export type TherapistMutation = typeof therapistMutations.$inferSelect;
 export type NewTherapistMutation = typeof therapistMutations.$inferInsert;
+
+// ============================================
+// CUSTOMER FEEDBACKS (Kritik, Saran & Penilaian Pelanggan)
+// ============================================
+export const customerFeedbacks = pgTable("customer_feedbacks", {
+  id: text("id").primaryKey(), // UUID
+  token: text("token").notNull().unique(), // URL-safe token
+  visitId: text("visit_id").references(() => patientVisits.id, { onDelete: "set null" }),
+  invoiceId: text("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+  branchId: text("branch_id").notNull().references(() => branches.id),
+  therapistId: text("therapist_id").references(() => therapists.id, { onDelete: "set null" }),
+  customerName: text("customer_name"),
+  customerPhone: text("customer_phone"),
+  overallRating: integer("overall_rating"), // 1-5
+  therapistRating: integer("therapist_rating"), // 1-5
+  facilityRating: integer("facility_rating"), // 1-5
+  serviceRating: integer("service_rating"), // 1-5
+  valueRating: integer("value_rating"), // 1-5
+  comment: text("comment"),
+  aspectRatings: text("aspect_ratings"), // JSON string: { cleanliness: 5, friendliness: 5, punctuality: 4, comfort: 5, technique: 5, parking: 4, waitingRoom: 5 }
+  wouldRecommend: boolean("would_recommend"), // true / false
+  status: text("status", { enum: ["PENDING", "SUBMITTED", "FLAGGED"] }).notNull().default("PENDING"),
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  submittedAt: text("submitted_at"),
+  createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
+}, (table: any) => ({
+  tokenIdx: index("feedback_token_idx").on(table.token),
+  branchIdx: index("feedback_branch_idx").on(table.branchId),
+  therapistIdx: index("feedback_therapist_idx").on(table.therapistId),
+  statusIdx: index("feedback_status_idx").on(table.status),
+  createdIdx: index("feedback_created_idx").on(table.createdAt),
+}));
+
+export type CustomerFeedback = typeof customerFeedbacks.$inferSelect;
+export type NewCustomerFeedback = typeof customerFeedbacks.$inferInsert;
+
